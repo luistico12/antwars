@@ -10,7 +10,7 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
 5. `supabase/schema.sql` (RLS, RPCs, Ranglisten), `scripts/gen-config.sh`, `.github/workflows/pages.yml`, `.env.example`, `README.md`.
 6. Headless-Tests (Playwright): Menüs, Screens, Spielstart, Touch-Langdrücken, Mobil-Layout ohne Fehler.
 
+7. Gepusht nach `luistico12/antwars` (main); Pause- und Einstellungsdialog geprüft.
+
 ## Offen
-- Push nach `luistico12/antwars` (Repo ist jetzt der Sitzung zugeordnet).
 - Supabase live testen (nur mit echten Zugangsdaten möglich).
-- Pause-/Einstellungs-/Eroberungsdialog optisch final prüfen.
