@@ -20,3 +20,13 @@ Ohne Supabase-Zugangsdaten läuft das Spiel im **Gastmodus** (Fortschritt nur im
 
 ## Bekannte Grenzen
 Spielstatistik wird vom Client gemeldet (serverseitig gedeckelt, aber nicht vollständig manipulationssicher). Lobby-Chat läuft über öffentliche Realtime-Broadcast-Kanäle. Oberfläche ist auf Deutsch und Englisch übersetzt. Werbefläche: eigenes Bild als `img/ad.png` ablegen.
+
+## Profil nachtragen / Admin setzen (falls Admin-Bereich fehlt)
+Der Admin-Bereich erscheint nur, wenn `profiles.is_admin = true` ist. Hast du dich registriert, bevor `schema.sql` lief, existiert noch kein Profil. Im SQL-Editor:
+```sql
+insert into public.profiles(id, username)
+select id, left(coalesce(nullif(raw_user_meta_data->>'username',''), split_part(email,'@',1)), 20) from auth.users
+on conflict do nothing;
+update public.profiles set is_admin = true where id = (select id from auth.users where email = 'DEINE@MAIL.DE');
+```
+Danach im Spiel abmelden und neu anmelden.

@@ -5,6 +5,7 @@ const needLogin=()=>REMOTE&&!AW.loggedIn;
 
 /* ---------- Profil (Bild 3, Seite 2) ---------- */
 S.profile=()=>{
+  if(AW.loggedIn&&!AW.profile&&!(AW.user&&AW.user.local))return shell(t('Profil'),{},`<div class="msg err">${LANG==='de'?'Dein Profil wurde in der Datenbank nicht gefunden. Führe supabase/schema.sql im Supabase-SQL-Editor aus und lege das Profil nach (siehe README, „Profil nachtragen“). Danach neu anmelden.':'Your profile was not found in the database. Run supabase/schema.sql in the Supabase SQL editor and backfill the profile (see README). Then sign in again.'}</div>`);
   const p=AW.profile||{},li=AW.loggedIn&&!(AW.user&&AW.user.local),wr=p.games?Math.round(100*p.wins/p.games):0;
   const hatName=p.hat&&SHOP_BY_ID['hat:'+p.hat],flag=p.flag;
   const qs=QUESTS.filter(q=>q[1]==='career').slice(0,4).map(q=>questRow(q,true)).join('');
