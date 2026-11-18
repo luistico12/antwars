@@ -1,5 +1,7 @@
 # Ant Wars – Projektkontext für Claude
 
+Lies zuerst `PROGRESS.md` (Stand, offene Punkte). Aktualisiere sie nach jedem abgeschlossenen Schritt und committe/pushe nach `main`.
+
 
 
 ## Was das Projekt ist
