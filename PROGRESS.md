@@ -12,5 +12,8 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
 
 7. Gepusht nach `luistico12/antwars` (main); Pause- und Einstellungsdialog geprüft.
 
+8. `config.js` (öffentlicher URL + publishable Key, RLS schützt) eingecheckt im `AW_CONFIG`-Format; Workflow überschreibt sie nur, wenn Secrets gesetzt sind.
+
 ## Offen
+- `supabase/schema.sql` im Supabase-SQL-Editor ausführen (nötig für Server).
 - Supabase live testen (nur mit echten Zugangsdaten möglich).
