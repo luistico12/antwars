@@ -91,14 +91,14 @@ h1,h2,h3,p{margin:0}
 .chip{cursor:pointer;display:flex;gap:8px;align-items:center;padding:5px 11px;border-radius:12px;background:var(--g1);border:1px solid var(--ln);backdrop-filter:blur(10px);font-variant-numeric:tabular-nums;font-size:14px}
 .chip:hover{background:var(--g3)}.chip.sel{border-color:var(--ac-line);background:var(--ac-soft)}
 .chip b{font-weight:700;font-size:15px}.chip small{color:var(--mu);font-size:12px}.chip.warn b{color:var(--bad)}
-.chip .ic,.ih{filter:brightness(0) invert(1);image-rendering:pixelated}
+.chip .ic,.ih{image-rendering:pixelated}
 .chip .ic{width:20px;height:20px;flex:none}
 .ih{width:18px;height:18px;vertical-align:-4px;margin-right:6px}.cost .ih{width:14px;height:14px;margin-right:3px;vertical-align:-2px}
 #statp{position:absolute;z-index:25;left:0;top:calc(100% + 6px);width:min(720px,100%);padding:12px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px 28px;background:rgba(12,16,26,.92);border:1px solid var(--ln);border-radius:var(--r);backdrop-filter:blur(18px);box-shadow:0 16px 48px rgba(0,0,0,.5)}
 #statp h3{font-size:14px;color:var(--ac);font-weight:700;margin-bottom:4px}
 #pwr{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto;align-items:center}
 .pw{display:flex;gap:6px;align-items:center;background:var(--g1);border:1px solid var(--ac-line);border-radius:10px;padding:2px 9px 2px 6px;font-size:13px;font-weight:600}
-.pw .ic{width:18px;height:18px;filter:brightness(0) invert(1);image-rendering:pixelated}
+.pw .ic{width:18px;height:18px;image-rendering:pixelated}
 .pw.more{border-color:var(--ln);color:var(--mu)}
 #tip{position:fixed;z-index:200;pointer-events:none;background:rgba(10,14,22,.95);border:1px solid var(--ac-line);border-radius:10px;padding:7px 10px;max-width:300px;font-size:13px;line-height:1.35;backdrop-filter:blur(8px)}
 #tip .dim{color:var(--mu)}
@@ -185,7 +185,7 @@ input[type=range]{width:100%;accent-color:var(--ac)}
 #set input[type=checkbox]{accent-color:var(--ac);width:17px;height:17px}
 #radial{position:fixed;inset:0 var(--adw) var(--adh) 0;z-index:210}#radial .ring{position:absolute;width:0;height:0}
 #radial .rb{position:absolute;width:76px;height:76px;margin:-38px 0 0 -38px;border-radius:50%;background:rgba(14,18,28,.88);border:1px solid var(--ln);color:var(--tx);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11.5px;line-height:1.1;padding:2px;backdrop-filter:blur(10px);box-shadow:0 8px 24px rgba(0,0,0,.5);animation:rpop .16s ease-out both}
-#radial .rb img{width:26px;height:26px;filter:brightness(0) invert(1);image-rendering:pixelated}
+#radial .rb img{width:26px;height:26px;image-rendering:pixelated}
 #radial .rb:hover:not(:disabled){background:var(--ac);border-color:var(--ac)}#radial .rb:disabled{opacity:.45}#radial .rb.atk{border-color:var(--ac-line)}
 #radial .mid{position:absolute;width:96px;margin:-56px 0 0 -48px;text-align:center;font-size:12px;font-weight:700;color:#fff;text-shadow:0 1px 6px #000;pointer-events:none}
 #radial .why{position:absolute;left:0;right:0;bottom:calc(var(--adh) + 24px);text-align:center;pointer-events:none}

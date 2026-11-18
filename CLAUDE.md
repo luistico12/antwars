@@ -23,7 +23,7 @@ Statisches HTML5-Canvas-Spiel (Vanilla JS, kein Build-Schritt), Ameisenkolonie b
 - `scripts/gen-config.sh` erzeugt `config.js` aus `.env`/Secrets (gitignored, nie einchecken).
 
 ## Konventionen
-- Design: dunkles Glas, Akzent `#ff5757`, nur weiße Linien-Icons (`ico('name')` in `icons.js`), keine externen Fonts/Bilder (DSGVO). Overlays lassen Header und Werbespalte frei (`--hh`, `--adw`, `--adh`).
+- Design: dunkles Glas, Akzent `#ff5757`, weiße Linien-Icons (`ico('name')`) nur in Menüs/Header; die farbigen Pixel-Icons im Spiel (HUD, Dock, Kreismenü) bleiben farbig, keine externen Fonts/Bilder (DSGVO). Overlays lassen Header und Werbespalte frei (`--hh`, `--adw`, `--adh`).
 - Texte im Code sind Deutsch und laufen durch `t('…')`; Englisch steht in `i18n.js`/`i18n-en.js`.
 - Neue Screens: `S.name=()=>shell(titel,{…},body)` plus optional `S.name.bind`, geöffnet mit `openScreen('name')`.
 - Spiel-DOM-IDs (`#cv`, `#mv`, `#chips`, `#dock`, `#side`, `#toasts` …) nicht umbenennen, der Spielcode greift darauf zu.
