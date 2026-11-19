@@ -25,9 +25,13 @@ Spielstatistik wird vom Client gemeldet (serverseitig gedeckelt, aber nicht voll
 ## Profil nachtragen / Admin setzen (falls Admin-Bereich fehlt)
 Der Admin-Bereich erscheint nur, wenn `profiles.is_admin = true` ist. Hast du dich registriert, bevor `schema.sql` lief, existiert noch kein Profil. Im SQL-Editor:
 ```sql
-insert into public.profiles(id, username)
-select id, left(coalesce(nullif(raw_user_meta_data->>'username',''), split_part(email,'@',1)), 20) from auth.users
+insert into public.profiles(id, username, tag)
+select u.id, u.n, public.new_tag(u.n) from (
+  select id, left(coalesce(nullif(raw_user_meta_data->>'username',''), split_part(email,'@',1), 'Spieler'), 20) as n from auth.users
+) u where char_length(u.n) >= 2
 on conflict do nothing;
+-- Admin: nur mit einem Konto, das eine E-Mail hat (anonyme Konten haben keine, siehe „Konto sichern“ im Profil)
 update public.profiles set is_admin = true where id = (select id from auth.users where email = 'DEINE@MAIL.DE');
 ```
+Änderungen im SQL-Editor/Table Editor des Dashboards bleiben bestehen; über das Spiel (Spieler-Token) kann sich niemand selbst zum Admin machen.
 Danach im Spiel abmelden und neu anmelden.

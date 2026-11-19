@@ -100,7 +100,8 @@ create trigger on_auth_user_created after insert on auth.users for each row exec
 create or replace function public.protect_profile() returns trigger
 language plpgsql security definer set search_path=public as $$
 begin
-  if coalesce(current_setting('app.rpc', true),'') = '1' or public.is_admin() then return new; end if;
+  -- auth.uid() ist null bei Änderungen aus dem Supabase-Dashboard/SQL-Editor (kein Spieler-Token): die dürfen alles.
+  if auth.uid() is null or coalesce(current_setting('app.rpc', true),'') = '1' or public.is_admin() then return new; end if;
   new.rubys := old.rubys; new.wins := old.wins; new.games := old.games; new.owned := old.owned;
   new.username := old.username; new.tag := old.tag; new.quests := old.quests; new.stats := old.stats; new.is_admin := old.is_admin; new.id := old.id; new.created_at := old.created_at;
   if new.hat is not null and not ('hat:'||new.hat) = any(old.owned) then new.hat := old.hat; end if;
