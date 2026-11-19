@@ -103,7 +103,7 @@ function cookieShow(open){
 function localSave(){if(!REMOTE&&AW.profile)lsSet('aw_local_profile',AW.profile)}
 
 /* ---------- Login (E-Mail/Passwort, Google, Discord) ---------- */
-function loginRequired(){return REMOTE&&!AW.loggedIn&&AW.ready}
+function loginRequired(){return false}  /* kein Anmeldezwang: anonyme/lokale Konten */
 function loginShow(mode='in'){
   const L=$('#login');L.hidden=false;
   const guest=!REMOTE;
@@ -129,7 +129,7 @@ function loginShow(mode='in'){
     ev.preventDefault();const em=$('#lgE').value.trim(),pw=$('#lgP').value;
     if(!/^\S+@\S+\.\S+$/.test(em)||pw.length<8){msg('err',t('Ungültige Zugangsdaten'));return}
     try{
-      if(mode==='up'){await AW.signUp(em,pw,($('#lgN').value||'').trim()||'Spieler');msg('ok',t('Bitte bestätige deine E-Mail, falls nötig, und melde dich dann an.'))}
+      if(mode==='up'){if(AW.isAnon&&!(AW.user&&AW.user.local))await AW.secure(em,pw);else await AW.signUp(em,pw,($('#lgN').value||'').trim()||'Spieler');msg('ok',t('Bitte bestätige deine E-Mail, falls nötig, und melde dich dann an.'))}
       else{await AW.signIn(em,pw);loginHide();toast(LANG==='de'?'Angemeldet':'Signed in','good')}
     }catch(e){msg('err',e.message||t('Ungültige Zugangsdaten'))}
   };
@@ -137,5 +137,20 @@ function loginShow(mode='in'){
   setTimeout(()=>{const f=$('#lgE');f&&f.focus()},30);
 }
 function loginHide(){$('#login').hidden=true;$('#login').innerHTML=''}
+/* Erster Start: Namen wählen (Tag #1234 vergibt das System) */
+function nameShow(){
+  const L=$('#login');L.hidden=false;
+  L.innerHTML=`<div class="lgbox"><img class="logo" src="img/logo.png" alt="Ant Wars">
+    <form id="nmF" class="field" style="gap:10px" novalidate><span class="lbl">${t('Wie willst du heißen?')}</span>
+    <input class="inp" id="nmI" type="text" maxlength="20" minlength="2" placeholder="${t('Benutzername')}" autocomplete="nickname">
+    <div id="nmMsg"></div><div class="mini">${t('Dahinter bekommst du eine Zahl wie #1234, damit Freunde dich eindeutig finden.')}</div>
+    <button class="btn pri lg block" type="submit">${t('Los geht\'s')}</button>
+    <button class="btn sm" type="button" id="nmSkip" style="align-self:center;background:transparent;border:0;color:var(--mu)">${t('Später')}</button></form></div>`;
+  $('#nmSkip').onclick=loginHide;
+  $('#nmF').onsubmit=async ev=>{ev.preventDefault();const n=cleanName($('#nmI').value);
+    if(n.length<2){$('#nmMsg').innerHTML=`<div class="msg err">${esc(t('Name zu kurz'))}</div>`;return}
+    try{await AW.update({username:n});loginHide();toast(AW.fullName,'good')}catch(e){$('#nmMsg').innerHTML=`<div class="msg err">${esc(e.message)}</div>`}};
+  setTimeout(()=>{const f=$('#nmI');f&&f.focus()},30);
+}
 /* Geschützter Bereich: ohne gültige Session kein Spielbildschirm */
 function requireSession(){if(REMOTE&&!AW.loggedIn){loginShow();return false}return true}

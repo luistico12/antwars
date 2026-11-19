@@ -1,5 +1,11 @@
 /* Englische Übersetzungen (Schlüssel = deutscher Quelltext) */
 Object.assign(EN,{
+"Wie willst du heißen?": "What should we call you?",
+"Dahinter bekommst du eine Zahl wie #1234, damit Freunde dich eindeutig finden.": "You get a number like #1234 after it, so friends can find you uniquely.",
+"Los geht's": "Let's go",
+"Später": "Later",
+"Name zu kurz": "Name too short",
+"Konto sichern": "Secure account",
 "1. Art und Startgebiet": "1. Species and start area",
 "1. Art wählen, 2. Startgebiet auf der Karte anklicken, 3. losbauen.": "1. Pick a species, 2. click a start area on the map, 3. start building.",
 "2. Kolonie bauen": "2. Build your colony",

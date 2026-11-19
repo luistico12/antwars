@@ -55,6 +55,29 @@ create table if not exists public.lobbies(
   created_at timestamptz not null default now()
 );
 
+-- Tag (Discord-Stil): Name#1234, die Kombination (Name, Tag) ist einmalig
+alter table public.profiles add column if not exists tag text not null default '0000' check (tag ~ '^[0-9]{4}$');
+
+create or replace function public.new_tag(n text) returns text
+language plpgsql security definer set search_path=public as $$
+declare tg text; i int := 0;
+begin
+  loop
+    tg := lpad((1 + floor(random()*9999))::int::text, 4, '0');
+    exit when not exists (select 1 from public.profiles where lower(username) = lower(n) and tag = tg);
+    i := i + 1;
+    if i > 300 then raise exception 'Kein freier Tag'; end if;
+  end loop;
+  return tg;
+end $$;
+
+do $$ declare r record; begin
+  for r in select id, username from public.profiles where tag = '0000' loop
+    update public.profiles set tag = public.new_tag(r.username) where id = r.id;
+  end loop;
+end $$;
+create unique index if not exists profiles_name_tag on public.profiles (lower(username), tag);
+
 -- ============ Hilfsfunktionen ============
 create or replace function public.is_admin() returns boolean
 language sql security definer set search_path=public stable as
@@ -62,9 +85,11 @@ $$ select coalesce((select is_admin from public.profiles where id = auth.uid()),
 
 create or replace function public.handle_new_user() returns trigger
 language plpgsql security definer set search_path=public as $$
+declare nm text;
 begin
-  insert into public.profiles(id, username)
-  values (new.id, left(coalesce(nullif(trim(new.raw_user_meta_data->>'username'),''), nullif(trim(new.raw_user_meta_data->>'full_name'),''), 'Spieler'),20))
+  nm := left(trim(regexp_replace(coalesce(nullif(trim(new.raw_user_meta_data->>'username'),''), nullif(trim(new.raw_user_meta_data->>'full_name'),''), 'Spieler'), '[#\s]+', ' ', 'g')),20);
+  if char_length(nm) < 2 then nm := 'Spieler'; end if;
+  insert into public.profiles(id, username, tag) values (new.id, nm, public.new_tag(nm))
   on conflict do nothing;
   return new;
 end $$;
@@ -77,7 +102,7 @@ language plpgsql security definer set search_path=public as $$
 begin
   if coalesce(current_setting('app.rpc', true),'') = '1' or public.is_admin() then return new; end if;
   new.rubys := old.rubys; new.wins := old.wins; new.games := old.games; new.owned := old.owned;
-  new.quests := old.quests; new.stats := old.stats; new.is_admin := old.is_admin; new.id := old.id; new.created_at := old.created_at;
+  new.username := old.username; new.tag := old.tag; new.quests := old.quests; new.stats := old.stats; new.is_admin := old.is_admin; new.id := old.id; new.created_at := old.created_at;
   if new.hat is not null and not ('hat:'||new.hat) = any(old.owned) then new.hat := old.hat; end if;
   if new.flag is not null and not ('flag:'||new.flag) = any(old.owned) then new.flag := old.flag; end if;
   return new;
@@ -150,6 +175,25 @@ begin
   update public.profiles set rubys = rubys + q.reward, quests = jsonb_set(quests, array[qid], to_jsonb(nowk)) where id = auth.uid();
 end $$;
 
+-- Name ändern: bereinigt den Namen und vergibt bei neuem Namen einen neuen Tag
+create or replace function public.set_username(n text) returns text
+language plpgsql security definer set search_path=public as $$
+declare nm text; me public.profiles; tg text;
+begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
+  nm := left(trim(regexp_replace(coalesce(n,''), '[#\s]+', ' ', 'g')),20);
+  if char_length(nm) < 2 then raise exception 'Name zu kurz'; end if;
+  select * into me from public.profiles where id = auth.uid() for update;
+  perform set_config('app.rpc','1',true);
+  if lower(me.username) = lower(nm) then
+    update public.profiles set username = nm where id = auth.uid();
+    return me.tag;
+  end if;
+  tg := public.new_tag(nm);
+  update public.profiles set username = nm, tag = tg where id = auth.uid();
+  return tg;
+end $$;
+
 -- Lobby per Code finden (auch private) – gibt nur diese eine Zeile zurück
 create or replace function public.find_lobby(c text) returns setof public.lobbies
 language sql security definer set search_path=public stable as
@@ -157,7 +201,7 @@ $$ select * from public.lobbies where code = c and status = 'open' limit 1 $$;
 
 -- ============ Ranglisten (nur öffentliche Spalten) ============
 create or replace view public.leaderboard_players with (security_invoker=false) as
-  select username, clan_tag, wins, games from public.profiles where games > 0;
+  select username, clan_tag, wins, games, tag from public.profiles where games > 0;
 create or replace view public.leaderboard_clans with (security_invoker=false) as
   select clan_tag, sum(wins)::int as wins, sum(games)::int as games, count(*)::int as members
   from public.profiles where clan_tag <> '' group by clan_tag;

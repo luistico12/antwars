@@ -101,5 +101,5 @@ AW.on(()=>{syncCosmetics();if(!$('#home').hidden)homeFill()});
   await AW.init();
   syncCosmetics();renderHeader();homeShow();
   AW.news().then(l=>{UI.news=l;UI.newsTop=l[0]?String(l[0].id):'';renderHeader()}).catch(()=>{});
-  if(REMOTE&&!AW.loggedIn)loginShow();
+  if(AW.loggedIn&&isDefaultName(AW.profile&&AW.profile.username))nameShow();
 })();

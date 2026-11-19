@@ -13,12 +13,12 @@ S.profile=()=>{
   <div class="grid" style="grid-template-columns:minmax(0,300px) minmax(0,1fr);align-items:start" id="profGrid">
     <div class="panel" style="display:flex;flex-direction:column;gap:12px">
       <div class="avbig">${esc(initials(p.username))}</div>
-      <div style="text-align:center"><b style="font-size:19px">${p.clan_tag?`<span class="ctag">${esc(p.clan_tag)}</span>`:''}${esc(p.username||'Gast')}</b>
+      <div style="text-align:center"><b style="font-size:19px">${p.clan_tag?`<span class="ctag">${esc(p.clan_tag)}</span>`:''}${esc(p.username||'Gast')}<span class="mini" style="font-weight:400">#${esc(p.tag||'0000')}</span></b>
         <div class="row" style="justify-content:center;margin-top:6px">${flag?flagSVG(flag):''}${hatName?`<span class="tag">${ico('hat')} ${hatName.name}</span>`:''}<span class="ruby">${ico('ruby')} ${p.rubys||0} ${t('Rubys')}</span></div></div>
       <div class="field"><span class="lbl">${t('Konto-ID')}</span><span class="mini" style="word-break:break-all">${esc(li?(p.id||'').slice(0,18)+'…':'local')}</span></div>
       <div class="field"><span class="lbl">${t('Mitglied seit')}</span><span>${fmtDate(p.created_at)}</span></div>
       <button class="btn block" id="pCopy" type="button">${ico('link')} ${t('Link kopieren')}</button>
-      ${li?`<button class="btn danger block" id="pOut" type="button">${ico('logout')} ${t('Abmelden')}</button>`:`<button class="btn pri block" id="pIn" type="button">${ico('enter')} ${t('Anmelden')}</button>`}
+      ${li&&!AW.isAnon?`<button class="btn danger block" id="pOut" type="button">${ico('logout')} ${t('Abmelden')}</button>`:`<button class="btn pri block" id="pSecure" type="button">${ico('shield')} ${t('Konto sichern')}</button><button class="btn block" id="pIn" type="button">${ico('enter')} ${t('Anmelden')}</button>`}
       ${AW.isAdmin?`<button class="btn block" data-go="admin" type="button">${ico('admin')} ${t('Admin')}</button>`:''}
     </div>
     <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
@@ -35,8 +35,9 @@ S.profile=()=>{
 S.profile.bind=p=>{
   const msg=(id,k,x)=>{p.querySelector(id).innerHTML=`<div class="msg ${k}">${esc(x)}</div>`};
   p.querySelector('#pCopy').onclick=()=>{try{navigator.clipboard.writeText(location.origin+location.pathname+'?u='+((AW.profile&&AW.profile.id)||'')).then(()=>toast(t('Kopiert'),'good'))}catch(e){}};
-  const o=p.querySelector('#pOut');if(o)o.onclick=async()=>{await AW.signOut();closeScreens();if(REMOTE)loginShow()};
+  const o=p.querySelector('#pOut');if(o)o.onclick=async()=>{await AW.signOut();closeScreens()};
   const i=p.querySelector('#pIn');if(i)i.onclick=()=>loginShow();
+  const sc=p.querySelector('#pSecure');if(sc)sc.onclick=()=>loginShow('up');
   p.querySelector('#pSave').onclick=async()=>{
     const n=p.querySelector('#pName').value.trim(),c=p.querySelector('#pClan').value.toUpperCase().replace(/[^A-Z0-9]/g,'');
     if(n.length<2){msg('#pMsg','err','Name zu kurz');return}

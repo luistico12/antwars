@@ -40,9 +40,16 @@ const AW={remote:REMOTE,sb:null,user:null,profile:null,ready:false,subs:[],
   on(f){this.subs.push(f)},emit(){this.subs.forEach(f=>{try{f()}catch(e){console.error(e)}})},
   get loggedIn(){return !!this.user},
   get isAdmin(){return !!(this.profile&&this.profile.is_admin)},
-  get name(){return(this.profile&&this.profile.username)||lsGet('ak_name','Gast')}
+  get name(){return(this.profile&&this.profile.username)||lsGet('ak_name','Gast')},
+  get tag(){return(this.profile&&this.profile.tag)||'0000'},
+  get fullName(){return this.name+'#'+this.tag},
+  get isAnon(){return !!(this.user&&(this.user.is_anonymous||this.user.local))}
 };
 const GENERIC_AUTH_ERR='Ungültige Zugangsdaten';
+/* Namen: kein '#', keine Mehrfach-Leerzeichen, 2–20 Zeichen. Tag: vier Ziffern, Discord-Stil (Name#1234). */
+const cleanName=n=>String(n==null?'':n).replace(/[#\s]+/g,' ').trim().slice(0,20);
+const randTag=()=>String(1+Math.floor(Math.random()*9999)).padStart(4,'0');
+const isDefaultName=n=>!n||/^(gast|spieler)$/i.test(String(n).trim());
 
 /* ===== REMOTE (Supabase) ===== */
 function loadSupabaseSDK(){
@@ -58,9 +65,13 @@ const Remote={
     await loadSupabaseSDK();
     AW.sb=window.supabase.createClient(CFG.SUPABASE_URL,CFG.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
     const{data}=await AW.sb.auth.getSession();AW.user=data.session?data.session.user:null;
+    /* Kein Anmeldezwang: ohne Session legt Supabase ein anonymes Konto an, das auf diesem Gerät bleibt. */
+    if(!AW.user)await Remote.anon();
     if(AW.user)await Remote.loadProfile();
     AW.sb.auth.onAuthStateChange(async(_e,s)=>{AW.user=s?s.user:null;AW.profile=null;if(AW.user)await Remote.loadProfile();AW.emit()});
   },
+  async anon(){const{data,error}=await AW.sb.auth.signInAnonymously();if(error)throw new Error('anon');AW.user=data.user},
+  async secure(email,pw){const{error}=await AW.sb.auth.updateUser({email,password:pw},{emailRedirectTo:location.origin+location.pathname});if(error)throw new Error(/password/i.test(error.message)?'Passwort zu schwach (mind. 8 Zeichen)':'Konto konnte nicht gesichert werden')},
   async loadProfile(){
     const{data,error}=await AW.sb.from('profiles').select('*').eq('id',AW.user.id).maybeSingle();
     if(!error)AW.profile=data;return AW.profile;
@@ -71,12 +82,16 @@ const Remote={
     if(error&&/password/i.test(error.message))throw new Error('Passwort zu schwach (mind. 8 Zeichen)');
     /* Kein Hinweis, ob die E-Mail schon existiert → immer dieselbe Rückmeldung */
   },
-  async oauth(provider){const{error}=await AW.sb.auth.signInWithOAuth({provider,options:{redirectTo:location.origin+location.pathname}});if(error)throw new Error('Anmeldung fehlgeschlagen')},
-  async signOut(){await AW.sb.auth.signOut()},
+  async oauth(provider){const o={provider,options:{redirectTo:location.origin+location.pathname}};const{error}=(AW.user&&AW.user.is_anonymous&&AW.sb.auth.linkIdentity)?await AW.sb.auth.linkIdentity(o):await AW.sb.auth.signInWithOAuth(o);if(error)throw new Error('Anmeldung fehlgeschlagen')},
+  async signOut(){await AW.sb.auth.signOut();try{await Remote.anon()}catch(e){AW.user=null}},
   async reset(email){await AW.sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname})},
   async setPhone(phone){const{error}=await AW.sb.auth.updateUser({phone});if(error)throw new Error('Nummer konnte nicht gespeichert werden')},
   async verifyPhone(phone,token){const{error}=await AW.sb.auth.verifyOtp({phone,token,type:'phone_change'});if(error)throw new Error('Code ungültig');await Remote.loadProfile()},
-  async update(p){const{error}=await AW.sb.from('profiles').update(p).eq('id',AW.user.id);if(error)throw new Error('Speichern nicht möglich');await Remote.loadProfile()},
+  async update(p){
+    p={...p};
+    if('username' in p){const nm=cleanName(p.username);if(nm.length<2)throw new Error('Name zu kurz');delete p.username;const{error}=await AW.sb.rpc('set_username',{n:nm});if(error)throw new Error('Name konnte nicht gespeichert werden')}
+    if(Object.keys(p).length){const{error}=await AW.sb.from('profiles').update(p).eq('id',AW.user.id);if(error)throw new Error('Speichern nicht möglich')}
+    await Remote.loadProfile()},
   async buy(id){const{error}=await AW.sb.rpc('buy_item',{item:id});if(error)throw new Error(error.message);await Remote.loadProfile()},
   async claim(id){const{error}=await AW.sb.rpc('claim_quest',{qid:id});if(error)throw new Error(error.message);await Remote.loadProfile()},
   async report(p){const{error}=await AW.sb.rpc('report_stats',{p});if(!error)await Remote.loadProfile()},
@@ -106,15 +121,17 @@ const LP='aw_local_';
 const Local={
   async init(){
     let p=lsGet(LP+'profile',null);
-    if(!p){p={id:'local',username:lsGet('ak_name','Gast'),clan_tag:'',rubys:0,wins:0,games:0,hat:null,flag:null,owned:[],quests:{},stats:{},is_admin:false,created_at:new Date().toISOString()};lsSet(LP+'profile',p)}
+    if(!p){p={id:'local',username:lsGet('ak_name','Gast'),tag:randTag(),clan_tag:'',rubys:0,wins:0,games:0,hat:null,flag:null,owned:[],quests:{},stats:{},is_admin:false,created_at:new Date().toISOString()};lsSet(LP+'profile',p)}
+    if(!p.tag){p.tag=randTag();lsSet(LP+'profile',p)}
     AW.user={id:'local',email:null,phone:null,local:true};AW.profile=p;
   },
   save(){lsSet(LP+'profile',AW.profile);AW.emit()},
   async signIn(){throw new Error('Kein Server konfiguriert – du spielst im Gastmodus')},
   async signUp(){throw new Error('Kein Server konfiguriert – du spielst im Gastmodus')},
+  async secure(){throw new Error('Kein Server konfiguriert – du spielst im Gastmodus')},
   async oauth(){throw new Error('Kein Server konfiguriert – du spielst im Gastmodus')},
   async signOut(){},async reset(){},async setPhone(){throw new Error('Nur mit Server-Konto möglich')},async verifyPhone(){},
-  async update(p){const a=AW.profile;if('username' in p)a.username=String(p.username).slice(0,20);if('clan_tag' in p)a.clan_tag=String(p.clan_tag||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,5);
+  async update(p){const a=AW.profile;if('username' in p){const nm=cleanName(p.username);if(nm.length<2)throw new Error('Name zu kurz');if(nm.toLowerCase()!==String(a.username).toLowerCase())a.tag=randTag();a.username=nm}if('clan_tag' in p)a.clan_tag=String(p.clan_tag||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,5);
     if('hat' in p){if(p.hat&&!a.owned.includes('hat:'+p.hat))throw new Error('Nicht freigeschaltet');a.hat=p.hat}
     if('flag' in p){if(p.flag&&!a.owned.includes('flag:'+p.flag))throw new Error('Nicht freigeschaltet');a.flag=p.flag}
     lsSet('ak_name',a.username);Local.save()},
@@ -124,7 +141,7 @@ const Local={
     if((a.quests[id])===b.k)throw new Error('Schon abgeholt');if((b.v[q[2]]||0)<q[3])throw new Error('Noch nicht geschafft');a.quests[id]=b.k;a.rubys+=q[4];Local.save()},
   async report(p){const a=AW.profile;for(const kind of['daily','weekly','career']){const b=Local.bucket(kind);for(const k in p){const v=Math.max(0,Math.min(500,+p[k]||0));b.v[k]=MAX_STATS.includes(k)?Math.max(b.v[k]||0,v):(b.v[k]||0)+Math.min(v,50)}}
     a.games+=Math.min(1,+p.games||0);a.wins+=Math.min(1,+p.wins||0);Local.save()},
-  async players(){const a=AW.profile;return[{username:a.username,clan_tag:a.clan_tag,wins:a.wins,games:a.games}].concat(lsGet(LP+'fake',[]))},
+  async players(){const a=AW.profile;return[{username:a.username,tag:a.tag,clan_tag:a.clan_tag,wins:a.wins,games:a.games}].concat(lsGet(LP+'fake',[]))},
   async clans(){const a=AW.profile;return a.clan_tag?[{clan_tag:a.clan_tag,wins:a.wins,games:a.games,members:1}]:[]},
   async news(){return lsGet(LP+'news',null)||DEFAULT_NEWS},
   async newsSave(n){const l=await Local.news();const c=l.map(x=>({...x}));if(n.id){const i=c.findIndex(x=>x.id===n.id);if(i>=0)c[i]={...c[i],...n}}else c.unshift({...n,id:'n'+Date.now(),created_at:new Date().toISOString()});lsSet(LP+'news',c)},
@@ -153,7 +170,7 @@ const DEFAULT_NEWS=[
 
 let API=REMOTE?Remote:Local;
 Object.assign(AW,{
-  signIn:(...a)=>API.signIn(...a),signUp:(...a)=>API.signUp(...a),oauth:(...a)=>API.oauth(...a),signOut:async()=>{await API.signOut();if(!REMOTE)return;AW.user=null;AW.profile=null;AW.emit()},
+  signIn:(...a)=>API.signIn(...a),signUp:(...a)=>API.signUp(...a),secure:(...a)=>API.secure(...a),oauth:(...a)=>API.oauth(...a),signOut:async()=>{await API.signOut();AW.emit()},
   reset:(...a)=>API.reset(...a),setPhone:(...a)=>API.setPhone(...a),verifyPhone:(...a)=>API.verifyPhone(...a),
   update:async p=>{await API.update(p);AW.emit()},buy:async id=>{await API.buy(id);AW.emit()},claim:async id=>{await API.claim(id);AW.emit()},report:p=>API.report(p).then(()=>AW.emit()),
   players:()=>API.players(),clans:()=>API.clans(),news:()=>API.news(),newsSave:n=>API.newsSave(n),newsDel:id=>API.newsDel(id),
