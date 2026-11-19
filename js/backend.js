@@ -49,6 +49,10 @@ const GENERIC_AUTH_ERR='Ungültige Zugangsdaten';
 /* Namen: kein '#', keine Mehrfach-Leerzeichen, 2–20 Zeichen. Tag: vier Ziffern, Discord-Stil (Name#1234). */
 const cleanName=n=>String(n==null?'':n).replace(/[#\s]+/g,' ').trim().slice(0,20);
 const randTag=()=>String(1+Math.floor(Math.random()*9999)).padStart(4,'0');
+/* 'Name#1234' → {name,tag} oder null */
+const parseNameTag=s=>{const m=/^(.+)#(\d{4})$/.exec(String(s||'').trim());if(!m)return null;const name=cleanName(m[1]);return name.length>=2?{name,tag:m[2]}:null};
+/* Zeilen von my_friends() → {list,incoming,outgoing}; jeweils {id,name,tag} */
+const groupFriends=rows=>{const r={list:[],incoming:[],outgoing:[]};for(const x of rows){const e={id:x.id,other:x.other_id,name:x.username,tag:x.tag};(x.status==='accepted'?r.list:x.incoming?r.incoming:r.outgoing).push(e)}return r};
 const isDefaultName=n=>!n||/^(gast|spieler)$/i.test(String(n).trim());
 
 /* ===== REMOTE (Supabase) ===== */
@@ -102,6 +106,10 @@ const Remote={
   async newsDel(id){const{error}=await AW.sb.from('news').delete().eq('id',id);if(error)throw new Error('Keine Berechtigung')},
   async adminProfiles(q){let r=AW.sb.from('profiles').select('*').order('created_at',{ascending:false}).limit(50);if(q)r=r.ilike('username','%'+q.replace(/[%_]/g,'')+'%');const{data}=await r;return data||[]},
   async adminUpdate(id,p){const{error}=await AW.sb.from('profiles').update(p).eq('id',id);if(error)throw new Error('Keine Berechtigung')},
+  async friends(){const{data,error}=await AW.sb.rpc('my_friends');if(error)throw new Error('Freunde konnten nicht geladen werden');return groupFriends(data||[])},
+  async friendRequest(nt){const m=parseNameTag(nt);if(!m)throw new Error('Format: Name#1234');const{error}=await AW.sb.rpc('friend_request',{n:m.name,tg:m.tag});if(error)throw new Error('Anfrage nicht möglich')},
+  async friendRespond(id,acc){const{error}=await AW.sb.rpc('friend_respond',{fid:id,acc:!!acc});if(error)throw new Error('Nicht möglich')},
+  async friendRemove(id){const{error}=await AW.sb.rpc('friend_remove',{fid:id});if(error)throw new Error('Nicht möglich')},
   async lobbies(){const{data}=await AW.sb.from('lobbies').select('*').eq('is_public',true).eq('status','open').order('created_at',{ascending:false}).limit(30);return data||[]},
   async lobbyCreate(l){const{data,error}=await AW.sb.from('lobbies').insert({...l,host:AW.user.id,host_name:AW.name}).select().single();if(error)throw new Error('Lobby konnte nicht erstellt werden');return data},
   async lobbyFind(code){const{data}=await AW.sb.rpc('find_lobby',{c:code});return data&&data[0]||null},
@@ -147,6 +155,10 @@ const Local={
   async newsSave(n){const l=await Local.news();const c=l.map(x=>({...x}));if(n.id){const i=c.findIndex(x=>x.id===n.id);if(i>=0)c[i]={...c[i],...n}}else c.unshift({...n,id:'n'+Date.now(),created_at:new Date().toISOString()});lsSet(LP+'news',c)},
   async newsDel(id){lsSet(LP+'news',(await Local.news()).filter(x=>x.id!==id))},
   async adminProfiles(){return[AW.profile]},async adminUpdate(id,p){Object.assign(AW.profile,p);Local.save()},
+  async friends(){return{list:[],incoming:[],outgoing:[]}},
+  async friendRequest(){throw new Error('Freunde brauchen einen Server – im Gastmodus nicht möglich')},
+  async friendRespond(){throw new Error('Freunde brauchen einen Server – im Gastmodus nicht möglich')},
+  async friendRemove(){throw new Error('Freunde brauchen einen Server – im Gastmodus nicht möglich')},
   async lobbies(){const t=Date.now();const l=lsGet(LP+'lobbies',[]).filter(x=>t-x.ts<20000&&x.is_public&&x.status==='open');return l},
   async lobbyCreate(l){const code=Math.random().toString(36).slice(2,9);const row={...l,code,host:'local',host_name:AW.name,status:'open',ts:Date.now(),created_at:new Date().toISOString()};const all=lsGet(LP+'lobbies',[]);all.push(row);lsSet(LP+'lobbies',all);row._hb=setInterval(()=>{const a=lsGet(LP+'lobbies',[]);const r=a.find(x=>x.code===code);if(r){r.ts=Date.now();lsSet(LP+'lobbies',a)}else clearInterval(row._hb)},5000);Local._hb=row._hb;return row},
   async lobbyFind(code){return lsGet(LP+'lobbies',[]).find(x=>x.code===code)||null},
@@ -175,6 +187,7 @@ Object.assign(AW,{
   update:async p=>{await API.update(p);AW.emit()},buy:async id=>{await API.buy(id);AW.emit()},claim:async id=>{await API.claim(id);AW.emit()},report:p=>API.report(p).then(()=>AW.emit()),
   players:()=>API.players(),clans:()=>API.clans(),news:()=>API.news(),newsSave:n=>API.newsSave(n),newsDel:id=>API.newsDel(id),
   adminProfiles:q=>API.adminProfiles(q),adminUpdate:(i,p)=>API.adminUpdate(i,p),
+  friends:()=>API.friends(),friendRequest:n=>API.friendRequest(n),friendRespond:(i,a)=>API.friendRespond(i,a),friendRemove:i=>API.friendRemove(i),
   lobbies:()=>API.lobbies(),lobbyCreate:l=>API.lobbyCreate(l),lobbyFind:c=>API.lobbyFind(c),lobbyUpdate:(c,p)=>API.lobbyUpdate(c,p),lobbyClose:c=>API.lobbyClose(c),channel:(c,h)=>API.channel(c,h)
 });
 AW.init=async()=>{try{await API.init()}catch(e){console.warn('Backend nicht erreichbar, Gastmodus',e);AW.remote=false;API=Local;await Local.init();}AW.ready=true;AW.emit()};

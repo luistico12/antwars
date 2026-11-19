@@ -259,3 +259,67 @@ insert into public.news(version,title,body) values ('v11','Neues Design, Konten 
 
 -- Admin ernennen (manuell, einmalig, im SQL-Editor – NICHT über die App):
 --   update public.profiles set is_admin = true where id = (select id from auth.users where email = 'du@example.com');
+
+-- ============ Freunde ============
+-- Anfragen und Freundschaften. Schreiben nur über die RPCs unten, lesen nur die eigenen Zeilen.
+create table if not exists public.friendships(
+  id uuid primary key default gen_random_uuid(),
+  requester uuid not null references auth.users(id) on delete cascade,
+  addressee uuid not null references auth.users(id) on delete cascade,
+  status text not null default 'pending' check (status in ('pending','accepted')),
+  created_at timestamptz not null default now(),
+  check (requester <> addressee)
+);
+create unique index if not exists friendships_pair on public.friendships (least(requester, addressee), greatest(requester, addressee));
+alter table public.friendships enable row level security;
+drop policy if exists friendships_own_select on public.friendships;
+create policy friendships_own_select on public.friendships for select to authenticated using (requester = auth.uid() or addressee = auth.uid());
+
+-- Anfrage per Name + Tag. Antwort ist immer 'ok' (verrät nicht, ob der Spieler existiert).
+create or replace function public.friend_request(n text, tg text) returns text
+language plpgsql security definer set search_path=public as $$
+declare other uuid; ex public.friendships;
+begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
+  select id into other from public.profiles where lower(username) = lower(trim(n)) and tag = tg;
+  if other is null or other = auth.uid() then return 'ok'; end if;
+  select * into ex from public.friendships
+    where least(requester, addressee) = least(auth.uid(), other) and greatest(requester, addressee) = greatest(auth.uid(), other);
+  if ex.id is null then
+    if (select count(*) from public.friendships where requester = auth.uid() and status = 'pending') >= 50 then return 'ok'; end if;
+    insert into public.friendships(requester, addressee) values (auth.uid(), other);
+  elsif ex.status = 'pending' and ex.addressee = auth.uid() then
+    update public.friendships set status = 'accepted' where id = ex.id;  -- beide wollten sich: gleich Freunde
+  end if;
+  return 'ok';
+end $$;
+
+create or replace function public.friend_respond(fid uuid, acc boolean) returns void
+language plpgsql security definer set search_path=public as $$
+begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
+  if acc then
+    update public.friendships set status = 'accepted' where id = fid and addressee = auth.uid() and status = 'pending';
+  else
+    delete from public.friendships where id = fid and addressee = auth.uid() and status = 'pending';
+  end if;
+end $$;
+
+create or replace function public.friend_remove(fid uuid) returns void
+language plpgsql security definer set search_path=public as $$
+begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
+  delete from public.friendships where id = fid and (requester = auth.uid() or addressee = auth.uid());
+end $$;
+
+-- Eigene Freunde und Anfragen inkl. Name/Tag der Gegenseite
+create or replace function public.my_friends() returns table(id uuid, other_id uuid, username text, tag text, status text, incoming boolean)
+language sql security definer set search_path=public stable as $$
+  select f.id, p.id, p.username, p.tag, f.status, (f.addressee = auth.uid())
+  from public.friendships f
+  join public.profiles p on p.id = case when f.requester = auth.uid() then f.addressee else f.requester end
+  where auth.uid() is not null and (f.requester = auth.uid() or f.addressee = auth.uid())
+  order by p.username
+$$;
+revoke all on function public.friend_request(text,text), public.friend_respond(uuid,boolean), public.friend_remove(uuid), public.my_friends() from public, anon;
+grant execute on function public.friend_request(text,text), public.friend_respond(uuid,boolean), public.friend_remove(uuid), public.my_friends() to authenticated;

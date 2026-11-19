@@ -114,8 +114,8 @@ S.leaderboard=()=>{
   const tab=UI.lbTab,rows=UI['lb_'+tab];
   const me=(AW.profile||{});
   const body=rows?`<div class="panel" style="padding:0;overflow:auto"><table class="lb"><thead><tr><th style="text-align:center">#</th><th>${tab==='players'?t('Spieler'):'Clan'}</th><th>${t('Siege')}</th><th>${t('Spiele')}</th><th>${t('Quote')}</th></tr></thead><tbody>
-    ${rows.map((r,i)=>{const wr=r.games?100*r.wins/r.games:0;const nm=tab==='players'?`${r.clan_tag?`<span class="ctag">${esc(r.clan_tag)}</span>`:''}${esc(r.username)}`:`<span class="ctag">${esc(r.clan_tag)}</span>${r.members||''} ${t('Mitglieder')}`;
-      return `<tr class="r${i+1} ${tab==='players'&&r.username===me.username&&me.games?'me':''}"><td style="text-align:center"><span class="rk">${i+1}</span></td><td><b>${nm}</b></td><td><b>${num(r.wins)}</b></td><td style="color:var(--mu)">${num(r.games)}</td><td><span class="wp ${wr<50?'low':''}">${wr.toFixed(1)}%</span></td></tr>`}).join('')||`<tr><td colspan="5" style="text-align:center;color:var(--mu)">–</td></tr>`}</tbody></table></div>`:spinner();
+    ${rows.map((r,i)=>{const wr=r.games?100*r.wins/r.games:0;const nm=tab==='players'?`${r.clan_tag?`<span class="ctag">${esc(r.clan_tag)}</span>`:''}${esc(r.username)}<span class="mini">#${esc(r.tag||'')}</span>`:`<span class="ctag">${esc(r.clan_tag)}</span>${r.members||''} ${t('Mitglieder')}`;
+      return `<tr class="r${i+1} ${tab==='players'&&r.username===me.username&&r.tag===me.tag&&me.games?'me':''}"><td style="text-align:center"><span class="rk">${i+1}</span></td><td><b>${nm}</b></td><td><b>${num(r.wins)}</b></td><td style="color:var(--mu)">${num(r.games)}</td><td><span class="wp ${wr<50?'low':''}">${wr.toFixed(1)}%</span></td></tr>`}).join('')||`<tr><td colspan="5" style="text-align:center;color:var(--mu)">–</td></tr>`}</tbody></table></div>`:spinner();
   return shell('Leaderboard',{sub:LANG==='de'?'Aktualisiert beim Öffnen':'Updated when opened',right:`<div class="pills" id="lbT"><button data-k="players" class="${tab==='players'?'on':''}" type="button">${ico('users')} ${t('Spieler')}</button><button data-k="clans" class="${tab==='clans'?'on':''}" type="button">${ico('shield')} ${t('Clans')}</button></div>`},body);
 };
 S.leaderboard.bind=async p=>{
@@ -123,6 +123,27 @@ S.leaderboard.bind=async p=>{
   const tab=UI.lbTab;if(!UI['lb_'+tab]){UI['lb_'+tab]=await(tab==='players'?AW.players():AW.clans());if(SCR.cur&&SCR.cur.name==='leaderboard')render()}
 };
 const lbReset=()=>{UI.lb_players=UI.lb_clans=null;UI.clans=null};
+
+/* ---------- Freunde: Liste, Anfragen, Hinzufügen per Name#1234 ---------- */
+S.friends=()=>{
+  const f=UI.friends,row=(e,btns)=>`<div class="li"><span class="av" style="width:34px;height:34px">${esc(initials(e.name))}</span><span class="sp"><b>${esc(e.name)}</b><small>#${esc(e.tag)}</small></span>${btns}</div>`;
+  const body=`<div class="panel"><div class="lbl" style="margin-bottom:8px">${t('Freund hinzufügen')}</div>
+      <form class="row" id="frF"><input class="inp" id="frI" placeholder="Name#1234" maxlength="26" style="flex:1;min-width:160px" autocomplete="off"><button class="btn pri" type="submit">${ico('plus')} ${t('Anfrage senden')}</button></form><div id="frMsg" style="margin-top:8px"></div>
+      <div class="mini" style="margin-top:6px">${t('Dein Name:')} <b>${esc(AW.fullName)}</b></div></div>
+    ${!f?spinner():`${f.incoming.length?`<div class="lbl">${t('Anfragen')} <b style="color:var(--ac)">${f.incoming.length}</b></div>${f.incoming.map(e=>row(e,`<button class="btn sm pri" data-fa="${esc(e.id)}" type="button">${ico('check')}</button><button class="ibtn" data-fd="${esc(e.id)}" type="button" aria-label="Decline">${ico('close')}</button>`)).join('')}`:''}
+    <div class="lbl">${t('Freunde')} <b style="color:var(--ac)">${f.list.length}</b></div>
+    ${f.list.length?f.list.map(e=>row(e,`<button class="ibtn" data-fr="${esc(e.id)}" type="button" aria-label="Remove">${ico('trash')}</button>`)).join(''):`<div class="mini">${t('Noch keine Freunde')}</div>`}
+    ${f.outgoing.length?`<div class="lbl">${t('Gesendet')}</div>${f.outgoing.map(e=>row(e,`<button class="ibtn" data-fr="${esc(e.id)}" type="button" aria-label="Cancel">${ico('close')}</button>`)).join('')}`:''}`}`;
+  return shell(t('Freunde'),{narrow:true},`<div class="grid" style="gap:10px">${body}</div>`);
+};
+S.friends.bind=async p=>{
+  const reload=async()=>{try{UI.friends=await AW.friends()}catch(e){UI.friends={list:[],incoming:[],outgoing:[]};toastErr(e)}if(SCR.cur&&SCR.cur.name==='friends')render()};
+  const act=(sel,fn)=>p.querySelectorAll(sel).forEach(b=>b.onclick=async()=>{try{await fn(b.dataset[sel.slice(6,8)]);}catch(e){toastErr(e)}UI.friends=null;reload()});
+  act('[data-fa]',id=>AW.friendRespond(id,true));act('[data-fd]',id=>AW.friendRespond(id,false));act('[data-fr]',id=>AW.friendRemove(id));
+  p.querySelector('#frF').onsubmit=async e=>{e.preventDefault();const i=p.querySelector('#frI'),m=p.querySelector('#frMsg');
+    try{await AW.friendRequest(i.value);m.innerHTML=`<div class="msg ok">${esc(t('Anfrage gesendet, falls es den Spieler gibt.'))}</div>`;i.value='';UI.friends=null;reload()}catch(x){m.innerHTML=`<div class="msg err">${esc(x.message)}</div>`}};
+  if(!UI.friends)reload();
+};
 
 /* ---------- Neuigkeiten (Bild 5) ---------- */
 S.news=()=>{

@@ -12,6 +12,7 @@ function homeBuild(){
     <button type="button" data-s="profile">${ico('user')}<span>${t('Profil')}</span></button>
     <button type="button" data-s="achievements">${ico('trophy')}<span>${t('Erfolge')}</span></button>
     <button type="button" data-s="shop">${ico('shop')}<span>${t('Shop')}</span></button>
+    <button type="button" data-s="friends">${ico('heart')}<span>${t('Freunde')}</span></button>
     <button type="button" data-s="clan">${ico('users')}<span>${t('Clan')}</span></button>
     <button type="button" data-s="leaderboard">${ico('board')}<span>Ranking</span></button>
     <div class="sp"></div>
