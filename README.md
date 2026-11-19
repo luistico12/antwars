@@ -8,7 +8,8 @@ Ohne Supabase-Zugangsdaten läuft das Spiel im **Gastmodus** (Fortschritt nur im
 
 ## Backend (Supabase)
 1. Projekt anlegen, `supabase/schema.sql` im SQL-Editor ausführen (Tabellen, RLS, RPCs, Ranglisten, Startdaten).
-2. Authentication → Providers: E-Mail aktivieren, Google und Discord eintragen, optional Phone (SMS-Anbieter) für die Telefonnummer als Backup. Site URL und Redirect URL auf die Pages-Adresse setzen.
+2. Authentication → Sign In / Providers → **Allow anonymous sign-ins** aktivieren (damit man ohne Anmeldung spielen kann; ohne den Schalter fällt das Spiel auf ein rein lokales Konto zurück).
+3. Authentication → Providers: E-Mail aktivieren, Google und Discord eintragen, optional Phone (SMS-Anbieter) für die Telefonnummer als Backup. Site URL und Redirect URL auf die Pages-Adresse setzen.
 3. `.env` (siehe `.env.example`) lokal, bzw. GitHub → Settings → Secrets → Actions: `SUPABASE_URL`, `SUPABASE_ANON_KEY`. Pages-Quelle: „GitHub Actions“.
 4. Admin ernennen (nur per SQL): `update public.profiles set is_admin = true where id = (select id from auth.users where email = 'du@example.com');`
 

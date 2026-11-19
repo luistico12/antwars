@@ -1,6 +1,6 @@
 /* ===== Weltkarte: Zustand ===== */
-const FCOL=[[74,163,255],[224,82,61],[179,107,224],[230,194,60]];
-const FNAME=['Du','Rote Kolonie','Violette Kolonie','Gelbe Kolonie'];
+const FCOL=[[74,163,255],[224,82,61],[179,107,224],[230,194,60],[80,200,140],[240,140,60],[230,120,190],[140,200,230]];
+const FNAME=['Du','Rote Kolonie','Violette Kolonie','Gelbe Kolonie','Grüne Kolonie','Orange Kolonie','Rosa Kolonie','Hellblaue Kolonie'];
 const DIFFS={easy:{regen:0.8,think:7,atk:1,ratio:1.5},normal:{regen:1,think:5,atk:1.05,ratio:1.25},hard:{regen:1.3,think:3.2,atk:1.15,ratio:1.1}};
 const STR_COST={out:[{mat:40,food:20},{mat:80,food:40}],line:[{mat:25,food:10},{mat:45,food:20}]};
 const MW=GW*CS,MH=GH*CS;
@@ -36,12 +36,15 @@ function collectItem(t){
   toast(`Powerup: ${PW[t.item.type]} +${t.item.pct}% (${t.name})`,'good');t.item=null;
 }
 function startGame(){
-  const D=DIFFS[diffKey],st=T[setupStart];
+  const D=DIFFS[diffKey],st=T[setupStart],hum=(typeof NET!=='undefined'&&NET.role==='host')?NET.humans:[];
   for(const t of T){t.owner=-1;t.isCap=false;t.troops=6+Math.floor(Math.random()*12);t.str=newStr();t.col=null;t.puppet=false;t.item=null}
   F=[{id:0,isPlayer:true,name:'Du',species:setupSp,rgb:FCOL[0],alive:true,capital:setupStart}];
   st.owner=0;st.isCap=true;st.troops=3;
   const taken=[st],dist=(a,b)=>Math.hypot(a.lx-b.lx,a.ly-b.ly);
-  for(let b=1;b<=3;b++){
+  hum.forEach(h=>{const ht=T[h.start];ht.owner=h.fid;ht.isCap=true;ht.troops=3;taken.push(ht);
+    F.push({id:h.fid,isPlayer:false,human:true,pid:h.pid,name:h.name,species:h.species,rgb:FCOL[h.fid],alive:true,capital:h.start,allied:false,dipCool:0,hurt:-999})});
+  const total=Math.max(4,1+hum.length);
+  for(let b=1+hum.length;b<total;b++){
     let best=null,bs=-1;
     for(const t of T){if(t.owner!==-1)continue;const d=Math.min(...taken.map(q=>dist(q,t)));if(d>bs){bs=d;best=t}}
     best.owner=b;best.isCap=true;best.troops=14;taken.push(best);
@@ -61,6 +64,8 @@ function defMulT(t,fromId){if(t.owner<0)return 1;const f=F[t.owner];return defMu
 function defPower(t,fromId){return t.troops*defMulT(t,fromId)}
 
 /* ===== Diplomatie ===== */
+/* Soldat aus der Kolonie ins Gebiet (im Mehrspieler-Gast an den Host gemeldet) */
+function addTroops(t,n){t.troops=Math.floor(t.troops)+n;if(typeof NET!=='undefined'&&NET.role==='guest')NET.cmd({k:'tr',tile:t.id,n})}
 function proposeAlliance(fid){
   const f=F[fid];if(!f||!f.alive||f.allied)return;
   if(f.dipCool>0)return toast(`${f.name} will gerade nicht verhandeln (${Math.ceil(f.dipCool)}s)`,'bad');
@@ -173,14 +178,14 @@ function updateWorld(dt){
   for(const f of F)if(f.dipCool>0)f.dipCool=Math.max(0,f.dipCool-dt);
   for(const t of T){
     if(t.owner===0){const o=t.str.out;if(o&&t.troops<30)t.troops=Math.min(30,t.troops+0.05*o*dt);if(t.puppet&&t.troops<20)t.troops=Math.min(20,t.troops+0.05*dt)}
-    else if(t.owner>0){const cp=t.isCap,mx=cp?60:30;if(t.troops<mx)t.troops=Math.min(mx,t.troops+(cp?0.5:0.15)*D.regen*dt+0.05*t.str.out*dt)}
+    else if(t.owner>0&&!F[t.owner].human){const cp=t.isCap,mx=cp?60:30;if(t.troops<mx)t.troops=Math.min(mx,t.troops+(cp?0.5:0.15)*D.regen*dt+0.05*t.str.out*dt)}
   }
   for(let i=marches.length-1;i>=0;i--){const m=marches[i];
     if(m.phase==='walk'){m.t+=dt;if(m.t>=m.dur)startFight(m)}
     if(m.phase==='join'){marches.splice(i,1);resolve(m);if(over)return;continue}
     if(m.phase==='fight'){m.ft+=dt;if(m.ft>=m.fdur){marches.splice(i,1);resolve(m);if(over)return}}}
   for(let i=fxs.length-1;i>=0;i--){fxs[i].t+=dt;if(fxs[i].t>=fxs[i].dur)fxs.splice(i,1)}
-  for(const f of F){if(f.isPlayer||!f.alive)continue;f.timer-=dt;if(f.timer<=0){f.timer=D.think*(0.7+Math.random()*0.6)*(1-0.08*heatStage());botThink(f)}}
+  for(const f of F){if(f.isPlayer||f.human||!f.alive)continue;f.timer-=dt;if(f.timer<=0){f.timer=D.think*(0.7+Math.random()*0.6)*(1-0.08*heatStage());botThink(f)}}
 }
 function botBuild(f){
   const mine=T.filter(t=>t.owner===f.id&&t.troops>=12&&t.adj.some(i=>T[i].owner!==f.id));

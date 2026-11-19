@@ -18,7 +18,7 @@ Statisches HTML5-Canvas-Spiel (Vanilla JS, kein Build-Schritt), Ameisenkolonie b
 - `index.html`: Gerüst (Header `#top`, Spielbereich `#app`, Werbespalte `#adrail`), lädt alle Skripte in fester Reihenfolge. Klassische Skripte teilen sich den globalen Scope.
 - `css/ui.css`: komplettes Design-System. Alte Variablennamen (`--soil`, `--moss` …) sind auf das neue System abgebildet.
 - Spielcode: `js/game-core.js` (Karte, Hilfen), `game-colony.js` (Kolonie, Hügel/Ausgänge, `drawAnt`), `game-world.js` (Weltkarte, Kämpfe, Diplomatie, Bots), `game-ui.js` (HUD, Dock, Kamera, Eingaben, Hauptschleife), `game-radial.js`, `game-pause.js`, `game-settings.js`.
-- UI/Konto: `util.js` (Speicher mit Einwilligung, `MP`-Stub), `icons.js`, `flags.js`, `cosmetics.js` (Hüte/Flaggen), `backend.js` (`AW`-API: Supabase oder lokaler Gastmodus), `i18n.js`/`i18n-en.js`, `ui-core.js` (Header, Screen-Manager `S`/`openScreen`, Login, Cookie-Banner), `ui-screens.js` (alle Screens inkl. Lobby, Admin), `ui-boot.js` (Hauptmenü, Spiel-Hooks, Start), `touch.js`.
+- UI/Konto: `util.js` (Speicher mit Einwilligung, `MP`-Stub), `icons.js`, `flags.js`, `cosmetics.js` (Hüte/Flaggen), `backend.js` (`AW`-API: Supabase oder lokaler Gastmodus), `i18n.js`/`i18n-en.js`, `ui-core.js` (Header, Screen-Manager `S`/`openScreen`, Login, Cookie-Banner), `ui-screens.js` (alle Screens inkl. Lobby, Admin), `ui-boot.js` (Hauptmenü, Spiel-Hooks, Start), `touch.js`, `net.js` (Mehrspieler nach Host-Prinzip: `NET`, Schnappschüsse, Befehle).
 - `supabase/schema.sql`: Tabellen, RLS, RPCs (`buy_item`, `claim_quest`, `report_stats`, `find_lobby`), Ranglisten-Views.
 - `scripts/gen-config.sh` erzeugt `config.js` aus `.env`/Secrets (gitignored, nie einchecken).
 
@@ -33,6 +33,7 @@ Statisches HTML5-Canvas-Spiel (Vanilla JS, kein Build-Schritt), Ameisenkolonie b
 Kein eigenes Passwort-Handling (nur Supabase-SDK), RLS für alles, Spiel nur mit Session wenn Supabase konfiguriert ist, Schlüssel nur aus `.env`/Secrets, Fehlermeldungen allgemein („Ungültige Zugangsdaten“), keine Info ob eine E-Mail existiert. Admin-Rechte nur per SQL vergeben.
 
 ## Testen
+Tests liegen in `tests/` (`node tests/solo.spec.js`, `accounts`, `friends`, `multiplayer`). Name#Tag, Freunde und Anmeldung: siehe `backend.js` (`AW.fullName`, `AW.friends…`).
 Lokal: `./scripts/gen-config.sh && python3 -m http.server 8000`. Automatisiert mit Playwright (Chromium ist vorinstalliert, `require('playwright')`), Seite per `file://…/index.html`; Konsole auf `pageerror` prüfen. Gegen echtes Supabase ist bisher nichts getestet.
 
 ## Bekannte Grenzen

@@ -183,22 +183,26 @@ function lobLeave(close){
 }
 function lobOpenChannel(code){
   LOB.ch=AW.channel(code,{
-    presence:l=>{LOB.players=l;lobRefresh()},
+    presence:l=>{LOB.players=l;if(NET.active())NET.onPresence(l);lobRefresh()},
     msg:m=>{
       if(m.t==='chat'){LOB.chat.push(m);if(LOB.chat.length>60)LOB.chat.shift();lobRefresh()}
       else if(m.t==='cfg'&&!LOB.host){Object.assign(LOB.cfg,m.cfg);lobRefresh(true)}
-      else if(m.t==='start'){lobStart(m.seed,m.diff)}
+      else if(m.t==='start'){lobStart(m.seed,m.diff,m.n)}
+      else NET.onmsg(m);
     }
   });
 }
-function lobStart(seed,diff){
+function lobStart(seed,diff,n){
   if(started){toast(LANG==='de'?'Du spielst gerade.':'You are already playing.','bad');return}
-  const ch=LOB.ch,code=LOB.code,host=LOB.host;
+  const ch=LOB.ch,code=LOB.code,host=LOB.host,players=LOB.players.slice();
   MATCH.seed=seed;
   if(DIFFS[diff]){diffKey=diff;$$('#diffSeg [data-d]').forEach(x=>x.classList.toggle('on',x.dataset.d===diff))}
-  newMap(seed);renderSetup();closeScreens();homeHide();setView('map');
+  newMap(seed);renderSetup();
+  /* Mehrere Spieler: Kanal an das Mehrspieler-Modul übergeben, damit er das Schließen der Lobby überlebt */
+  if(ch&&Math.max(players.length,n||0)>1){NET.begin({ch,host,players});LOB.ch=null}
   if(host&&code)AW.lobbyUpdate(code,{status:'started'}).catch(()=>{});
-  setTimeout(()=>lobLeave(false),500);
+  closeScreens();homeHide();setView('map');
+  if(NET.active())NET.refreshStart();
 }
 function lobRefresh(full){
   if(!SCR.cur||SCR.cur.name!=='lobby'){return}
@@ -245,7 +249,7 @@ S.lobby.bind=p=>{
   p.querySelector('#lobCopy').onclick=()=>{try{navigator.clipboard.writeText(LOB.code);toast(t('Kopiert'),'good')}catch(e){}};
   p.querySelector('#chatF').onsubmit=e=>{e.preventDefault();const i=p.querySelector('#chatI'),x=i.value.trim();if(x&&LOB.ch){LOB.ch.send({t:'chat',n:AW.name,x:x.slice(0,200)});i.value=''}};
   p.querySelector('#lobLeave').onclick=()=>{lobLeave(true);screenBack()};
-  const sb=p.querySelector('#lobStart');if(sb)sb.onclick=()=>{const seed=CUR.seed||((Math.random()*1e6)|0);LOB.ch.send({t:'start',seed,diff:c.diff})};
+  const sb=p.querySelector('#lobStart');if(sb)sb.onclick=()=>{const seed=CUR.seed||((Math.random()*1e6)|0);LOB.ch.send({t:'start',seed,diff:c.diff,n:LOB.players.length})};
   lobRefresh();
 };
 async function lobCreate(){

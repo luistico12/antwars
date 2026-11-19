@@ -146,7 +146,7 @@ function renderAnts(body){
     if(col.w<=3)return toast('Zu wenige Arbeiterinnen','bad');
     if(G.fungus<6)return toast('Zu wenig Pilze','bad');
     if(Math.floor(t.troops)>=col.stats.soldierCap)return toast('Keine Soldatenplätze frei: Kaserne bauen','bad');
-    G.fungus-=6;col.w--;t.troops=Math.floor(t.troops)+1;refreshLive();
+    G.fungus-=6;col.w--;addTroops(t,1);refreshLive();
   };
 }
 function renderRooms(body){

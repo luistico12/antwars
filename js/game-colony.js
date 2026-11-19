@@ -124,7 +124,7 @@ function updateColonies(dt){
       if(a>=EGG_T){
         const wantS=Math.random()<C.spct/100;let kind=null;
         if(wantS&&sold<S.soldierCap)kind='s';else if(C.w<S.workerCap)kind='w';else if(sold<S.soldierCap)kind='s';
-        if(kind){if(kind==='s'){t.troops=Math.floor(t.troops)+1;sold++}else C.w++;continue}
+        if(kind){if(kind==='s'){addTroops(t,1);sold++}else C.w++;continue}
         a=EGG_T;
       }
       keep.push(a);

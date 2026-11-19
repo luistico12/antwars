@@ -45,6 +45,8 @@ const AW={remote:REMOTE,sb:null,user:null,profile:null,ready:false,subs:[],
   get fullName(){return this.name+'#'+this.tag},
   get isAnon(){return !!(this.user&&(this.user.is_anonymous||this.user.local))}
 };
+/* Kennung dieser Browser-Sitzung (Mehrspieler: identifiziert Absender auch bei lokalen Konten) */
+const PID=Math.random().toString(36).slice(2,8);
 const GENERIC_AUTH_ERR='Ungültige Zugangsdaten';
 /* Namen: kein '#', keine Mehrfach-Leerzeichen, 2–20 Zeichen. Tag: vier Ziffern, Discord-Stil (Name#1234). */
 const cleanName=n=>String(n==null?'':n).replace(/[#\s]+/g,' ').trim().slice(0,20);
@@ -119,7 +121,7 @@ const Remote={
     const ch=AW.sb.channel('lobby:'+code,{config:{presence:{key:AW.user.id},broadcast:{self:true}}});
     ch.on('presence',{event:'sync'},()=>h.presence(Object.values(ch.presenceState()).map(a=>a[0])))
       .on('broadcast',{event:'m'},e=>h.msg(e.payload));
-    ch.subscribe(st=>{if(st==='SUBSCRIBED')ch.track({id:AW.user.id,name:AW.name,clan:(AW.profile&&AW.profile.clan_tag)||''})});
+    ch.subscribe(st=>{if(st==='SUBSCRIBED')ch.track({id:AW.user.id,pid:PID,name:AW.name,clan:(AW.profile&&AW.profile.clan_tag)||''})});
     return{send:m=>ch.send({type:'broadcast',event:'m',payload:m}),leave:()=>AW.sb.removeChannel(ch)};
   }
 };
@@ -165,11 +167,11 @@ const Local={
   async lobbyUpdate(code,p){const a=lsGet(LP+'lobbies',[]);const r=a.find(x=>x.code===code);if(r){Object.assign(r,p);lsSet(LP+'lobbies',a)}},
   async lobbyClose(code){clearInterval(Local._hb);lsSet(LP+'lobbies',lsGet(LP+'lobbies',[]).filter(x=>x.code!==code))},
   channel(code,h){
-    const bc=new BroadcastChannel('aw-lobby-'+code),me={id:AW.user.id+'-'+Math.random().toString(36).slice(2,6),name:AW.name,clan:AW.profile.clan_tag||''};
+    const bc=new BroadcastChannel('aw-lobby-'+code),me={id:AW.user.id+'-'+Math.random().toString(36).slice(2,6),pid:PID,name:AW.name,clan:AW.profile.clan_tag||''};
     const peers=new Map([[me.id,{...me,t:Date.now()}]]);
     const flush=()=>{const t=Date.now();for(const[k,v]of peers)if(t-v.t>6000)peers.delete(k);h.presence([...peers.values()])};
     const ann=()=>bc.postMessage({k:'p',p:me});
-    bc.onmessage=e=>{const d=e.data;if(d.k==='p'){peers.set(d.p.id,{...d.p,t:Date.now()});flush()}else if(d.k==='m')h.msg(d.m)};
+    bc.onmessage=e=>{const d=e.data;if(d.k==='p'){const isNew=!peers.has(d.p.id);peers.set(d.p.id,{...d.p,t:Date.now()});if(isNew)ann();flush()}else if(d.k==='m')h.msg(d.m)};
     ann();const iv=setInterval(()=>{peers.get(me.id).t=Date.now();ann();flush()},2000);setTimeout(flush,50);
     return{send:m=>{bc.postMessage({k:'m',m});setTimeout(()=>h.msg(m),0)},leave:()=>{clearInterval(iv);bc.close()}};
   }
