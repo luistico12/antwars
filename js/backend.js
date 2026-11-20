@@ -179,7 +179,7 @@ const Local={
   }
 };
 const DEFAULT_NEWS=[
-  {id:'d1',version:'v11',title:'Neues Design, Konten und Shop',body:'Komplett neues Glas-Interface, Anmeldung mit E-Mail, Google oder Discord, Rubys durch Quests, Hüte und Flaggen im Shop, Clans über freie Tags und Ranglisten.',created_at:'2026-11-17T09:00:00Z'},
+  {id:'d1',version:'v11',title:'Neues Design, Konten und Shop',body:'Komplett neues Glas-Interface, Anmeldung mit E-Mail, GitHub oder Discord, Rubys durch Quests, Hüte und Flaggen im Shop, Clans über freie Tags und Ranglisten.',created_at:'2026-11-17T09:00:00Z'},
   {id:'d2',version:'v10',title:'Schutzzeit am Start',body:'Zu Beginn kann niemand angreifen: Leicht 2:30, Normal 1:30, Schwer 1:00 Minuten.',created_at:'2026-11-10T09:00:00Z'},
   {id:'d3',version:'v9',title:'Powerups in der Kolonie',body:'Zufällig vergrabene Funde liegen im Boden. Grabe Tunnel dorthin, dann werden sie geborgen.',created_at:'2026-11-03T09:00:00Z'}
 ];

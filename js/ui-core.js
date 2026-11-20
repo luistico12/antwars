@@ -102,7 +102,7 @@ function cookieShow(open){
 }
 function localSave(){if(!REMOTE&&AW.profile)lsSet('aw_local_profile',AW.profile)}
 
-/* ---------- Login (E-Mail/Passwort, Google, Discord) ---------- */
+/* ---------- Login (E-Mail/Passwort, GitHub, Discord) ---------- */
 function loginRequired(){return false}  /* kein Anmeldezwang: anonyme/lokale Konten */
 function loginShow(mode='in'){
   const L=$('#login');L.hidden=false;
@@ -120,7 +120,7 @@ function loginShow(mode='in'){
       ${mode==='in'?`<button class="btn sm" type="button" id="lgReset" style="align-self:center;background:transparent;border:0;color:var(--mu)">${t('Passwort vergessen?')}</button>`:''}
     </form>
     <div class="sep">${t('oder')}</div>
-    <div class="oauth"><button class="btn lg" type="button" data-o="google">${BRAND.google} Google</button><button class="btn lg" type="button" data-o="discord">${BRAND.discord} Discord</button></div>
+    <div class="oauth"><button class="btn lg" type="button" data-o="github">${BRAND.github} GitHub</button><button class="btn lg" type="button" data-o="discord">${BRAND.discord} Discord</button></div>
     <div class="row" style="justify-content:center">${guest||!loginRequired()?`<button class="btn sm" id="lgClose" type="button">${guest?(LANG==='de'?'Als Gast fortfahren':'Continue as guest'):t('Schließen')}</button>`:''}</div></div>`;
   const msg=(k,x)=>{$('#lgMsg').innerHTML=`<div class="msg ${k}">${esc(x)}</div>`};
   L.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>loginShow(b.dataset.m));

@@ -11,7 +11,7 @@ const EN={
 'Profil':'Profile','Erfolge':'Achievements','Shop':'Shop','Clan':'Clan','Leaderboard':'Leaderboard','Einstellungen':'Settings','Hauptmenü':'Main menu','Admin':'Admin',
 'Spielen':'Play','Lobby erstellen':'Create lobby','Lobby beitreten':'Join lobby','Tutorial':'Tutorial','Nächste Karte':'Next map','Karte':'Map','Neue Karte':'New map',
 'Anmelden':'Sign in','Registrieren':'Sign up','Abmelden':'Sign out','E-Mail':'Email','Passwort':'Password','Benutzername':'Username','Passwort vergessen?':'Forgot password?',
-'oder':'or','Mit Google fortfahren':'Continue with Google','Mit Discord fortfahren':'Continue with Discord','Ungültige Zugangsdaten':'Invalid credentials',
+'oder':'or','Mit GitHub fortfahren':'Continue with GitHub','Mit Discord fortfahren':'Continue with Discord','Ungültige Zugangsdaten':'Invalid credentials',
 'Wenn die Angaben stimmen, haben wir dir eine E-Mail geschickt.':'If the details are correct, we have sent you an email.',
 'Bitte bestätige deine E-Mail, falls nötig, und melde dich dann an.':'Please confirm your email if required, then sign in.',
 'Gastmodus: Kein Server konfiguriert. Dein Fortschritt liegt nur in diesem Browser.':'Guest mode: no server configured. Your progress is stored in this browser only.',

@@ -256,7 +256,7 @@ insert into public.quests(id,kind,stat,goal,reward) values
  ('w_games','weekly','games',5,2),('w_wins','weekly','wins',1,3),('w_terr','weekly','terr',8,2),
  ('c_games','career','games',10,2),('c_wins','career','wins',5,5),('c_terr','career','terr',12,3),('c_found','career','found',25,3),('c_allied','career','allied',1,1),('c_score','career','score',300,3)
 on conflict (id) do update set kind=excluded.kind, stat=excluded.stat, goal=excluded.goal, reward=excluded.reward;
-insert into public.news(version,title,body) values ('v11','Neues Design, Konten und Shop','Komplett neues Glas-Interface, Anmeldung per E-Mail, Google oder Discord, Rubys durch Quests, Hüte und Flaggen im Shop, Clans über freie Tags und Ranglisten.');
+insert into public.news(version,title,body) values ('v11','Neues Design, Konten und Shop','Komplett neues Glas-Interface, Anmeldung per E-Mail, GitHub oder Discord, Rubys durch Quests, Hüte und Flaggen im Shop, Clans über freie Tags und Ranglisten.');
 
 -- Admin ernennen (manuell, einmalig, im SQL-Editor – NICHT über die App):
 --   update public.profiles set is_admin = true where id = (select id from auth.users where email = 'du@example.com');
