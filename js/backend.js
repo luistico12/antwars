@@ -90,7 +90,7 @@ const Remote={
     if(error&&/password/i.test(error.message))throw new Error('Passwort zu schwach (mind. 8 Zeichen)');
     /* Kein Hinweis, ob die E-Mail schon existiert → immer dieselbe Rückmeldung */
   },
-  async oauth(provider){const o={provider,options:{redirectTo:location.origin+location.pathname}};const{error}=(AW.user&&AW.user.is_anonymous&&AW.sb.auth.linkIdentity)?await AW.sb.auth.linkIdentity(o):await AW.sb.auth.signInWithOAuth(o);if(error)throw new Error('Anmeldung fehlgeschlagen')},
+  async oauth(provider){const o={provider,options:{redirectTo:location.origin+location.pathname}};const{error}=(AW.user&&AW.user.is_anonymous&&AW.sb.auth.linkIdentity)?await AW.sb.auth.linkIdentity(o):await AW.sb.auth.signInWithOAuth(o);if(error){console.warn('oauth:',error.message);const m=error.message||'';throw new Error(/not enabled|unsupported provider/i.test(m)?'Anbieter in Supabase nicht aktiviert (Authentication → Providers)':/manual linking/i.test(m)?'Supabase: „Allow manual linking“ aktivieren (Authentication → Sign In / Providers)':'Anmeldung fehlgeschlagen: '+m)}},
   async signOut(){await AW.sb.auth.signOut();try{await Remote.anon()}catch(e){AW.user=null}},
   async reset(email){await AW.sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname})},
   async setPhone(phone){const{error}=await AW.sb.auth.updateUser({phone});if(error)throw new Error('Nummer konnte nicht gespeichert werden')},
