@@ -108,6 +108,7 @@ function loginShow(mode='in'){
   const L=$('#login');L.hidden=false;
   const guest=!REMOTE;
   L.innerHTML=`<div class="lgbox"><img class="logo" src="img/logo.png" alt="Ant Wars">
+    ${(!guest&&typeof Remote!=='undefined'&&Remote.anonFailed&&!AW.loggedIn)?`<div class="msg">${t('Spielen ohne Anmeldung ist auf dem Server noch nicht aktiviert. Bitte registriere dich oder melde dich an.')}</div>`:''}
     ${guest?`<div class="msg">${t('Gastmodus: Kein Server konfiguriert. Dein Fortschritt liegt nur in diesem Browser.')}</div>`:''}
     <div class="pills" style="align-self:center"><button type="button" data-m="in" class="${mode==='in'?'on':''}">${t('Anmelden')}</button><button type="button" data-m="up" class="${mode==='up'?'on':''}">${t('Registrieren')}</button></div>
     <form id="lgF" class="field" style="gap:10px" autocomplete="on" novalidate>

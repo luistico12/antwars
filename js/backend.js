@@ -47,6 +47,7 @@ const AW={remote:REMOTE,sb:null,user:null,profile:null,ready:false,subs:[],
 };
 /* Kennung dieser Browser-Sitzung (Mehrspieler: identifiziert Absender auch bei lokalen Konten) */
 const PID=Math.random().toString(36).slice(2,8);
+const noServer=()=>new Error(REMOTE?'Server nicht erreichbar – du spielst im Gastmodus':'Kein Server konfiguriert – du spielst im Gastmodus');
 const GENERIC_AUTH_ERR='Ungültige Zugangsdaten';
 /* Namen: kein '#', keine Mehrfach-Leerzeichen, 2–20 Zeichen. Tag: vier Ziffern, Discord-Stil (Name#1234). */
 const cleanName=n=>String(n==null?'':n).replace(/[#\s]+/g,' ').trim().slice(0,20);
@@ -72,7 +73,8 @@ const Remote={
     AW.sb=window.supabase.createClient(CFG.SUPABASE_URL,CFG.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
     const{data}=await AW.sb.auth.getSession();AW.user=data.session?data.session.user:null;
     /* Kein Anmeldezwang: ohne Session legt Supabase ein anonymes Konto an, das auf diesem Gerät bleibt. */
-    if(!AW.user)await Remote.anon();
+    /* Schlägt das fehl (z. B. „Allow anonymous sign-ins“ ist im Dashboard aus), bleibt der Server aktiv: Registrieren/Anmelden geht trotzdem. */
+    if(!AW.user){try{await Remote.anon()}catch(e){Remote.anonFailed=true;console.warn('Anonyme Anmeldung nicht möglich (Supabase → Authentication → Sign In / Providers → Allow anonymous sign-ins):',e.message)}}
     if(AW.user)await Remote.loadProfile();
     AW.sb.auth.onAuthStateChange(async(_e,s)=>{AW.user=s?s.user:null;AW.profile=null;if(AW.user)await Remote.loadProfile();AW.emit()});
   },
@@ -136,10 +138,10 @@ const Local={
     AW.user={id:'local',email:null,phone:null,local:true};AW.profile=p;
   },
   save(){lsSet(LP+'profile',AW.profile);AW.emit()},
-  async signIn(){throw new Error('Kein Server konfiguriert – du spielst im Gastmodus')},
-  async signUp(){throw new Error('Kein Server konfiguriert – du spielst im Gastmodus')},
-  async secure(){throw new Error('Kein Server konfiguriert – du spielst im Gastmodus')},
-  async oauth(){throw new Error('Kein Server konfiguriert – du spielst im Gastmodus')},
+  async signIn(){throw noServer()},
+  async signUp(){throw noServer()},
+  async secure(){throw noServer()},
+  async oauth(){throw noServer()},
   async signOut(){},async reset(){},async setPhone(){throw new Error('Nur mit Server-Konto möglich')},async verifyPhone(){},
   async update(p){const a=AW.profile;if('username' in p){const nm=cleanName(p.username);if(nm.length<2)throw new Error('Name zu kurz');if(nm.toLowerCase()!==String(a.username).toLowerCase())a.tag=randTag();a.username=nm}if('clan_tag' in p)a.clan_tag=String(p.clan_tag||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,5);
     if('hat' in p){if(p.hat&&!a.owned.includes('hat:'+p.hat))throw new Error('Nicht freigeschaltet');a.hat=p.hat}
