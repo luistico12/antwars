@@ -81,7 +81,7 @@ const PROT={easy:150,normal:90,hard:60};
 const protLeft=()=>started?Math.max(0,PROT[diffKey]-gtime):0;
 const mmss=s=>Math.floor(s/60)+':'+String(Math.ceil(s%60)%60).padStart(2,'0');
 function launch(from,to,n,fid){
-  if(to.owner!==fid&&protLeft()>0){if(fid===0)toast(`Schutzzeit: noch ${mmss(protLeft())}. Bis dahin kann niemand angreifen`,'bad');return false}
+  if(to.owner!==fid&&!isFriend(fid,to.owner)&&protLeft()>0){if(fid===0)toast(`Schutzzeit: noch ${mmss(protLeft())}. Bis dahin kann niemand angreifen`,'bad');return false}
   from.troops-=n;
   const d=Math.hypot(from.lx-to.lx,from.ly-to.ly);
   marches.push({from,to,n,f:fid,t:0,dur:(2.5+d*0.14)/(fid===0?pwMul('speed'):1),phase:'walk',ft:0,fdur:2.4,seed:(Math.random()*1e6)|0});

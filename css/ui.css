@@ -184,10 +184,13 @@ input[type=range]{width:100%;accent-color:var(--ac)}
 #set .opt{display:flex;gap:6px;flex-wrap:wrap}#set .note{font-size:12.5px;color:var(--mu)}#set label.ck{display:flex;gap:8px;align-items:center}
 #set input[type=checkbox]{accent-color:var(--ac);width:17px;height:17px}
 #radial{position:fixed;inset:0 var(--adw) var(--adh) 0;z-index:210}#radial .ring{position:absolute;width:0;height:0}
-#radial .rb{position:absolute;width:76px;height:76px;margin:-38px 0 0 -38px;border-radius:50%;background:rgba(14,18,28,.88);border:1px solid var(--ln);color:var(--tx);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11.5px;line-height:1.1;padding:2px;backdrop-filter:blur(10px);box-shadow:0 8px 24px rgba(0,0,0,.5);animation:rpop .16s ease-out both}
-#radial .rb img{width:26px;height:26px;image-rendering:pixelated}
-#radial .rb:hover:not(:disabled){background:var(--ac);border-color:var(--ac)}#radial .rb:disabled{opacity:.45}#radial .rb.atk{border-color:var(--ac-line)}
-#radial .mid{position:absolute;width:96px;margin:-56px 0 0 -48px;text-align:center;font-size:12px;font-weight:700;color:#fff;text-shadow:0 1px 6px #000;pointer-events:none}
+#radial svg{position:absolute;left:-150px;top:-150px;overflow:visible;filter:drop-shadow(0 10px 22px rgba(0,0,0,.55));animation:rpop .16s ease-out both;transform-origin:50% 50%}
+#radial .seg,#radial .atk{cursor:pointer;transition:filter .12s}
+#radial .seg:hover,#radial .atk:hover{filter:brightness(1.18)}
+#radial .atk:hover circle{fill:var(--ac)}
+#radial .dis{opacity:.42;filter:grayscale(.6)}#radial .atk.dis{opacity:.8}#radial .dis:hover{filter:grayscale(.6)}#radial .atk.dis:hover circle{fill:#1b2130}
+#radial .rlbl{font:700 14px/1 Inter,system-ui,sans-serif;fill:#fff;stroke:rgba(0,0,0,.75);stroke-width:3.2px;paint-order:stroke;pointer-events:none}
+#radial .rn{font:800 15px/1 Inter,system-ui,sans-serif;fill:#fff;pointer-events:none}
 #radial .why{position:absolute;left:0;right:0;bottom:calc(var(--adh) + 24px);text-align:center;pointer-events:none}
 #radial .why span{background:rgba(10,14,22,.9);border:1px solid var(--ln);border-radius:9px;padding:5px 12px;font-size:13px}#radial .why span:empty{display:none}
 @keyframes rpop{from{transform:scale(.3);opacity:0}to{transform:none;opacity:1}}
