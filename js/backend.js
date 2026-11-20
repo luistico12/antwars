@@ -115,8 +115,8 @@ const Remote={
   async friendRespond(id,acc){const{error}=await AW.sb.rpc('friend_respond',{fid:id,acc:!!acc});if(error)throw new Error('Nicht möglich')},
   async friendRemove(id){const{error}=await AW.sb.rpc('friend_remove',{fid:id});if(error)throw new Error('Nicht möglich')},
   async lobbies(){const{data}=await AW.sb.from('lobbies').select('*').eq('is_public',true).eq('status','open').order('created_at',{ascending:false}).limit(30);return data||[]},
-  async lobbyCreate(l){const{data,error}=await AW.sb.from('lobbies').insert({...l,host:AW.user.id,host_name:AW.name}).select().single();if(error)throw new Error('Lobby konnte nicht erstellt werden');return data},
-  async lobbyFind(code){const{data}=await AW.sb.rpc('find_lobby',{c:code});return data&&data[0]||null},
+  async lobbyCreate(l){const{data,error}=await AW.sb.from('lobbies').insert({...l,host:AW.user.id,host_name:AW.name}).select().single();if(error){console.warn('lobby insert:',error.message);throw new Error(/relation|schema cache|column/i.test(error.message)?'Server noch nicht aktualisiert: supabase/schema.sql im SQL-Editor ausführen':'Lobby konnte nicht erstellt werden')}return data},
+  async lobbyFind(code){const{data,error}=await AW.sb.rpc('find_lobby',{c:String(code).trim().toLowerCase()});if(error){console.warn('find_lobby:',error.message);throw new Error(/function|schema cache|relation/i.test(error.message)?'Server noch nicht aktualisiert: supabase/schema.sql im SQL-Editor ausführen':'Lobby konnte nicht gesucht werden')}return data&&data[0]||null},
   async lobbyUpdate(code,p){await AW.sb.from('lobbies').update(p).eq('code',code)},
   async lobbyClose(code){await AW.sb.from('lobbies').delete().eq('code',code)},
   channel(code,h){
