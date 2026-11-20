@@ -287,9 +287,8 @@ function buildHTML(){
   }
   return h;
 }
-$('#buildBox').addEventListener('click',e=>{const b=e.target.closest('[data-b]');if(!b||selT==null)return;buildStr(T[selT],b.dataset.b,+b.dataset.n);updateSide()});
-function setSideTab(v){sideTab=v;$('#stInfo').classList.toggle('on',v==='info');$('#stBuild').classList.toggle('on',v==='build');$('#infoBox').hidden=v!=='info';$('#buildBox').hidden=v!=='build';updateSide()}
-$('#stInfo').onclick=()=>setSideTab('info');$('#stBuild').onclick=()=>setSideTab('build');
+function setSideTab(v){sideTab='info';updateSide()}
+$('#stInfo').onclick=()=>setSideTab('info');
 $('#terrInfo').insertAdjacentHTML('afterend','<div id="openBox" style="margin-top:8px"></div>');
 $('#openBox').addEventListener('click',e=>{
   const b=e.target.closest('[data-open]');if(b)openColony(+b.dataset.open);
@@ -308,7 +307,6 @@ function facHTML(){
 function updateSide(){
   if(!started)return;
   setHTML($('#facList'),facHTML());
-  if(sideTab==='build'){setHTML($('#buildBox'),buildHTML());return}
   const info=$('#terrInfo'),hint=$('#terrHint'),send=$('#sendBox');
   if(selT==null){info.innerHTML='';send.hidden=true;setHTML($('#openBox'),'');hint.textContent='Linksklick: eigenes Gebiet wählen (Verstärkung). Rechtsklick auf ein Gebiet: Angriff, Bündnis, Spenden oder Bauen.'}
   else{
@@ -439,7 +437,7 @@ function panKeys(dt){
   else if(view==='map'){mcam.x+=dx*500*dt/mcam.z;mcam.y+=dy*500*dt/mcam.z;clampMapCam()}
 }
 $('#pct').oninput=e=>{pct=+e.target.value;$('#pctLbl').textContent=pct+'%';updateSide()};
-{const m={ants:'ant',rooms:'clay',upg:'star'};$$('#dock .tab').forEach(b=>b.insertAdjacentHTML('afterbegin',ih(m[b.dataset.tab])));$('#stInfo').insertAdjacentHTML('afterbegin',ih('flag'));$('#stBuild').insertAdjacentHTML('afterbegin',ih('pick'))}
+{const m={ants:'ant',rooms:'clay',upg:'star'};$$('#dock .tab').forEach(b=>b.insertAdjacentHTML('afterbegin',ih(m[b.dataset.tab])));$('#stInfo').insertAdjacentHTML('afterbegin',ih('flag'))}
 $$('#dock .tab').forEach(b=>b.onclick=()=>{dockTab=b.dataset.tab;renderDock()});
 $('#tabColony').onclick=()=>{if(col)setView('colony')};$('#tabMap').onclick=()=>setView('map');
 $$('#speed [data-sp]').forEach(b=>b.onclick=()=>{speed=+b.dataset.sp;$$('#speed [data-sp]').forEach(x=>x.classList.toggle('on',x===b))});

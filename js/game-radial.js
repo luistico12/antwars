@@ -78,7 +78,7 @@ function ownRing(t,mode,cx,cy,wx,wy){
       {k:'line',l:'Linie',dis:!foes.length,why:foes.length?`Verteidigungslinie gegen eine Grenze: +60% je Stufe (ab ${costLbl(cLn)})`:'Alle Nachbarn gehören dir, hier ist keine Linie nötig'},
       {k:'port',l:'Hafen',dis:!!wPort,why:wPort||`Hafen bauen (${costLbl(PORT_COST)}). Floße und Seewege`}];
     if(t.port)segs.push({k:'raft',l:'Floß',n:`${t.port.rafts}/${t.port.max}`,dis:t.port.rafts>=t.port.max||poorFor(RAFT_COST),why:t.port.rafts>=t.port.max?'Alle Flöße dieses Hafens sind gebaut':`Floß bauen (${costLbl(RAFT_COST)}). Damit greifst du über Wasser an`});
-    segs.push({k:'road',l:'Weg',why:'Wege malen: Handelsstrecken und schneller Transport für Soldaten. Auch Floßwege im Wasser'});
+    segs.push({k:'road',l:'Weg',why:'Wege malen: Handelsstrecken und schneller Transport für Soldaten. Seewege im Wasser brauchen Flöße (1 je 8 Abschnitte) und bringen doppelten Handel'});
     atk={ic:'build',dis:true,why:`Bauen in ${t.name}`};
   }else{
     segs=[{k:'back',l:'Zurück',why:'Zurück zum Bauen-Menü'}];

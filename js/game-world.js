@@ -165,7 +165,7 @@ function chooseConquest(id,mode){
   const t=T[id];conqQueue=conqQueue.filter(x=>x!==id);
   if(t.owner===0){
     if(mode==='keep'){const n=t.conqN||4,m=n*6,fo=n*4;G.mat=Math.min(G.matCap,G.mat+m);G.food=Math.min(G.foodCap,G.food+fo);toast(`${t.name} gehört jetzt zu deinem Reich: +${m} Erde, +${fo} Blätter`,'good');renderColSwitch()}
-    else{t.puppet=true;toast(`${t.name} ist ein Marionettenstaat und liefert Tribut`,'good')}
+    else{t.puppet=true;const n=t.conqN||4,m=Math.round(n*6*0.4),fo=Math.round(n*4*0.4),tr=Math.max(1,Math.round(n/2)),cp=T[F[0].capital];G.mat=Math.min(G.matCap,G.mat+m);G.food=Math.min(G.foodCap,G.food+fo);if(cp&&cp.owner===0)addTroops(cp,tr);ownDirty=true;toast(`${t.name} ist ein Marionettenstaat: ein Teil der Beute (+${m} Erde, +${fo} Blätter, +${tr} Soldaten) und laufend Tribut`,'good')}
   }
   ownDirty=true;showConquest();
 }

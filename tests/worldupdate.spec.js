@@ -47,7 +47,7 @@ let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++};
   const rw=await pg.evaluate(()=>{const t=T.find(x=>x.owner===-1&&!x.isCap);t.conqN=5;G.mat=100;G.food=100;const m=G.mat,f=G.food;setOwner(t,0,4);t.conqN=5;conqQueue.push(t.id);chooseConquest(t.id,'keep');return{dm:G.mat-m,hasCol:!!t.col}});
   ok(!rw.hasCol&&rw.dm>0,`Behalten gibt Material (${rw.dm}) und keine eigene Kolonie`);
   const pr=await pg.evaluate(()=>{const t=T.find(x=>x.owner===-1&&!x.isCap);t.conqN=5;setOwner(t,0,4);conqQueue.push(t.id);const m=G.mat;chooseConquest(t.id,'puppet');return{dm:G.mat-m,puppet:t.puppet,merged:mergedTerr(t,T[F[0].capital])}});
-  ok(pr.puppet&&pr.dm===0,'Marionettenstaat gibt kein Material');
+  ok(pr.puppet&&pr.dm>0&&pr.dm<rw.dm,'Marionettenstaat gibt einen Teil der Beute');
 
   /* ---- Kreismenü auf eigenem Gebiet ---- */
   await pg.evaluate(()=>{G.mat=G.matCap=400;G.food=G.foodCap=400});

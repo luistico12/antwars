@@ -2,14 +2,14 @@
 const WALL_R=70,WALL_MAX=3,WALL_COST={mat:50,food:25},PORT_COST={mat:60,food:30},RAFT_COST={mat:25,food:10};
 const ROAD_LAND=1,ROAD_SEA=2,ROAD_ACTIVE=6;
 /* placing: aktueller Platzier-Modus {kind:'wall'|'road'|'land'} */
-let placing=null,rd=new Map(),roadDirty=true,roadCanvas=null,roadNet=null,tradeW=0,paintingRoad=null;
+let seaN=0,placing=null,rd=new Map(),roadDirty=true,roadCanvas=null,roadNet=null,tradeW=0,paintingRoad=null;
 const mapEl=document.getElementById('mv');
 const cellOf=(x,y)=>{const cx=Math.floor(x/CS),cy=Math.floor(y/CS);return(cx<0||cy<0||cx>=GW||cy>=GH)?-1:cy*GW+cx};
 const cellPos=i=>[(i%GW)*CS+CS/2,((i/GW)|0)*CS+CS/2];
 
 /* Beim Kartenwechsel: Grenzpunkte zwischen Gebieten und Küstenzellen vorberechnen */
 function seaReset(){
-  rd=new Map();roadDirty=true;roadNet=null;tradeW=0;placing=null;paintingRoad=null;roadCanvas=null;
+  seaN=0;rd=new Map();roadDirty=true;roadNet=null;tradeW=0;placing=null;paintingRoad=null;roadCanvas=null;
   if(!M)return;
   M.bp=new Map();
   const add=(a,b,x,y)=>{const k=a+'-'+b;let l=M.bp.get(k);if(!l){l=[];M.bp.set(k,l)}l.push([x*CS+CS/2,y*CS+CS/2])};
@@ -131,10 +131,13 @@ function startRoad(){
   placing={kind:'road'};
   toast('Weg: Linksklick halten und über dein Gebiet (oder ins Wasser) ziehen. Verbinde Städte und Häfen. Esc oder Rechtsklick beendet','good');
 }
+const seaSource2=()=>T.find(t=>t.owner===0&&!t.puppet&&t.port&&t.port.rafts>0)||null;
 function paintRoadAt(x,y){
   const st=paintingRoad,i=cellOf(x,y);if(!st||i<0||st.last===i)return;st.last=i;
   const k=roadKind(i);if(!k){if(!rd.has(i))st.bad++;return}
   const c=k===2?ROAD_SEA:ROAD_LAND;if(G.mat<c){st.low++;return}
+  if(k===2&&seaN%8===0){const h=seaSource2();if(!h){st.noRaft=true;return}h.port.rafts--}
+  if(k===2)seaN++;
   G.mat-=c;rd.set(i,{p:0,w:k===2});st.n++;roadDirty=true;
 }
 function paintRoadLine(x0,y0,x1,y1){
@@ -143,7 +146,8 @@ function paintRoadLine(x0,y0,x1,y1){
 }
 function endRoad(){
   const st=paintingRoad;paintingRoad=null;if(!st)return;
-  if(st.n>0)toast(`Weg: ${st.n} Abschnitte werden gebaut`,'good');
+  if(st.n>0)toast(`Weg: ${st.n} Abschnitte werden gebaut`+(st.noRaft?'. Für mehr Wasserweg fehlen Flöße':''),'good');
+  else if(st.noRaft)toast('Wasserwege brauchen Flöße (1 Floß je 8 Abschnitte). Baue Flöße in einem Hafen','bad');
   else if(st.low)toast('Zu wenig Material für den Weg','bad');
   else if(st.bad)toast('Dort geht kein Weg: nur auf eigenem Gebiet oder im Wasser neben deinem Gebiet','bad');
 }
