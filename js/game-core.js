@@ -132,26 +132,31 @@ function renderBase(m){
     const i=y*GW+x;if(!m.land[i])continue;
     for(const[dx,dy]of N4){const nx=x+dx,ny=y+dy;
       const water=!isLand(nx,ny);
-      const other=!water&&m.tid[ny*GW+nx]!==m.tid[i];
-      if(!water&&!other)continue;
-      g.fillStyle=water?'rgba(245,235,190,.9)':'rgba(30,18,8,.72)';
-      const w=water?2:2;
+      if(!water)continue;
+      g.fillStyle='rgba(245,235,190,.9)';
+      const w=2;
       if(dx===1)g.fillRect(x*CS+CS-w,y*CS,w,CS);else if(dx===-1)g.fillRect(x*CS,y*CS,w,CS);
       else if(dy===1)g.fillRect(x*CS,y*CS+CS-w,CS,w);else g.fillRect(x*CS,y*CS,CS,w);
     }
   }
   return c;
 }
+/* Zwei Gebiete verschmelzen, wenn sie demselben Volk gehören (Marionettenstaaten und wilde Gebiete nicht) */
+function mergedTerr(a,b){return a.owner>=0&&a.owner===b.owner&&!a.puppet&&!b.puppet}
 function renderOwners(m,F){
   const c=makeCanvas(GW*CS,GH*CS),g=c.getContext('2d');
   for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
-    const i=y*GW+x,tt=m.tid[i];if(tt<0)continue;const o=m.terrs[tt].owner;if(o<0)continue;
-    g.fillStyle=rgb(F[o].rgb,0.36);g.fillRect(x*CS,y*CS,CS,CS);
-    g.fillStyle=rgb(F[o].rgb,0.95);
+    const i=y*GW+x,tt=m.tid[i];if(tt<0)continue;const A=m.terrs[tt],o=A.owner;
+    if(o>=0){g.fillStyle=rgb(F[o].rgb,0.36);g.fillRect(x*CS,y*CS,CS,CS)}
     for(const[dx,dy]of N4){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=GW||ny>=GH)continue;const j=ny*GW+nx;
-      if(m.tid[j]<0||m.tid[j]===tt)continue;if(m.terrs[m.tid[j]].owner===o)continue;
-      if(dx===1)g.fillRect(x*CS+CS-4,y*CS,4,CS);else if(dx===-1)g.fillRect(x*CS,y*CS,4,CS);
-      else if(dy===1)g.fillRect(x*CS,y*CS+CS-4,CS,4);else g.fillRect(x*CS,y*CS,CS,4);}
+      if(m.tid[j]<0||m.tid[j]===tt)continue;const B=m.terrs[m.tid[j]];
+      if(mergedTerr(A,B))continue;
+      g.fillStyle='rgba(30,18,8,.72)';
+      if(dx===1)g.fillRect(x*CS+CS-2,y*CS,2,CS);else if(dx===-1)g.fillRect(x*CS,y*CS,2,CS);
+      else if(dy===1)g.fillRect(x*CS,y*CS+CS-2,CS,2);else g.fillRect(x*CS,y*CS,CS,2);
+      if(o>=0&&B.owner!==o){g.fillStyle=rgb(F[o].rgb,0.95);
+        if(dx===1)g.fillRect(x*CS+CS-4,y*CS,4,CS);else if(dx===-1)g.fillRect(x*CS,y*CS,4,CS);
+        else if(dy===1)g.fillRect(x*CS,y*CS+CS-4,CS,4);else g.fillRect(x*CS,y*CS,CS,4)}}
   }
   return c;
 }

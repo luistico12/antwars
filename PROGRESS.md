@@ -19,6 +19,16 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
 11. Mehrspieler nach Host-Prinzip (`js/net.js`): Host simuliert die Welt, sendet 2×/s Schnappschüsse über den Lobby-Kanal; Gäste spielen ihre Kolonie lokal und senden Befehle (Angriff, Soldaten aus der Kolonie). Host-Austritt beendet die Partie; verschwundene Gäste werden zu Bots.
 12. Tests in `tests/` (`node tests/<name>.spec.js`): solo, accounts, friends, multiplayer. SQL-Logik wurde gegen ein lokales Postgres geprüft (Tags, RLS, Freunde).
 
+13. Update „Tunnel und Weltkarte“ (alles erledigt, getestet mit `node tests/worldupdate.spec.js`):
+    - Tunnelansicht: Taste T (oder Raum „Tunnel“), grün = gegraben, rot = unbebaubar. Linksklick markiert, Klick halten und ziehen malt mehrere Abschnitte (`tunnelMark`/`paintAt` in `game-colony.js`). Tunnel brauchen 2 statt 5 Arbeit (2,5× schneller). Rechtsklick/T beendet.
+    - Weltkarte: eigene Gebiete verschmelzen (keine Grenze zwischen Gebieten desselben Volks, Marionettenstaaten ausgenommen, `mergedTerr` in `game-core.js`). Alle Städte sichtbar, Hauptstadt wächst mit der Fläche des Reichs (`computeRegions`/`nestSize`). Kolonie nur noch für die Hauptstadt. „Behalten“ gibt Erde und Blätter (6/4 je Eroberungsstufe), Marionettenstaat nichts.
+    - Kreismenü auf eigenem Gebiet (`ownRing` in `game-radial.js`): Info, Bauen, Schließen. Mitte = frei platzierbarer Verteidigungswall (max. 3 je Gebiet, +50% Grenzverteidigung im Umkreis). Bauen: Außenposten, Verteidigungslinie, Hafen, Floß, Weg.
+    - Neues Modul `js/game-sea.js`: Wälle, Häfen (Küstengebiet, 3 Flöße), Wege (Linksklick halten malen, auch als Floßweg im Wasser), Wegnetze (Handel +Material/Blätter, Soldaten 2,2× schneller zwischen verbundenen Städten), Floß-Angriff und Floß-Transport zu Verbündeten (Zielkreuz an der Küste wählen). Floß kehrt nach dem Kampf zurück. Bots bauen auch Wälle, greifen aber nicht per Floß an.
+## Offen (neu)
+- Mehrspieler synchronisiert Wälle, Häfen, Wege und Flöße noch nicht (nur Host-Welt, Gäste sehen sie nicht).
+- Bots nutzen keine Häfen/Flöße/Wege.
+- Seitenpanel „Bauen“ (Außenposten/Linien) existiert zusätzlich zum Kreismenü.
+
 ## Offen
 - Im Supabase-Dashboard: Authentication → Sign In / Providers → „Allow anonymous sign-ins“ aktivieren (sonst Fallback auf lokales Konto ohne Sync).
 - Mehrspieler: Gäste können noch keine Bündnisse, Spenden oder Befehlsposten/Verteidigungslinien; Host-Niederlage beendet die Partie für alle; nur lokal (BroadcastChannel) getestet, nicht über echtes Supabase Realtime.

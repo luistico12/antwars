@@ -1,7 +1,7 @@
 /* ===== Kolonie: Daten ===== */
 const CELLW=48,CELLH=32,COLS=40,MR=12,UR=22,ROWS=MR+UR,CW=COLS*CELLW,CH=ROWS*CELLH,GY=MR*CELLH,ENT_C=20,ENT_X=ENT_C*CELLW+CELLW/2,TREE_X=118,DAYLEN=110,VW=1120,VH=630,EGG_T=120;
 const ROOMS={
-  tunnel:{n:'Tunnel',mat:1,food:0,need:5,d:'Start und Ziel anklicken, der Gang wird gegraben'},
+  tunnel:{n:'Tunnel',mat:1,food:0,need:2,d:'Taste T: Tunnelansicht. Linksklick markiert, Ziehen malt mehrere Abschnitte. Wird 2,5× schneller gegraben'},
   leaf:{n:'Blattlager',mat:2,food:0,need:10,d:'+60 Blattplatz'},
   farm:{n:'Pilzfarm',mat:5,food:20,need:14,d:'Platz für 5 Pilzzüchter. Macht aus Blättern Pilze'},
   fstore:{n:'Pilzlager',mat:5,food:20,need:12,d:'+60 Pilzplatz'},
@@ -175,14 +175,32 @@ function tunnelPath(c0,r0,c1,r1){
   const t=r1*COLS+c1;if(prev[t]<0&&t!==s)return null;
   const out=[];let k=t;while(k!==s&&k>=0){out.push([k%COLS,(k/COLS)|0]);k=prev[k]}out.push([c0,r0]);return out.reverse();
 }
-function tunnelClick(c,r){
-  if(!col.tun){const k=cellAt(c,r);if(!k||k.s!==2){toast('Der Start muss ein vorhandener Gang oder Raum sein','bad');return}col.tun={c,r};toast('Start gesetzt. Klicke jetzt das Ziel','');return}
-  const p=tunnelPath(col.tun.c,col.tun.r,c,r);if(!p){toast(isWaterCell(col,c,r)?'Im Wasser kann man nicht graben':'Dorthin lässt sich kein Tunnel graben','bad');return}
-  const nw=p.filter(([x,y])=>col.grid[y*COLS+x].s===0);
-  if(!nw.length){toast('Dort gibt es schon einen Gang','bad');col.tun=null;return}
-  const cost=nw.length*ROOMS.tunnel.mat;if(G.mat<cost){toast(`Zu wenig Material (${cost} nötig)`,'bad');return}
-  G.mat-=cost;for(const[x,y]of nw){const k=col.grid[y*COLS+x];k.s=3;k.build={kind:'tunnel',prog:0,need:ROOMS.tunnel.need}}
-  toast(`Tunnel mit ${nw.length} Abschnitten wird gegraben`,'good');col.tun=null;
+/* Tunnelansicht: Linksklick markiert eine Zelle, Ziehen malt mehrere. Liegt die Zelle nicht an einem Gang, wird der kürzeste Weg vom nächsten Gang gegraben.
+   Rückgabe: Zahl neuer Abschnitte, 0 = nichts zu tun, -1 = geht nicht, -2 = zu wenig Material */
+function tunnelMark(c,r){
+  const k=cellAt(c,r);if(!k||k.s!==0)return 0;
+  if(!diggable(col,c,r)||isWaterCell(col,c,r))return -1;
+  let cells=[[c,r]];
+  const adj=N4.some(([dx,dy])=>{const n=cellAt(c+dx,r+dy);return n&&(n.s===2||n.s===3)});
+  if(!adj){
+    const op=openCells();if(!op.length)return -1;
+    const dist=o=>Math.abs(o[0]-c)+Math.abs(o[1]-r);op.sort((a,b)=>dist(a)-dist(b));
+    const p=tunnelPath(op[0][0],op[0][1],c,r);if(!p)return -1;cells=p.filter(([x,y])=>col.grid[y*COLS+x].s===0);
+    if(!cells.length)return 0;
+  }
+  const cost=cells.length*ROOMS.tunnel.mat;if(G.mat<cost)return -2;
+  G.mat-=cost;for(const[x,y]of cells){const q=col.grid[y*COLS+x];q.s=3;q.build={kind:'tunnel',prog:0,need:ROOMS.tunnel.need}}
+  return cells.length;
+}
+function paintAt(c,r){
+  const p=col&&col.paint;if(!p)return;const key=c+','+r;if(p.last===key)return;p.last=key;
+  const res=tunnelMark(c,r);if(res>0)p.n+=res;else if(res===-1)p.bad++;else if(res===-2)p.low++;
+}
+function endPaint(){
+  const p=col&&col.paint;if(!p)return;col.paint=null;
+  if(p.n>0)toast(`Tunnel: ${p.n} Abschnitte werden gegraben`,'good');
+  else if(p.low)toast('Zu wenig Material für den Tunnel','bad');
+  else if(p.bad)toast('Dort lässt sich kein Tunnel graben (Fels, Wasser oder außerhalb des Hügels)','bad');
 }
 function burst(C,x,y){for(let i=0;i<16;i++)C.parts.push({x,y,vx:(Math.random()-0.5)*70,vy:-Math.random()*60-10,life:0.7+Math.random()*0.5,c:Math.random()<0.5?'#8a5a2e':'#c08a52'})}
 function stepParts(C,dt){for(let i=C.parts.length-1;i>=0;i--){const p=C.parts[i];p.life-=dt;p.vy+=160*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;if(p.life<=0)C.parts.splice(i,1)}}
@@ -508,13 +526,16 @@ function drawColony(g,now,cam){
   for(const a of C.ants){drawAnt(g,a.x,a.y,a.hx,a.hy,a.ph,a.role,C.sp,a.carry,a.role==='s'?0.9:0.78);if(mine)drawHat(g,COSM.hat,a.x+(a.hx<0?-1:1)*5,a.y-4,1.5)}
   for(const p of C.parts){g.fillStyle=p.c;g.fillRect(p.x|0,p.y|0,3,3)}
   if(C.buildSel==='tunnel'){
-    if(C.tun){
-      if(hv){const path=tunnelPath(C.tun.c,C.tun.r,hv.c,hv.r);
-        if(path){for(const[c,r]of path){const k=C.grid[r*COLS+c];g.fillStyle=k.s===0?'rgba(155,232,106,.4)':'rgba(255,255,255,.12)';g.fillRect(c*CELLW+10,r*CELLH+6,CELLW-20,CELLH-12)}
-          marker(g,hv.c*CELLW+24,hv.r*CELLH+16,'E','#c0452e')}
-        else marker(g,hv.c*CELLW+24,hv.r*CELLH+16,'X','#555')}
-      marker(g,C.tun.c*CELLW+24,C.tun.r*CELLH+16,'S','#3f9a4c')}
-    else if(hv)marker(g,hv.c*CELLW+24,hv.r*CELLH+16,'S','#3f9a4c');
+    /* Tunnelansicht: grün = schon gegraben oder in Arbeit, rot = unbebaubar (Fels, Wasser) */
+    for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+      const k=C.grid[r*COLS+c];let col2=null;
+      if(k.s===2||k.s===3)col2='rgba(70,220,110,.34)';
+      else if(r>=MR&&(k.s===1||isWaterCell(C,c,r)))col2='rgba(235,60,50,.42)';
+      else if(r<MR&&!diggable(C,c,r))continue;
+      if(col2){g.fillStyle=col2;g.fillRect(c*CELLW+1,r*CELLH+1,CELLW-2,CELLH-2)}
+    }
+    if(hv){const k=C.grid[hv.r*COLS+hv.c],bad=!k||k.s===1||isWaterCell(C,hv.c,hv.r)||!diggable(C,hv.c,hv.r);
+      g.strokeStyle=bad?'#ff6a5a':'#c8ffd0';g.lineWidth=2;g.strokeRect(hv.c*CELLW+1,hv.r*CELLH+1,CELLW-2,CELLH-2);g.lineWidth=1}
   }else if(hv){const why=C.buildSel?canPlace(C.buildSel,hv.c,hv.r):'',x0=hv.c*CELLW,y0=hv.r*CELLH;
     if(C.buildSel){g.strokeStyle=why?'#e0523d':'#9be86a';g.lineWidth=2;g.strokeRect(x0+1,y0+1,CELLW-2,CELLH-2);g.lineWidth=1;
       if(!why){g.globalAlpha=0.65;ell(g,x0+24,y0+16,22,14,'#241408');drawRoom(g,C.buildSel,x0,y0,0.6,tm,C.sp);g.globalAlpha=1}}

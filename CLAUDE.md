@@ -12,13 +12,14 @@ Statisches HTML5-Canvas-Spiel (Vanilla JS, kein Build-Schritt), Ameisenkolonie b
 - Weltkarte ohne Inseln mit Gebieten, Bot-Stämme, Bündnisse, Fahndungsstufe (Heat), Eroberung als Marionettenstaat oder behalten.
 - Eier schlüpfen nach 2 Min, brauchen Platz und Pilze. Tonkuhlen brauchen Wasser. Tunnel-Werkzeug, vergrabene Funde (Powerups) in der Kolonie.
 - Schutzzeit am Start: leicht 2:30, normal 1:30, schwer 1:00.
-- Rechtsklick (Touch: langes Drücken) auf ein fremdes Gebiet öffnet das Kreismenü (Angriff, Bündnis, Spenden).
+- Rechtsklick (Touch: langes Drücken) auf ein Gebiet öffnet das Kreismenü: fremd = Angriff, Bündnis, Spenden, Floß; eigen = Info, Bauen, Wall.
+- Eigene Gebiete verschmelzen; Kolonie (Hügel) gibt es nur für die Hauptstadt. In der Kolonie: Taste T = Tunnelansicht (Linksklick/Ziehen).
 
 ## Dateien
 - `index.html`: Gerüst (Header `#top`, Spielbereich `#app`, Werbespalte `#adrail`), lädt alle Skripte in fester Reihenfolge. Klassische Skripte teilen sich den globalen Scope.
 - `css/ui.css`: komplettes Design-System. Alte Variablennamen (`--soil`, `--moss` …) sind auf das neue System abgebildet.
 - Spielcode: `js/game-core.js` (Karte, Hilfen), `game-colony.js` (Kolonie, Hügel/Ausgänge, `drawAnt`), `game-world.js` (Weltkarte, Kämpfe, Diplomatie, Bots), `game-ui.js` (HUD, Dock, Kamera, Eingaben, Hauptschleife), `game-radial.js`, `game-pause.js`, `game-settings.js`.
-- UI/Konto: `util.js` (Speicher mit Einwilligung, `MP`-Stub), `icons.js`, `flags.js`, `cosmetics.js` (Hüte/Flaggen), `backend.js` (`AW`-API: Supabase oder lokaler Gastmodus), `i18n.js`/`i18n-en.js`, `ui-core.js` (Header, Screen-Manager `S`/`openScreen`, Login, Cookie-Banner), `ui-screens.js` (alle Screens inkl. Lobby, Admin), `ui-boot.js` (Hauptmenü, Spiel-Hooks, Start), `touch.js`, `net.js` (Mehrspieler nach Host-Prinzip: `NET`, Schnappschüsse, Befehle).
+- UI/Konto: `util.js` (Speicher mit Einwilligung, `MP`-Stub), `icons.js`, `flags.js`, `cosmetics.js` (Hüte/Flaggen), `backend.js` (`AW`-API: Supabase oder lokaler Gastmodus), `i18n.js`/`i18n-en.js`, `ui-core.js` (Header, Screen-Manager `S`/`openScreen`, Login, Cookie-Banner), `ui-screens.js` (alle Screens inkl. Lobby, Admin), `ui-boot.js` (Hauptmenü, Spiel-Hooks, Start), `game-sea.js` (Wälle, Häfen, Wege, Flöße, Seeangriff), `touch.js`, `net.js` (Mehrspieler nach Host-Prinzip: `NET`, Schnappschüsse, Befehle).
 - `supabase/schema.sql`: Tabellen, RLS, RPCs (`buy_item`, `claim_quest`, `report_stats`, `find_lobby`), Ranglisten-Views.
 - `scripts/gen-config.sh` erzeugt `config.js` aus `.env`/Secrets (gitignored, nie einchecken).
 

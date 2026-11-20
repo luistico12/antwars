@@ -274,5 +274,14 @@ Object.assign(EN,{
 "Lobby erstellen ": "Create lobby",
 "Gegner ": "Opponents",
 "Max": "Max",
-"Zielgebiet": "Target"
+"Zielgebiet": "Target",
+"Bauen": "Build",
+"Schließen": "Close",
+"Außenposten": "Outpost",
+"Linie": "Line",
+"Hafen": "Port",
+"Floß": "Raft",
+"Weg": "Road",
+"Floß-Angriff": "Raft attack",
+"Floß schicken": "Send raft"
 });

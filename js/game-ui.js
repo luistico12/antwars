@@ -73,6 +73,8 @@ function terrTip(t){
     if(own&&t.col)h+=`<br>Arbeiterinnen: ${t.col.w} · Eier: ${t.col.eggAges.length}<br>Hügelhöhe: ${moundH(t.col)}/${MR} · Wasser: ${WATER_N[t.col.water.size]}`;
     if(own&&!t.isCap&&!t.col&&!t.puppet)h+='<br>Wartet auf deine Entscheidung';
     if(t.str.out)h+=`<br>Außenposten Stufe ${t.str.out}`;
+    if(t.walls&&t.walls.length)h+=`<br>Verteidigungswälle: ${t.walls.length}`;
+    if(t.port)h+=`<br>Hafen · Flöße ${t.port.rafts}/${t.port.max}`;
     for(const k of Object.keys(t.str.lines))if(t.str.lines[k])h+=`<br>Verteidigungslinie gegen ${T[k].name}: Stufe ${t.str.lines[k]}`;
     if(own&&!t.isCap&&!t.puppet)h+=`<br>Ertrag: ${q.food?'+'+fmt(q.food*60)+' Blätter/Min ':''}${q.mat?'+'+fmt(q.mat*60)+' Erde/Min':''}`;
     if(t.item)h+=`<br><b style="color:#7fe6f2">Powerup:</b> ${PW[t.item.type]} +${t.item.pct}% <span class="dim">(Rechtsklick: Spähtrupp bergen oder Gebiet erobern)</span>`;
@@ -260,7 +262,7 @@ function refreshLive(){
     const u=UPG.find(x=>x.id===b.dataset.u),lv=G.upg[u.id];b.disabled=lv>=3||G[u.res]<u.cost[lv];
   });
   let hint;
-  if(col.buildSel==='tunnel')hint=col.tun?'Tunnel: Klicke jetzt das <b>Ziel (E)</b>. Der kürzeste Weg wird gegraben. Rechtsklick setzt den Start zurück.':'Tunnel: Klicke den <b>Start (S)</b>, einen vorhandenen Gang oder Raum. Danach das Ziel. Rechtsklick bricht ab.';
+  if(col.buildSel==='tunnel')hint='<b>Tunnelansicht</b> (Taste T): <span style="color:#7fe69a">grün</span> = gegraben, <span style="color:#ff8a70">rot</span> = unbebaubar. <b>Linksklick</b> markiert eine Zelle, <b>Klick halten und ziehen</b> malt mehrere. Rechtsklick oder T beendet.';
   else if(col.buildSel)hint=`Bauen: <b>${ROOMS[col.buildSel].n}</b>. Klicke eine Zelle neben einem Gang oder im Hügel. Gleiche Räume nebeneinander verschmelzen. Rechtsklick bricht ab.`;
   else if(col.pin)hint=roomInfo(col,col.pin.c,col.pin.r)||'';
   else hint=`<b>${t.name}</b>${t.isCap?' (Hauptstadt)':''} · Wasser: ${WATER_N[col.water.size]}. Im Reiter <b>Räume</b> wählst du, was gebaut wird. Fahre mit der Maus über etwas für Details.`;
@@ -308,7 +310,7 @@ function updateSide(){
   setHTML($('#facList'),facHTML());
   if(sideTab==='build'){setHTML($('#buildBox'),buildHTML());return}
   const info=$('#terrInfo'),hint=$('#terrHint'),send=$('#sendBox');
-  if(selT==null){info.innerHTML='';send.hidden=true;setHTML($('#openBox'),'');hint.textContent='Linksklick: eigenes Gebiet wählen (Verstärkung). Rechtsklick auf ein fremdes Gebiet: Angriff, Bündnis, Spenden.'}
+  if(selT==null){info.innerHTML='';send.hidden=true;setHTML($('#openBox'),'');hint.textContent='Linksklick: eigenes Gebiet wählen (Verstärkung). Rechtsklick auf ein Gebiet: Angriff, Bündnis, Spenden oder Bauen.'}
   else{
     const t=T[selT],q=TERR[t.terrain],own=t.owner===0,cmd=own&&!t.puppet&&!conqQueue.includes(t.id);
     const stt=(t.str.out?`Außenposten ${t.str.out}`:'')+Object.keys(t.str.lines).filter(k=>t.str.lines[k]).map(k=>` · Linie ${T[k].name} ${t.str.lines[k]}`).join('');
@@ -330,7 +332,7 @@ function showConquest(){
   const t=T[conqQueue[0]];
   $('#conqT').textContent=`${t.name} erobert`;
   $('#conqP').textContent='Was soll mit dem Gebiet passieren?'+(conqQueue.length>1?` (noch ${conqQueue.length-1} weitere)`:'');
-  $('#conqKeepS').textContent=`Eigene Kolonie mit ${t.conqN||4} vorgebauten Räumen. Du verwaltest sie und teilst dir das Lager.`;
+  $('#conqKeepS').textContent=`Das Gebiet verschmilzt mit deinem Reich. Du bekommst sofort ${(t.conqN||4)*6} Erde und ${(t.conqN||4)*4} Blätter und es liefert Ertrag.`;
   el.hidden=false;
 }
 $('#conqKeep').onclick=()=>{if(conqQueue.length)chooseConquest(conqQueue[0],'keep')};
@@ -364,23 +366,32 @@ function moveDrag(e){
   if(drag.moved){const r=drag.el.getBoundingClientRect(),k=drag.W/r.width/drag.cam.z;drag.cam.x=drag.cx-dx*k;drag.cam.y=drag.cy-dy*k;if(drag.cam===ccam)clampCam();else clampMapCam()}
   return drag.moved;
 }
-cv.addEventListener('pointerdown',e=>{if(e.button===2){startDrag(e,ccam,cv,VW,VH);e.preventDefault()}});
+cv.addEventListener('pointerdown',e=>{
+  if(e.button===2){startDrag(e,ccam,cv,VW,VH);e.preventDefault();return}
+  if(e.button===0&&col&&col.buildSel==='tunnel'){
+    const[x,y]=colWorld(e);col.paint={n:0,bad:0,low:0,last:null};try{cv.setPointerCapture(e.pointerId)}catch(_){}
+    paintAt(clamp(Math.floor(x/CELLW),0,COLS-1),clamp(Math.floor(y/CELLH),0,ROWS-1));refreshLive();
+  }
+});
 cv.addEventListener('pointermove',e=>{
   if(!col)return;
   if(drag&&drag.el===cv){moveDrag(e);hideTip();return}
   const[x,y]=colWorld(e);col.hover=(x>=0&&y>=0&&x<CW&&y<CH)?{c:Math.floor(x/CELLW),r:Math.floor(y/CELLH)}:null;
+  if(col.paint&&col.hover)paintAt(col.hover.c,col.hover.r);
   if(!col.buildSel)showTip(colonyInfoAt(col,x,y),e);else if(col.buildSel==='tunnel')hideTip();else{const k=col.hover&&canPlace(col.buildSel,col.hover.c,col.hover.r);showTip(k?`<span style="color:#ff8a70">${k}</span>`:null,e)}
 });
 cv.addEventListener('pointerup',e=>{
+  if(e.button===0&&col&&col.paint){endPaint();refreshLive();return}
   if(e.button!==2||!drag||drag.el!==cv)return;const moved=drag.moved;drag=null;
-  if(!moved&&col){if(col.buildSel==='tunnel'&&col.tun)col.tun=null;else col.buildSel=null;col.pin=null;refreshLive()}
+  if(!moved&&col){col.buildSel=null;col.pin=null;refreshLive()}
 });
+cv.addEventListener('pointercancel',()=>{if(col&&col.paint)endPaint()});
 cv.addEventListener('pointerleave',()=>{if(col)col.hover=null;hideTip()});
 cv.addEventListener('click',e=>{
   if(!col||e.button!==0)return;const[x,y]=colWorld(e);
   const c=clamp(Math.floor(x/CELLW),0,COLS-1),r=clamp(Math.floor(y/CELLH),0,ROWS-1);
   col.hover={c,r};
-  if(col.buildSel==='tunnel'){tunnelClick(c,r);refreshLive();return}
+  if(col.buildSel==='tunnel')return;
   if(col.buildSel){placeBuild(col.buildSel,c,r);refreshLive();return}
   col.pin=(col.pin&&col.pin.c===c&&col.pin.r===r)?null:{c,r};refreshLive();
 });
@@ -404,7 +415,7 @@ mv.addEventListener('pointerup',e=>{if(e.button===2)rcUp(e)});
 mv.addEventListener('pointercancel',rcUp);
 window.addEventListener('mouseup',e=>{if(e.button===2)rcUp(e)});
 mv.addEventListener('pointerleave',()=>{hovT=null;hideTip()});
-mv.addEventListener('click',e=>{if(e.button!==0)return;hovT=terrAtEvent(e);mapClick(hovT);updateSide()});
+mv.addEventListener('click',e=>{if(e.button!==0)return;if(typeof seaClick==='function'&&seaClick(e)){updateSide();return}hovT=terrAtEvent(e);mapClick(hovT);updateSide()});
 mv.addEventListener('dblclick',e=>{const id=terrAtEvent(e);if(started&&id!=null&&T[id].owner===0&&T[id].col)openColony(id)});
 mv.addEventListener('contextmenu',e=>e.preventDefault());
 mv.addEventListener('wheel',e=>{
@@ -415,7 +426,8 @@ mv.addEventListener('wheel',e=>{
 const KEYMAP={ArrowLeft:'l',a:'l',A:'l',ArrowRight:'r',d:'r',D:'r',ArrowUp:'u',w:'u',W:'u',ArrowDown:'d',s:'d',S:'d'};
 document.addEventListener('keydown',e=>{
   if(e.target&&/INPUT|TEXTAREA/.test(e.target.tagName))return;
-  if(e.key==='Escape'){if(col){col.buildSel=null;col.tun=null;col.pin=null}selT=null;statKey=null;statPin=false;if(started){refreshLive();renderStat()}return}
+  if((e.key==='t'||e.key==='T')&&started&&view==='colony'&&col&&!e.ctrlKey&&!e.metaKey){col.buildSel=col.buildSel==='tunnel'?null:'tunnel';col.pin=null;refreshLive();return}
+  if(e.key==='Escape'){if(typeof placing!=='undefined'&&placing){placing=null;updateSide()}if(col){col.buildSel=null;col.tun=null;col.pin=null}selT=null;statKey=null;statPin=false;if(started){refreshLive();renderStat()}return}
   const k=KEYMAP[e.key];if(k&&started&&(view==='colony'||view==='map')){keys.add(k);if(e.key.startsWith('Arrow'))e.preventDefault()}
 });
 document.addEventListener('keyup',e=>{const k=KEYMAP[e.key];if(k)keys.delete(k)});
