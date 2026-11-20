@@ -76,7 +76,11 @@ const Remote={
     /* Schlägt das fehl (z. B. „Allow anonymous sign-ins“ ist im Dashboard aus), bleibt der Server aktiv: Registrieren/Anmelden geht trotzdem. */
     if(!AW.user){try{await Remote.anon()}catch(e){Remote.anonFailed=true;console.warn('Anonyme Anmeldung nicht möglich (Supabase → Authentication → Sign In / Providers → Allow anonymous sign-ins):',e.message)}}
     if(AW.user)await Remote.loadProfile();
-    AW.sb.auth.onAuthStateChange(async(_e,s)=>{AW.user=s?s.user:null;AW.profile=null;if(AW.user)await Remote.loadProfile();AW.emit()});
+    /* Kein await auf Supabase-Aufrufe direkt im Callback (Deadlock im SDK) – Arbeit läuft danach in einem eigenen Tick. */
+    AW.sb.auth.onAuthStateChange((ev,s)=>{AW.user=s?s.user:null;AW.profile=null;
+      if(ev==='SIGNED_OUT'&&!Remote.userOut){console.warn('Unerwartet abgemeldet (SIGNED_OUT)');try{toast('Abgemeldet (Sitzung ungültig)','bad')}catch(e){}}
+      Remote.userOut=false;
+      setTimeout(async()=>{try{if(AW.user)await Remote.loadProfile()}catch(e){console.warn('loadProfile:',e)}AW.emit()},0)});
   },
   async anon(){const{data,error}=await AW.sb.auth.signInAnonymously();if(error)throw new Error('anon');AW.user=data.user},
   async secure(email,pw){const{error}=await AW.sb.auth.updateUser({email,password:pw},{emailRedirectTo:location.origin+location.pathname});if(error)throw new Error(/password/i.test(error.message)?'Passwort zu schwach (mind. 8 Zeichen)':'Konto konnte nicht gesichert werden')},
@@ -91,7 +95,7 @@ const Remote={
     /* Kein Hinweis, ob die E-Mail schon existiert → immer dieselbe Rückmeldung */
   },
   async oauth(provider){const o={provider,options:{redirectTo:location.origin+location.pathname}};const{error}=(AW.user&&AW.user.is_anonymous&&AW.sb.auth.linkIdentity)?await AW.sb.auth.linkIdentity(o):await AW.sb.auth.signInWithOAuth(o);if(error){console.warn('oauth:',error.message);const m=error.message||'';throw new Error(/not enabled|unsupported provider/i.test(m)?'Anbieter in Supabase nicht aktiviert (Authentication → Providers)':/manual linking/i.test(m)?'Supabase: „Allow manual linking“ aktivieren (Authentication → Sign In / Providers)':'Anmeldung fehlgeschlagen: '+m)}},
-  async signOut(){await AW.sb.auth.signOut();try{await Remote.anon()}catch(e){AW.user=null}},
+  async signOut(){Remote.userOut=true;await AW.sb.auth.signOut();try{await Remote.anon()}catch(e){AW.user=null}},
   async reset(email){await AW.sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname})},
   async setPhone(phone){const{error}=await AW.sb.auth.updateUser({phone});if(error)throw new Error('Nummer konnte nicht gespeichert werden')},
   async verifyPhone(phone,token){const{error}=await AW.sb.auth.verifyOtp({phone,token,type:'phone_change'});if(error)throw new Error('Code ungültig');await Remote.loadProfile()},
