@@ -47,9 +47,11 @@ bell:'<path d="M6 17V11a6 6 0 0 1 12 0v6l2 2H4zM10 21h4"/>',
 down:'<path d="M6 9l6 6 6-6"/>',
 up:'<path d="M6 15l6-6 6 6"/>'
 };
-/* Rubys als facettierter Kristallhaufen (Akzentfarbe) */
-const RUBY_SVG='<path d="M2 13l3-3.5 3 3.5v6l-3 2.5-3-2.5z" fill="#c92a46"/><path d="M2 13l3-3.5v12L2 19z" fill="#ff7d8e"/><path d="M5 9.5l3 3.5v6l-3 2.5z" fill="#d93552"/><path d="M16 9l3.2-3.5L22 9v8l-2.8 3L16 17z" fill="#c92a46"/><path d="M16 9l3.2-3.5V20L16 17z" fill="#ff7d8e"/><path d="M19.2 5.5L22 9v8l-2.8 3z" fill="#d93552"/><path d="M8 7l4-5 4 5v10l-4 5-4-5z" fill="#ff5757"/><path d="M8 7l4-5v20l-4-5z" fill="#ff8d9c"/><path d="M12 2l4 5-4 2.4L8 7z" fill="#ffd6dc"/><path d="M12 9.4L16 7v10l-4 5z" fill="#cf2f4b"/><path d="M12 9.4v12.6" stroke="#ffe3e7" stroke-width=".5" opacity=".7"/><path d="M3.2 1.5h1.2v1.2H3.2zM20 1h1.2v1.2H20zM21.5 11h1v1h-1z" fill="#ffd6dc"/>';
-function rubyPix(cls){return `<svg class="svg rpx ${cls||''}" viewBox="0 0 24 24" aria-hidden="true">${RUBY_SVG}</svg>`}
+/* Rubys als Pixel-Kristallhaufen (Akzentfarbe) */
+const RUBY_PIX=["......oooo......", ".....ohhhlo.....", "....ollllldo....", "....olmmmmdooo..", "....olllmddhhlo.", "..ooolllmddllldo", ".ohhollhmddmmmdo", "ollldlllmddmmmdo", "olmmdlllmddmmmdo", "olmmdllhmddmmmdo", "olmmdlllmddmmmdo", "olmmdlllmddmmmdo", "olmmdlmmmddmmmdo", "oldddlmmmmdddddo", ".ooooldddddoooo.", ".....oooooo....."];
+const RUBY_COL={o:'#6b0f2a',d:'#c01f45',m:'#ff5757',l:'#ff8f9d',h:'#ffe3e7'};
+const RUBY_SVG=(()=>{let r='';RUBY_PIX.forEach((row,y)=>{for(let x=0;x<row.length;x++){const c=RUBY_COL[row[x]];if(c)r+=`<rect x="${x}" y="${y}" width="1.02" height="1.02" fill="${c}"/>`}});return r})();
+function rubyPix(cls){return `<svg class="svg rpx ${cls||''}" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">${RUBY_SVG}</svg>`}
 function ico(n,cls){if(n==='ruby')return rubyPix(cls);return `<svg class="svg ${cls||''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${SV[n]||''}</svg>`}
 /* Markenlogos (einfarbig, weiß) für GitHub/Discord */
 const BRAND={
