@@ -25,7 +25,16 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
     - Kreismenü auf eigenem Gebiet (`ownRing` in `game-radial.js`): Info, Bauen, Schließen. Mitte = frei platzierbarer Verteidigungswall (max. 3 je Gebiet, +50% Grenzverteidigung im Umkreis). Bauen: Außenposten, Verteidigungslinie, Hafen, Floß, Weg.
     - Neues Modul `js/game-sea.js`: Wälle, Häfen (Küstengebiet, 3 Flöße), Wege (Linksklick halten malen, auch als Floßweg im Wasser), Wegnetze (Handel +Material/Blätter, Soldaten 2,2× schneller zwischen verbundenen Städten), Floß-Angriff und Floß-Transport zu Verbündeten (Zielkreuz an der Küste wählen). Floß kehrt nach dem Kampf zurück. Bots bauen auch Wälle, greifen aber nicht per Floß an.
 14. Anpassungen: Bauen-Tab im Seitenpanel entfernt (Bauen nur noch im Kreismenü). Marionettenstaat gibt 40% der Beute (Erde, Blätter) plus Soldaten in die Hauptstadt. Wasserwege (Handel, doppelter Ertrag) brauchen Flöße: 1 Floß je 8 Wasserabschnitte.
+15. Update v13 (alles erledigt, Tests: solo, radial, worldupdate, ui2, multiplayer, accounts, friends):
+    - Tasten (Q/R, 1/2/3, Tab), Floß nur über Wasser, Spielzeit im Kopf, Rechtsklick halten baut mehrere, Weiterspielen nach Sieg.
+    - Modi FFA (7 Gegner) und Unlimited (3,5× Karte, 5 Gegner, kein Ende), Flüsse (`carveRivers`), 15-Sekunden-Startwahl direkt auf der Karte.
+    - Einstellungen (`game-settings.js`): Steuerung, Grafik (VSync via `nextFrame`, FPS-Limit, Qualität Niedrig/Mittel/Hoch/Ultra), Spiel (Standard-Truppenanteil, Kosmetik anderer ausblenden, Interface-Größe).
+    - Roter Angriffsrahmen (`flashHit`), Quest-Pille und Erfolgs-Toasts im Spiel (`qLive` in ui-boot), Inventar (`S.inventory`, Menüknopf), Spieler des Tages (`#potd`, `AW.potd`, View `player_of_day` in schema.sql).
+    - News v12 und v13 in `DEFAULT_NEWS` und schema.sql. Regel in CLAUDE.md: nach jedem Update einen News-Release.
 ## Offen (neu)
+- Unlimited vergrößert nur die Weltkarte, die Kolonie-Fläche (COLS/ROWS) noch nicht („riesige Kolonie“ offen).
+- „Kosmetik anderer ausblenden“ wirkt erst, wenn Kosmetik anderer Spieler gerendert/synchronisiert wird (`cosmVisible`).
+- schema.sql erneut im Supabase-SQL-Editor ausführen (View `player_of_day`, News v12/v13).
 - Mehrspieler synchronisiert Wälle, Häfen, Wege und Flöße noch nicht (nur Host-Welt, Gäste sehen sie nicht).
 - Bots nutzen keine Häfen/Flöße/Wege.
 

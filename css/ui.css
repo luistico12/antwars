@@ -294,3 +294,18 @@ tr.r1 td{background:rgba(255,200,60,.1)}tr.r2 td{background:rgba(220,228,240,.07
 @media (prefers-reduced-motion:reduce){.toast{animation:none}}
 
 #pickBar{position:fixed;left:50%;top:calc(var(--hh,60px) + 12px);transform:translateX(-50%);z-index:150;background:rgba(10,14,22,.92);border:1px solid var(--ln);border-radius:12px;padding:10px 16px;min-width:300px;text-align:center;box-shadow:0 8px 28px rgba(0,0,0,.5)}#pickBar b{display:block;font-size:14px;margin-bottom:8px}#pickBar i{display:block;height:5px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden}#pickBar u{display:block;height:100%;background:var(--ac);text-decoration:none;transition:width .1s linear}
+
+#potd{display:flex;align-items:center;gap:10px;margin-left:8px;padding:0 14px;height:40px;border-left:1px solid var(--ln);white-space:nowrap}
+#potd .pcrown svg{width:22px;height:22px;stroke:#f0a73a;fill:none;stroke-width:2}#potd .plbl{font-size:12px;letter-spacing:.08em;color:var(--mu);font-weight:700}
+#potd .psep{width:1px;height:22px;background:var(--ln)}#potd .pclan{border:1px solid #f0a73a;color:#f0a73a;border-radius:6px;padding:1px 6px;font-size:12px;font-weight:800}
+#potd .pname{font-size:17px}#potd .pwins{color:var(--mu);font-size:13px}#potd .pwins b{color:#f0a73a;font-size:20px;margin-right:4px}
+@media (max-width:1180px){#potd .plbl,#potd .psep:first-of-type{display:none}}@media (max-width:900px){#potd{display:none}}
+#hitFrame{position:fixed;inset:0;pointer-events:none;z-index:180;opacity:0}
+#hitFrame.on{animation:hitfl 1.5s ease-out}
+@keyframes hitfl{0%{opacity:1;box-shadow:inset 0 0 0 7px rgba(255,60,50,.95),inset 0 0 110px 30px rgba(255,30,30,.55)}60%{opacity:.9}100%{opacity:0;box-shadow:inset 0 0 0 7px rgba(255,60,50,0),inset 0 0 110px 30px rgba(255,30,30,0)}}
+#qLive{position:fixed;z-index:120;right:calc(var(--adw) + 14px);top:calc(var(--hh) + 10px);display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+#qLive .qpill{display:flex;gap:6px;align-items:center;background:rgba(10,14,22,.88);border:1px solid var(--ln);border-radius:20px;padding:6px 12px;color:#fff;font-weight:700;cursor:pointer}
+#qLive .qpill svg{width:16px;height:16px;stroke:#f0a73a;fill:none;stroke-width:2}#qLive .qpill.rdy{border-color:#f0a73a;box-shadow:0 0 14px rgba(240,167,58,.45)}
+#qLive .qbox{width:290px;background:rgba(10,14,22,.94);border:1px solid var(--ln);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:8px}
+#qLive .qrow{display:grid;grid-template-columns:1fr auto;gap:4px 8px;align-items:center;font-size:12.5px}#qLive .qrow .bar{grid-column:1/2;height:5px}#qLive .qrow small{color:var(--mu)}#qLive .qrow.done span{color:#7fe69a}
+@media (max-width:899px){#qLive{right:10px;top:calc(var(--hh) + 6px)}}

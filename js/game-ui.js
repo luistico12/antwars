@@ -499,6 +499,8 @@ $('#endBtn').onclick=()=>{
 /* ----- Hauptschleife ----- */
 let last=performance.now(),acc5=0;
 function frame(now){
+  if(typeof ST!=='undefined'&&ST.fpsMax&&now-(frame.t||0)<1000/ST.fpsMax-1.5){requestAnimationFrame(frame);return}
+  frame.t=now;
   const rdt=Math.min(0.1,(now-last)/1000);last=now;
   if(started&&!over&&speed>0&&!conqQueue.length){
     const dt=rdt*speed,n=Math.ceil(dt/0.1),h=dt/n;
@@ -509,7 +511,7 @@ function frame(now){
   if(started&&dockDirty)renderDock();
   if(started&&view==='colony'&&col)drawColony(cg,now,ccam);
   if(view==='map')drawMap(mg,now);
-  requestAnimationFrame(frame);
+  typeof nextFrame==='function'?nextFrame(frame):requestAnimationFrame(frame);
 }
 newMap((Math.random()*1e6)|0);renderSetup();setView('map');
 requestAnimationFrame(frame);

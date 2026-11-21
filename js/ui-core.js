@@ -70,6 +70,14 @@ function renderHeader(){
   $('#hdrProf').onclick=()=>{if(REMOTE&&!AW.loggedIn)loginShow();else openScreen('profile',undefined,false)};
   const ch=$('#ctlHint');if(ch)ch.textContent=t(matchMedia('(pointer:coarse)').matches?'Zwei Finger: zoomen · Ein Finger ziehen: verschieben · Lange drücken: Menü':'Mausrad: Zoom · WASD oder Pfeiltasten: bewegen · Rechte Maustaste halten und ziehen: verschieben');
 }
+/* Spieler des Tages (meiste Siege heute) */
+function potdRender(){
+  const el=$('#potd');if(!el)return;const p=UI.potd;
+  if(!p){el.hidden=true;return}
+  el.hidden=false;
+  el.innerHTML=`<span class="pcrown">${ico('crown')}</span><span class="plbl">${t('SPIELER DES TAGES')}</span><i class="psep"></i>${p.clan_tag?`<span class="pclan">${esc(p.clan_tag)}</span>`:''}<b class="pname">${esc(p.username)}</b><i class="psep"></i><span class="pwins"><b>${p.wins}</b> ${t('Siege heute')}</span>`;
+}
+async function potdRefresh(){try{UI.potd=await AW.potd()}catch(e){UI.potd=null}potdRender()}
 document.getElementById('logo').addEventListener('click',()=>{if(!started)homeShow&&homeShow()});
 AW.on(()=>{renderHeader();if(SCR.cur&&!$('#scr').hidden&&!UI.noRerender)render()});
 

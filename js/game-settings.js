@@ -1,7 +1,18 @@
 /* ===== Einstellungen: Steuerung und Grafik ===== */
 const KB_DEF={up:'w',down:'s',left:'a',right:'d',zoomIn:'+',zoomOut:'-',pause:'p',view:'Tab',tabAnts:'1',tabRooms:'2',tabUpg:'3',dockLeft:'q',dockRight:'r',tunnel:'t',speed1:'',speed2:'',speed4:'',speed8:''};
 const KB_NAME={up:'Nach oben',down:'Nach unten',left:'Nach links',right:'Nach rechts',zoomIn:'Hineinzoomen',zoomOut:'Herauszoomen',pause:'Pause',view:'Kolonie / Weltkarte wechseln',tabAnts:'Reiter Ameisen',tabRooms:'Reiter Räume',tabUpg:'Reiter Upgrades',dockLeft:'Leiste nach links scrollen',dockRight:'Leiste nach rechts scrollen',tunnel:'Tunnelansicht (Kolonie)',speed1:'Geschwindigkeit x1',speed2:'Geschwindigkeit x2',speed4:'Geschwindigkeit x4',speed8:'Geschwindigkeit x8'};
-const ST=Object.assign({fps:false,density:1,kb:{...KB_DEF}},lsGet('ak_settings',{}));ST.kb=Object.assign({...KB_DEF},ST.kb||{});
+const QUAL={low:{n:'Niedrig',d:0.6},mid:{n:'Mittel',d:1},high:{n:'Hoch',d:1.5},ultra:{n:'Ultra',d:2}};
+const FPS_OPT=[0,30,60,120,144,240];
+const ST=Object.assign({fps:false,q:'',vsync:true,fpsMax:0,hideCosm:false,ui:100,pct:50,kb:{...KB_DEF}},lsGet('ak_settings',{}));ST.kb=Object.assign({...KB_DEF},ST.kb||{});
+if(!QUAL[ST.q]){const d=ST.density||1;ST.q=d<0.8?'low':d<1.25?'mid':d<1.75?'high':'ultra'}
+ST.density=QUAL[ST.q].d;
+const cosmVisible=own=>own||!ST.hideCosm;
+/* Bildwechsel: mit VSync per requestAnimationFrame, sonst per Nachrichtenkanal (ohne Monitor-Takt) */
+const nextFrame=(()=>{const ch=new MessageChannel();let cb=null;ch.port1.onmessage=()=>{const f=cb;cb=null;f&&f(performance.now())};return f=>{if(ST.vsync)requestAnimationFrame(f);else{cb=f;ch.port2.postMessage(0)}}})();
+function applyUI(){const z=ST.ui/100;for(const s of['#dock','#side','#qLive','#chips'])document.querySelectorAll(s).forEach(e=>e.style.zoom=z===1?'':z)}
+document.body.insertAdjacentHTML('beforeend','<div id="hitFrame"></div>');
+function flashHit(){const h=$('#hitFrame');h.classList.remove('on');void h.offsetWidth;h.classList.add('on')}
+function applyPct(){pct=ST.pct;const r=$('#pct');if(r){r.value=pct;$('#pctLbl').textContent=pct+'%'}}
 const saveST=()=>lsSet('ak_settings',ST);
 function keyLabel(k){return k===''?'—':k===' '?'Leertaste':k.length===1?k.toUpperCase():k}
 function rebuildKeymap(){
@@ -12,22 +23,28 @@ function rebuildKeymap(){
 function applyDensity(){
   RD=ST.density;cv.width=Math.round(VW*RD);cv.height=Math.round(VH*RD);mv.width=Math.round(MW*RD);mv.height=Math.round(MH*RD);cg.imageSmoothingEnabled=false;
 }
-rebuildKeymap();applyDensity();
+rebuildKeymap();applyDensity();applyUI();applyPct();
 document.body.insertAdjacentHTML('beforeend','<div id="fpsBox" hidden></div><div id="set" hidden role="dialog" aria-label="Einstellungen"><div class="box" id="setBox"></div></div>');
 $('#top .brand').appendChild($('#fpsBox'));
 let setTab='kb',kbWait=null;
 function renderSet(){
   const box=$('#setBox');
   let h=`<div style="display:flex;align-items:center;gap:8px"><h2 style="flex:1">Einstellungen</h2><button class="btn sm" id="setClose" type="button">Schließen</button></div>
-  <div class="opt"><button class="btn sm${setTab==='kb'?' on':''}" data-st="kb" type="button">Steuerung</button><button class="btn sm${setTab==='gfx'?' on':''}" data-st="gfx" type="button">Grafik</button></div>`;
+  <div class="opt"><button class="btn sm${setTab==='kb'?' on':''}" data-st="kb" type="button">Steuerung</button><button class="btn sm${setTab==='gfx'?' on':''}" data-st="gfx" type="button">Grafik</button><button class="btn sm${setTab==='game'?' on':''}" data-st="game" type="button">Spiel</button></div>`;
   if(setTab==='kb'){
     h+='<p class="note">Klicke auf eine Taste und drücke die neue. Die Pfeiltasten bewegen immer zusätzlich. Esc pausiert und bricht ab. Entf/Rücktaste löscht die Belegung.</p>';
     h+=Object.keys(KB_DEF).map(a=>`<div class="kbrow"><span>${KB_NAME[a]}</span><button class="btn sm${kbWait===a?' wait':''}" data-kb="${a}" type="button">${kbWait===a?'Taste drücken …':esc(keyLabel(ST.kb[a]))}</button></div>`).join('');
     h+='<div><button class="btn sm" id="kbReset" type="button">Standard wiederherstellen</button></div>';
+  }else if(setTab==='game'){
+    h+=`<div><b>Standard-Truppenanteil</b><p class="note">Anteil der Truppen, der bei einem Angriff gesendet wird. Gilt zu Spielbeginn: <span id="pctV">${ST.pct}%</span></p><input type="range" id="pctSet" min="10" max="100" step="10" value="${ST.pct}" style="width:100%"></div>
+    <label class="ck"><input type="checkbox" id="hideCk" ${ST.hideCosm?'checked':''}> Kosmetik anderer Spieler ausblenden</label>
+    <div><b>Interface-Größe</b><p class="note">Skaliert Leiste, Seitenmenü und Anzeigen. Aktuell: ${ST.ui}%</p><div class="opt">${[80,90,100,115,130].map(d=>`<button class="btn sm${ST.ui===d?' on':''}" data-ui="${d}" type="button">${d}%</button>`).join('')}</div></div>`;
   }else{
     h+=`<label class="ck"><input type="checkbox" id="fpsCk" ${ST.fps?'checked':''}> FPS anzeigen</label>
-    <div><b>Pixeldichte</b><p class="note">Niedriger wirkt gröber und ist schneller. Höher ist schärfer und braucht mehr Leistung. Aktuell: ${Math.round(ST.density*100)}%</p>
-    <div class="opt">${[0.5,0.75,1,1.5,2].map(d=>`<button class="btn sm${ST.density===d?' on':''}" data-den="${d}" type="button">${Math.round(d*100)}%</button>`).join('')}</div></div>`;
+    <label class="ck"><input type="checkbox" id="vsCk" ${ST.vsync?'checked':''}> VSync (an den Monitor-Takt koppeln)</label>
+    <div><b>FPS-Limit</b><div class="opt">${FPS_OPT.map(d=>`<button class="btn sm${ST.fpsMax===d?' on':''}" data-fm="${d}" type="button">${d?d:'Unbegrenzt'}</button>`).join('')}</div></div>
+    <div><b>Grafikqualität</b><p class="note">Niedrig ist gröber und schneller, Ultra ist am schärfsten und braucht am meisten Leistung.</p>
+    <div class="opt">${Object.keys(QUAL).map(k=>`<button class="btn sm${ST.q===k?' on':''}" data-q="${k}" type="button">${QUAL[k].n}</button>`).join('')}</div></div>`;
   }
   box.innerHTML=h;
 }
@@ -39,10 +56,15 @@ $('#set').addEventListener('click',e=>{
     if(b.dataset.st){setTab=b.dataset.st;kbWait=null;renderSet()}
     else if(b.dataset.kb){kbWait=b.dataset.kb;renderSet()}
     else if(b.id==='kbReset'){ST.kb={...KB_DEF};rebuildKeymap();saveST();renderSet()}
-    else if(b.dataset.den){ST.density=+b.dataset.den;applyDensity();saveST();renderSet()}
+    else if(b.dataset.q){ST.q=b.dataset.q;ST.density=QUAL[ST.q].d;applyDensity();saveST();renderSet()}
+    else if(b.dataset.fm!==undefined){ST.fpsMax=+b.dataset.fm;saveST();renderSet()}
+    else if(b.dataset.ui){ST.ui=+b.dataset.ui;applyUI();saveST();renderSet()}
   }
+  if(e.target.id==='vsCk'){ST.vsync=e.target.checked;saveST()}
+  if(e.target.id==='hideCk'){ST.hideCosm=e.target.checked;saveST()}
   if(e.target.id==='fpsCk'){ST.fps=e.target.checked;saveST();$('#fpsBox').hidden=!ST.fps}
 });
+$('#set').addEventListener('input',e=>{if(e.target.id==='pctSet'){ST.pct=+e.target.value;$('#pctV').textContent=ST.pct+'%';saveST();applyPct()}});
 document.addEventListener('keydown',e=>{
   if(kbWait&&!$('#set').hidden){
     e.preventDefault();e.stopImmediatePropagation();
@@ -75,4 +97,4 @@ $('#pause .box').insertAdjacentHTML('beforeend','');
 $('#pEnd').insertAdjacentHTML('beforebegin','<button class="btn" id="pSet" type="button">Einstellungen</button>');
 $('#pSet').onclick=openSet;
 /* FPS */
-(function(){let n=0,t0=performance.now();function f(now){n++;if(now-t0>=500){const fps=Math.round(n*1000/(now-t0));n=0;t0=now;const b=$('#fpsBox');b.hidden=!ST.fps;if(ST.fps)b.textContent=fps+' FPS · '+Math.round(ST.density*100)+'%'}requestAnimationFrame(f)}requestAnimationFrame(f)})();
+(function(){let n=0,t0=performance.now();function f(now){n++;if(now-t0>=500){const fps=Math.round(n*1000/(now-t0));n=0;t0=now;const b=$('#fpsBox');b.hidden=!ST.fps;if(ST.fps)b.textContent=fps+' FPS · '+QUAL[ST.q].n}nextFrame(f)}nextFrame(f)})();

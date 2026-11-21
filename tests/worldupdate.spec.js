@@ -86,7 +86,7 @@ let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++};
   ok(sea.rafts===3,'Floß-Maximum 3 pro Hafen');
   ok(sea.okl&&sea.after===2,'Seeangriff startet und verbraucht ein Floß');
   await pg.screenshot({path:'/tmp/sea-march.png'});
-  await pg.evaluate(()=>{for(let i=0;i<300;i++){updateWorld(0.1);if(!marches.some(m=>m.sea))break}});
+  await pg.evaluate(()=>{for(let i=0;i<1500;i++){updateWorld(0.1);if(!marches.some(m=>m.sea))break}});
   ok(await pg.evaluate(()=>!marches.some(m=>m.sea)),'Seemarsch kommt an und wird abgewickelt');
   ok(await pg.evaluate(id=>T[id].port.rafts===3,sea.id),'Floß kehrt zum Hafen zurück');
   const rd2=await pg.evaluate(()=>{

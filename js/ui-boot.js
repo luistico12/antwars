@@ -12,6 +12,7 @@ function homeBuild(){
     <button type="button" data-s="profile">${ico('user')}<span>${t('Profil')}</span></button>
     <button type="button" data-s="achievements">${ico('trophy')}<span>${t('Erfolge')}</span></button>
     <button type="button" data-s="shop">${ico('shop')}<span>${t('Shop')}</span></button>
+    <button type="button" data-s="inventory">${ico('box')}<span>${t('Inventar')}</span></button>
     <button type="button" data-s="friends">${ico('heart')}<span>${t('Freunde')}</span></button>
     <button type="button" data-s="clan">${ico('users')}<span>${t('Clan')}</span></button>
     <button type="button" data-s="leaderboard">${ico('board')}<span>Ranking</span></button>
@@ -80,7 +81,7 @@ let rep={terr:0,score:0,found:0,allied:false};
     setTimeout(()=>toast(LANG==='de'?`Schutzzeit: ${mmss(PROT[diffKey])} lang kann niemand angreifen`:`Protection: nobody can attack for ${mmss(PROT[diffKey])}`,'good'),400);
   };
   const eg=endGame;
-  endGame=function(win){eg(win);AW.report({wins:win?1:0,score:myScore()});lbReset();renderHeader()};
+  endGame=function(win){eg(win);AW.report({wins:win?1:0,score:myScore()});lbReset();renderHeader();setTimeout(potdRefresh,1500)};
 })();
 function seededRandom(seed){let a=seed>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 setInterval(()=>{
@@ -111,6 +112,30 @@ function pickStart(){
 function pickStop(){if(pick15){clearInterval(pick15.iv);pick15=null}$('#pickBar').hidden=true}
 (function(){const mc=mapClick;mapClick=function(id){const before=setupStart;mc(id);if(!started&&pick15&&setupStart!=null&&setupStart!==before){pickStop();$('#btnStart').onclick()}}})();
 
+/* ---------- Erfolge und Quests live im Spiel ---------- */
+document.body.insertAdjacentHTML('beforeend','<div id="qLive" hidden></div>');
+let qOpen=false,qSeen=new Set(),qInit=false;
+function qCheck(){
+  if(!started||!AW.profile)return;
+  for(const q of QUESTS){const g=qProg(q);
+    if(g.done&&!g.claimed&&!qSeen.has(q[0])){qSeen.add(q[0]);if(qInit)toast(`${LANG==='de'?'Erfolg':'Achievement'}: ${t(q[5])} (+${q[4]} Rubys)`,'good')}}
+  qInit=true;
+}
+function qLiveRender(){
+  const el=$('#qLive');
+  if(!started||!AW.profile||over){el.hidden=true;return}
+  const L=QUESTS.filter(q=>!qProg(q).claimed).sort((a,b)=>qProg(b).done-qProg(a).done||qProg(b).v/b[3]-qProg(a).v/a[3]).slice(0,7),ready=L.filter(q=>qProg(q).done).length;
+  el.hidden=false;
+  setHTML(el,`<button type="button" class="qpill${ready?' rdy':''}" id="qTog">${ico('trophy')} ${ready?`${ready} ${t('abholbar')}`:t('Quests')}</button>`+(qOpen?`<div class="qbox">${L.map(q=>{const g=qProg(q);return `<div class="qrow${g.done?' done':''}"><span>${t(q[5])}</span><div class="bar"><i style="width:${Math.round(100*g.v/q[3])}%"></i></div>${g.done?`<button class="btn sm pri" data-qc="${q[0]}" type="button">+${q[4]}</button>`:`<small>${g.v}/${q[3]}</small>`}</div>`}).join('')||`<div class="mini">${t('Alles abgeholt')}</div>`}</div>`:''));
+}
+$('#qLive').addEventListener('click',e=>{
+  if(e.target.closest('#qTog')){qOpen=!qOpen;$('#qLive')._h=null;qLiveRender();return}
+  const c=e.target.closest('[data-qc]');if(c)AW.claim(c.dataset.qc).then(()=>toast('+ Rubys','good')).catch(toastErr);
+});
+AW.on(()=>{qCheck();qLiveRender()});
+setInterval(()=>{qCheck();qLiveRender()},3000);
+(function(){const sg=startGame;startGame=function(){sg();applyPct();qSeen=new Set();qInit=false;qCheck();qLiveRender()}})();
+
 /* ---------- Start ---------- */
 AW.on(()=>{syncCosmetics();if(!$('#home').hidden)homeFill()});
 (async()=>{
@@ -121,7 +146,7 @@ AW.on(()=>{syncCosmetics();if(!$('#home').hidden)homeFill()});
   $('#backHome').onclick=homeShow;
   renderHeader();adRender();if(!CONSENT.set)cookieShow(false);
   await AW.init();
-  syncCosmetics();renderHeader();homeShow();
+  syncCosmetics();renderHeader();homeShow();potdRefresh();setInterval(potdRefresh,300000);
   AW.news().then(l=>{UI.news=l;UI.newsTop=l[0]?String(l[0].id):'';renderHeader()}).catch(()=>{});
   if(AW.loggedIn&&isDefaultName(AW.profile&&AW.profile.username))nameShow();
   else if(REMOTE&&!AW.loggedIn&&AW.remote)loginShow();

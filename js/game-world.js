@@ -92,6 +92,7 @@ function launch(from,to,n,fid){
   if(fid===0&&to.owner>0&&!isFriend(0,to.owner)){F[to.owner].hurt=gtime;addHeat(to.owner)}
   if(to.owner===0&&fid!==0&&!isFriend(0,fid)){
     toast(`Angriff auf ${to.name}: ${F[fid].name} schickt ${n} Soldaten`,'bad');
+    if(typeof flashHit==='function')flashHit();
     for(const a of F){if(a.isPlayer||!a.alive||!a.allied||a.id===fid)continue;
       const h=T.find(t=>t.owner===a.id&&t.adj.includes(to.id)&&t.troops>=14);
       if(h){const k=Math.min(12,Math.floor(h.troops*0.35));if(k>=3){launch(h,to,k,a.id);toast(`${a.name} schickt dir ${k} Soldaten zu Hilfe`,'good')}}}

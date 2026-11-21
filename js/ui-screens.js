@@ -91,6 +91,29 @@ S.shop.bind=p=>{
     try{await AW.update({[it.kind]:cur===it.key?null:it.key})}catch(e){toastErr(e)}});
 };
 
+/* ---------- Inventar: alles, was du besitzt, ausrüsten und ablegen ---------- */
+UI.invTab='hat';
+S.inventory=()=>{
+  const p=AW.profile||{owned:[]},tab=UI.invTab;
+  const own=(p.owned||[]).map(id=>SHOP_BY_ID[id]).filter(Boolean);
+  const items=own.filter(i=>i.kind===(tab==='hat'?'hat':'flag'));
+  const hat=p.hat&&SHOP_BY_ID['hat:'+p.hat],flag=p.flag&&SHOP_BY_ID['flag:'+p.flag];
+  const card=i=>{
+    const eq=i.kind==='hat'?p.hat===i.key:p.flag===i.key,pv=i.kind==='hat'?`<span data-hat="${i.key}"></span>`:flagSVG(i.key);
+    return `<div class="shopit ${eq?'eq':''}"><div class="pv">${pv}</div><b>${esc(i.name)}</b><button class="btn sm ${eq?'':'pri'} block" data-eq="${i.id}" type="button">${eq?t('Ablegen'):t('Ausrüsten')}</button></div>`;
+  };
+  return shell(t('Inventar'),{right:`<span class="tag">${own.length} ${t('Gegenstände')}</span>`},
+   `<div class="panel row" style="gap:18px"><div class="field"><span class="lbl">${t('Hut')}</span><b>${hat?esc(hat.name):'—'}</b></div><div class="field"><span class="lbl">${t('Flagge')}</span><b>${flag?esc(flag.name):'—'}</b></div></div>
+    <div class="pills" id="invT" style="align-self:flex-start">${[['hat','Hüte'],['flag','Flaggen']].map(([k,n])=>`<button data-k="${k}" class="${tab===k?'on':''}" type="button">${t(n)}</button>`).join('')}</div>
+    ${items.length?`<div class="shopgrid">${items.map(card).join('')}</div>`:`<div class="msg">${LANG==='de'?'Hier liegt noch nichts. Im Shop kaufst du Hüte und Flaggen mit Rubys, die du durch Quests verdienst.':'Nothing here yet. Buy hats and flags in the shop with Rubys earned from quests.'}</div><button class="btn pri" data-go="shop" type="button" style="align-self:flex-start">${ico('shop')} ${t('Shop')}</button>`}`);
+};
+S.inventory.bind=p=>{
+  p.querySelectorAll('#invT [data-k]').forEach(b=>b.onclick=()=>{UI.invTab=b.dataset.k;render()});
+  p.querySelectorAll('[data-hat]').forEach(c=>c.appendChild(hatPreview(c.dataset.hat)));
+  p.querySelectorAll('[data-eq]').forEach(b=>b.onclick=async()=>{const it=SHOP_BY_ID[b.dataset.eq],pr=AW.profile,cur=it.kind==='hat'?pr.hat:pr.flag;
+    try{await AW.update({[it.kind]:cur===it.key?null:it.key})}catch(e){toastErr(e)}});
+};
+
 /* ---------- Clan (freie Tags sammeln Siege) ---------- */
 S.clan=()=>{
   const p=AW.profile||{},cl=UI.clans;

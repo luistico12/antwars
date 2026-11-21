@@ -109,6 +109,7 @@ const Remote={
   async report(p){const{error}=await AW.sb.rpc('report_stats',{p});if(error)console.warn('report_stats fehlgeschlagen (schema.sql ausgeführt?):',error.message);else await Remote.loadProfile()},
   async players(){const{data}=await AW.sb.from('leaderboard_players').select('*').order('wins',{ascending:false}).limit(100);return data||[]},
   async clans(){const{data}=await AW.sb.from('leaderboard_clans').select('*').order('wins',{ascending:false}).limit(100);return data||[]},
+  async potd(){const{data}=await AW.sb.from('player_of_day').select('*').limit(1);const r=data&&data[0];return r&&r.wins>0?r:null},
   async news(){const{data}=await AW.sb.from('news').select('*').order('created_at',{ascending:false}).limit(30);return data||[]},
   async newsSave(n){const r=n.id?await AW.sb.from('news').update({version:n.version,title:n.title,body:n.body}).eq('id',n.id):await AW.sb.from('news').insert({version:n.version,title:n.title,body:n.body});if(r.error)throw new Error('Keine Berechtigung')},
   async newsDel(id){const{error}=await AW.sb.from('news').delete().eq('id',id);if(error)throw new Error('Keine Berechtigung')},
@@ -159,6 +160,7 @@ const Local={
     a.games+=Math.min(1,+p.games||0);a.wins+=Math.min(1,+p.wins||0);Local.save()},
   async players(){const a=AW.profile;return[{username:a.username,tag:a.tag,clan_tag:a.clan_tag,wins:a.wins,games:a.games}].concat(lsGet(LP+'fake',[]))},
   async clans(){const a=AW.profile;return a.clan_tag?[{clan_tag:a.clan_tag,wins:a.wins,games:a.games,members:1}]:[]},
+  async potd(){const p=AW.profile,b=p&&p.stats&&p.stats.daily,w=b&&b.k===dayKey()?(b.v.wins||0):0;return w>0?{username:p.username,clan_tag:p.clan_tag,wins:w}:null},
   async news(){return lsGet(LP+'news',null)||DEFAULT_NEWS},
   async newsSave(n){const l=await Local.news();const c=l.map(x=>({...x}));if(n.id){const i=c.findIndex(x=>x.id===n.id);if(i>=0)c[i]={...c[i],...n}}else c.unshift({...n,id:'n'+Date.now(),created_at:new Date().toISOString()});lsSet(LP+'news',c)},
   async newsDel(id){lsSet(LP+'news',(await Local.news()).filter(x=>x.id!==id))},
@@ -183,6 +185,8 @@ const Local={
   }
 };
 const DEFAULT_NEWS=[
+  {id:'d5',version:'v13',title:'Modi, Unlimited, Flüsse und viele Neuerungen',body:'Neuer Modus-Knopf im Startmenü: FFA (7 Gegner) und Unlimited (3,5× große Karte, 5 Gegner, kein Ende). Das Startgebiet wählst du jetzt in 15 Sekunden direkt auf der Karte. Flüsse auf der Karte: baue Häfen und Flöße daran. Flöße fahren jetzt nur noch über Wasser. Spielzeit im Kopf, nach einem Sieg kannst du weiterspielen, Rechtsklick halten baut mehrere Räume. Tasten: Q/R scrollen, 1/2/3 Reiter, Tab wechselt Kolonie und Karte. Neu: Inventar für Kosmetik, Spieler des Tages, mehr Einstellungen (Tasten, VSync, FPS-Limit, Grafikqualität, Interface-Größe, Standard-Truppenanteil), roter Rahmen bei Angriffen und Quest-Anzeige im Spiel.',created_at:'2026-11-21T12:00:00Z'},
+  {id:'d4',version:'v12',title:'Tunnelansicht und neue Weltkarte',body:'Taste T zeigt in der Kolonie grün Gegrabenes und rot Unbebaubares: Linksklick markiert, ziehen malt mehrere, Tunnel sind 2,5× schneller. Auf der Weltkarte verschmelzen eigene Gebiete, die Hauptstadt wird mit dem Reich größer. Rechtsklick aufs eigene Gebiet öffnet das Bauen-Menü: Verteidigungswall, Außenposten, Linien, Hafen, Floß, Wege. Marionettenstaaten geben einen Teil der Beute.',created_at:'2026-11-20T20:00:00Z'},
   {id:'d1',version:'v11',title:'Neues Design, Konten und Shop',body:'Komplett neues Glas-Interface, Anmeldung mit E-Mail, GitHub oder Discord, Rubys durch Quests, Hüte und Flaggen im Shop, Clans über freie Tags und Ranglisten.',created_at:'2026-11-17T09:00:00Z'},
   {id:'d2',version:'v10',title:'Schutzzeit am Start',body:'Zu Beginn kann niemand angreifen: Leicht 2:30, Normal 1:30, Schwer 1:00 Minuten.',created_at:'2026-11-10T09:00:00Z'},
   {id:'d3',version:'v9',title:'Powerups in der Kolonie',body:'Zufällig vergrabene Funde liegen im Boden. Grabe Tunnel dorthin, dann werden sie geborgen.',created_at:'2026-11-03T09:00:00Z'}
@@ -193,7 +197,7 @@ Object.assign(AW,{
   signIn:(...a)=>API.signIn(...a),signUp:(...a)=>API.signUp(...a),secure:(...a)=>API.secure(...a),oauth:(...a)=>API.oauth(...a),signOut:async()=>{await API.signOut();AW.emit()},
   reset:(...a)=>API.reset(...a),setPhone:(...a)=>API.setPhone(...a),verifyPhone:(...a)=>API.verifyPhone(...a),
   update:async p=>{await API.update(p);AW.emit()},buy:async id=>{await API.buy(id);AW.emit()},claim:async id=>{await API.claim(id);AW.emit()},report:p=>API.report(p).then(()=>AW.emit()),
-  players:()=>API.players(),clans:()=>API.clans(),news:()=>API.news(),newsSave:n=>API.newsSave(n),newsDel:id=>API.newsDel(id),
+  players:()=>API.players(),potd:()=>API.potd(),clans:()=>API.clans(),news:()=>API.news(),newsSave:n=>API.newsSave(n),newsDel:id=>API.newsDel(id),
   adminProfiles:q=>API.adminProfiles(q),adminUpdate:(i,p)=>API.adminUpdate(i,p),
   friends:()=>API.friends(),friendRequest:n=>API.friendRequest(n),friendRespond:(i,a)=>API.friendRespond(i,a),friendRemove:i=>API.friendRemove(i),
   lobbies:()=>API.lobbies(),lobbyCreate:l=>API.lobbyCreate(l),lobbyFind:c=>API.lobbyFind(c),lobbyUpdate:(c,p)=>API.lobbyUpdate(c,p),lobbyClose:c=>API.lobbyClose(c),channel:(c,h)=>API.channel(c,h)

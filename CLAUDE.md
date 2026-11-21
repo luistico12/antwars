@@ -23,6 +23,9 @@ Statisches HTML5-Canvas-Spiel (Vanilla JS, kein Build-Schritt), Ameisenkolonie b
 - `supabase/schema.sql`: Tabellen, RLS, RPCs (`buy_item`, `claim_quest`, `report_stats`, `find_lobby`), Ranglisten-Views.
 - `scripts/gen-config.sh` erzeugt `config.js` aus `.env`/Secrets (gitignored, nie einchecken).
 
+## Standing Rule: News-Release
+Nach jedem Update immer einen neuen News-Release schreiben und ingame veröffentlichen: neuer Eintrag oben in `DEFAULT_NEWS` (js/backend.js, nächste Version) plus idempotenter `insert … where not exists` am Ende von `supabase/schema.sql`. Dem Nutzer den Text im Abschluss nennen.
+
 ## Konventionen
 - Design: dunkles Glas, Akzent `#ff5757`, weiße Linien-Icons (`ico('name')`) nur in Menüs/Header; die farbigen Pixel-Icons im Spiel (HUD, Dock, Kreismenü) bleiben farbig, keine externen Fonts/Bilder (DSGVO). Overlays lassen Header und Werbespalte frei (`--hh`, `--adw`, `--adh`).
 - Texte im Code sind Deutsch und laufen durch `t('…')`; Englisch steht in `i18n.js`/`i18n-en.js`.

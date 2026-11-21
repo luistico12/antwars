@@ -15,6 +15,7 @@ globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c
 back:'<path d="M19 12H5M11 6l-6 6 6 6"/>',
 close:'<path d="M6 6l12 12M18 6 6 18"/>',
 check:'<path d="M5 12.5l4.5 4.5L19 7"/>',
+box:'<path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
 crown:'<path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"/>',
 ruby:'<path d="M6 4h12l4 6-10 11L2 10z"/><path d="M2 10h20M8 4l-2 6 6 11 6-11-2-6"/>',
 lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',

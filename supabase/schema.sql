@@ -324,3 +324,19 @@ language sql security definer set search_path=public stable as $$
 $$;
 revoke all on function public.friend_request(text,text), public.friend_respond(uuid,boolean), public.friend_remove(uuid), public.my_friends() from public, anon;
 grant execute on function public.friend_request(text,text), public.friend_respond(uuid,boolean), public.friend_remove(uuid), public.my_friends() to authenticated;
+
+-- ============ Spieler des Tages (v13) ============
+create or replace view public.player_of_day with (security_invoker=false) as
+  select p.username, p.clan_tag, coalesce((p.stats->'daily'->'v'->>'wins')::int,0) as wins
+  from public.profiles p
+  where p.stats->'daily'->>'k' = to_char(now() at time zone 'utc','YYYY-MM-DD')
+  order by wins desc limit 1;
+grant select on public.player_of_day to anon, authenticated;
+
+-- News-Releases (nach jedem Update einen neuen eintragen, siehe CLAUDE.md)
+insert into public.news(version,title,body)
+select 'v12','Tunnelansicht und neue Weltkarte','Taste T zeigt in der Kolonie grün Gegrabenes und rot Unbebaubares: Linksklick markiert, ziehen malt mehrere, Tunnel sind 2,5× schneller. Auf der Weltkarte verschmelzen eigene Gebiete, die Hauptstadt wird mit dem Reich größer. Rechtsklick aufs eigene Gebiet öffnet das Bauen-Menü: Verteidigungswall, Außenposten, Linien, Hafen, Floß, Wege. Marionettenstaaten geben einen Teil der Beute.'
+where not exists (select 1 from public.news where version='v12');
+insert into public.news(version,title,body)
+select 'v13','Modi, Unlimited, Flüsse und viele Neuerungen','Neuer Modus-Knopf im Startmenü: FFA (7 Gegner) und Unlimited (3,5× große Karte, 5 Gegner, kein Ende). Das Startgebiet wählst du jetzt in 15 Sekunden direkt auf der Karte. Flüsse auf der Karte: baue Häfen und Flöße daran. Flöße fahren jetzt nur noch über Wasser. Spielzeit im Kopf, nach einem Sieg kannst du weiterspielen, Rechtsklick halten baut mehrere Räume. Tasten: Q/R scrollen, 1/2/3 Reiter, Tab wechselt Kolonie und Karte. Neu: Inventar für Kosmetik, Spieler des Tages, mehr Einstellungen (Tasten, VSync, FPS-Limit, Grafikqualität, Interface-Größe, Standard-Truppenanteil), roter Rahmen bei Angriffen und Quest-Anzeige im Spiel.'
+where not exists (select 1 from public.news where version='v13');
