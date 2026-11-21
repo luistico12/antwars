@@ -376,3 +376,4 @@ body.wmv #chips{display:none}
 @media (max-width:1100px){#wmBar{width:calc(100% - 340px);min-width:0}#wmEv{width:220px}#wmLb{width:300px}}
 @media (max-width:760px){#wmEv,#wmDon{display:none}#wmBar{width:calc(100% - 20px)}}
 .wmsl .lbl{text-transform:none;letter-spacing:0;font-size:12.5px}.wmsl .val{font-size:12.5px}
+#wmLb .crn{width:20px;height:12px;margin-right:6px;image-rendering:pixelated;vertical-align:-1px}

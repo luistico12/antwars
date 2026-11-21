@@ -67,27 +67,35 @@ S.achievements=()=>shell(t('Erfolge'),{right:`<div class="pills" id="achT">${[['
 S.achievements.bind=p=>{p.querySelectorAll('#achT [data-k]').forEach(b=>b.onclick=()=>{UI.achTab=b.dataset.k;render()});bindClaims(p)};
 
 /* ---------- Shop: Hüte, Weltflaggen, Ameisenflaggen ---------- */
+/* Vorschau und Ausrüstungsstatus für alle Kosmetik-Arten */
+const COS_TABS=[['hat','Hüte'],['crown','Kronen'],['pattern','Muster'],['ship','Schiffe'],['world','Weltflaggen'],['ant','Ameisenflaggen']];
+const cosKind=tab=>tab==='world'||tab==='ant'?'flag':tab;
+const cosFilter=(tab,i)=>tab==='world'?i.kind==='flag'&&!i.custom:tab==='ant'?i.kind==='flag'&&i.custom:i.kind===tab;
+const cosEq=(i,p)=>p[i.kind]===i.key;
+const cosPv=i=>i.kind==='flag'?flagSVG(i.key):`<span data-cos="${i.kind}:${i.key}"></span>`;
+function cosBind(p){p.querySelectorAll('[data-cos]').forEach(c=>{const[k,id]=c.dataset.cos.split(':');
+  c.appendChild(k==='hat'?hatPreview(id):k==='crown'?crownPreview(id):k==='pattern'?patternPreview(id):shipPreview(id))})}
 UI.shopTab='hat';
 S.shop=()=>{
   const p=AW.profile||{owned:[]},tab=UI.shopTab;
-  const items=SHOP.filter(i=>tab==='hat'?i.kind==='hat':tab==='world'?i.kind==='flag'&&!i.custom:i.kind==='flag'&&i.custom);
+  const items=SHOP.filter(i=>cosFilter(tab,i));
   const card=i=>{
-    const own=(p.owned||[]).includes(i.id),eq=i.kind==='hat'?p.hat===i.key:p.flag===i.key;
-    const pv=i.kind==='hat'?`<span data-hat="${i.key}"></span>`:flagSVG(i.key);
+    const own=(p.owned||[]).includes(i.id),eq=cosEq(i,p);
+    const pv=cosPv(i);
     return `<div class="shopit ${eq?'eq':''}"><div class="pv">${pv}</div><b>${esc(i.name)}</b>
       ${own?`<button class="btn sm ${eq?'':'pri'} block" data-eq="${i.id}" type="button">${eq?t('Ablegen'):t('Ausrüsten')}</button>`:`<button class="btn sm pri block" data-buy="${i.id}" type="button" ${(p.rubys||0)<i.price?'disabled':''}>${i.price} ${ico('ruby')} ${t('Kaufen')}</button>`}</div>`;
   };
   return shell(t('Shop'),{right:`<span class="ruby" style="font-size:17px">${ico('ruby')} ${p.rubys||0}</span>`},
-   `<div class="pills" id="shopT" style="align-self:flex-start">${[['hat','Hüte'],['world','Weltflaggen'],['ant','Ameisenflaggen']].map(([k,n])=>`<button data-k="${k}" class="${tab===k?'on':''}" type="button">${t(n)}</button>`).join('')}</div>
+   `<div class="pills" id="shopT" style="align-self:flex-start">${COS_TABS.map(([k,n])=>`<button data-k="${k}" class="${tab===k?'on':''}" type="button">${t(n)}</button>`).join('')}</div>
     ${needLogin()?`<div class="msg">${t('Melde dich an, um zu spielen')}</div>`:''}
-    <div class="msg">${LANG==='de'?'Rubys verdienst du mit Quests (Erfolge). Hüte tragen deine Ameisen, die Flagge steht auf deinem Hügel.':'Earn Rubys with quests (Achievements). Hats are worn by your ants, the flag flies on your mound.'}</div>
+    <div class="msg">${LANG==='de'?'Rubys verdienst du mit Quests (Erfolge). Hüte tragen deine Ameisen, die Flagge steht auf deinem Hügel, Muster färben deine Gebiete, Schiffe fahren über Wasser und die Krone trägt, wer das meiste Land hat.':'Earn Rubys with quests (Achievements). Hats are worn by your ants, the flag flies on your mound, patterns cover your territories, ships sail the seas and the crown goes to whoever holds the most land.'}</div>
     <div class="shopgrid">${items.map(card).join('')}</div>`);
 };
 S.shop.bind=p=>{
   p.querySelectorAll('#shopT [data-k]').forEach(b=>b.onclick=()=>{UI.shopTab=b.dataset.k;render()});
-  p.querySelectorAll('[data-hat]').forEach(c=>c.appendChild(hatPreview(c.dataset.hat)));
+  cosBind(p);
   p.querySelectorAll('[data-buy]').forEach(b=>b.onclick=async()=>{try{await AW.buy(b.dataset.buy)}catch(e){toastErr(e)}});
-  p.querySelectorAll('[data-eq]').forEach(b=>b.onclick=async()=>{const it=SHOP_BY_ID[b.dataset.eq],pr=AW.profile,cur=it.kind==='hat'?pr.hat:pr.flag;
+  p.querySelectorAll('[data-eq]').forEach(b=>b.onclick=async()=>{const it=SHOP_BY_ID[b.dataset.eq],pr=AW.profile,cur=pr[it.kind];
     try{await AW.update({[it.kind]:cur===it.key?null:it.key})}catch(e){toastErr(e)}});
 };
 
@@ -96,21 +104,21 @@ UI.invTab='hat';
 S.inventory=()=>{
   const p=AW.profile||{owned:[]},tab=UI.invTab;
   const own=(p.owned||[]).map(id=>SHOP_BY_ID[id]).filter(Boolean);
-  const items=own.filter(i=>i.kind===(tab==='hat'?'hat':'flag'));
-  const hat=p.hat&&SHOP_BY_ID['hat:'+p.hat],flag=p.flag&&SHOP_BY_ID['flag:'+p.flag];
+  const items=own.filter(i=>cosFilter(tab,i));
+  const slot=k=>{const v=p[k];return v&&SHOP_BY_ID[k+':'+v]?esc(SHOP_BY_ID[k+':'+v].name):'—'};
   const card=i=>{
-    const eq=i.kind==='hat'?p.hat===i.key:p.flag===i.key,pv=i.kind==='hat'?`<span data-hat="${i.key}"></span>`:flagSVG(i.key);
+    const eq=cosEq(i,p),pv=cosPv(i);
     return `<div class="shopit ${eq?'eq':''}"><div class="pv">${pv}</div><b>${esc(i.name)}</b><button class="btn sm ${eq?'':'pri'} block" data-eq="${i.id}" type="button">${eq?t('Ablegen'):t('Ausrüsten')}</button></div>`;
   };
   return shell(t('Inventar'),{right:`<span class="tag">${own.length} ${t('Gegenstände')}</span>`},
-   `<div class="panel row" style="gap:18px"><div class="field"><span class="lbl">${t('Hut')}</span><b>${hat?esc(hat.name):'—'}</b></div><div class="field"><span class="lbl">${t('Flagge')}</span><b>${flag?esc(flag.name):'—'}</b></div></div>
-    <div class="pills" id="invT" style="align-self:flex-start">${[['hat','Hüte'],['flag','Flaggen']].map(([k,n])=>`<button data-k="${k}" class="${tab===k?'on':''}" type="button">${t(n)}</button>`).join('')}</div>
+   `<div class="panel row" style="gap:18px;flex-wrap:wrap">${[['hat','Hut'],['crown','Krone'],['pattern','Muster'],['ship','Schiff']].map(([k,n])=>`<div class="field"><span class="lbl">${t(n)}</span><b>${slot(k)}</b></div>`).join('')}<div class="field"><span class="lbl">${t('Flagge')}</span><b>${(p.flag&&SHOP_BY_ID['flag:'+p.flag]?esc(SHOP_BY_ID['flag:'+p.flag].name):'—')}</b></div></div>
+    <div class="pills" id="invT" style="align-self:flex-start;flex-wrap:wrap">${COS_TABS.map(([k,n])=>`<button data-k="${k}" class="${tab===k?'on':''}" type="button">${t(n)}</button>`).join('')}</div>
     ${items.length?`<div class="shopgrid">${items.map(card).join('')}</div>`:`<div class="msg">${LANG==='de'?'Hier liegt noch nichts. Im Shop kaufst du Hüte und Flaggen mit Rubys, die du durch Quests verdienst.':'Nothing here yet. Buy hats and flags in the shop with Rubys earned from quests.'}</div><button class="btn pri" data-go="shop" type="button" style="align-self:flex-start">${ico('shop')} ${t('Shop')}</button>`}`);
 };
 S.inventory.bind=p=>{
   p.querySelectorAll('#invT [data-k]').forEach(b=>b.onclick=()=>{UI.invTab=b.dataset.k;render()});
-  p.querySelectorAll('[data-hat]').forEach(c=>c.appendChild(hatPreview(c.dataset.hat)));
-  p.querySelectorAll('[data-eq]').forEach(b=>b.onclick=async()=>{const it=SHOP_BY_ID[b.dataset.eq],pr=AW.profile,cur=it.kind==='hat'?pr.hat:pr.flag;
+  cosBind(p);
+  p.querySelectorAll('[data-eq]').forEach(b=>b.onclick=async()=>{const it=SHOP_BY_ID[b.dataset.eq],pr=AW.profile,cur=pr[it.kind];
     try{await AW.update({[it.kind]:cur===it.key?null:it.key})}catch(e){toastErr(e)}});
 };
 

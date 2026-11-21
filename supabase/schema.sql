@@ -13,6 +13,9 @@ create table if not exists public.profiles(
   games int not null default 0,
   hat text,
   flag text,
+  crown text,
+  pattern text,
+  ship text,
   owned text[] not null default '{}',
   quests jsonb not null default '{}',
   stats jsonb not null default '{}',
@@ -106,6 +109,9 @@ begin
   new.username := old.username; new.tag := old.tag; new.quests := old.quests; new.stats := old.stats; new.is_admin := old.is_admin; new.id := old.id; new.created_at := old.created_at;
   if new.hat is not null and not ('hat:'||new.hat) = any(old.owned) then new.hat := old.hat; end if;
   if new.flag is not null and not ('flag:'||new.flag) = any(old.owned) then new.flag := old.flag; end if;
+  if new.crown is not null and not ('crown:'||new.crown) = any(old.owned) then new.crown := old.crown; end if;
+  if new.pattern is not null and not ('pattern:'||new.pattern) = any(old.owned) then new.pattern := old.pattern; end if;
+  if new.ship is not null and not ('ship:'||new.ship) = any(old.owned) then new.ship := old.ship; end if;
   return new;
 end $$;
 drop trigger if exists protect_profile on public.profiles;
@@ -251,6 +257,15 @@ insert into public.shop_items(id,price)
  select 'flag:'||c, case when c in ('de','gb','us','fr','es','it','nl','pl') then 1 else 2 end
  from unnest(array['de','gb','us','fr','es','it','nl','pl','pt','br','ar','mx','ca','au','jp','kr','cn','in','tr','ru','ua','se','no','dk','fi','at','ch','ie','be','gr','cz','hu','ro','bg','rs','sk','si','il','sa','eg','za','bd','mk']) c
 on conflict (id) do update set price = excluded.price;
+-- Update v15: Kronen, Muster, Schiffe
+alter table public.profiles add column if not exists crown text;
+alter table public.profiles add column if not exists pattern text;
+alter table public.profiles add column if not exists ship text;
+insert into public.shop_items(id,price) values
+ ('crown:monarch',2),('crown:ruby',3),('crown:amethyst',4),('crown:laurel',6),('crown:halo',6),('crown:inferno',8),('crown:prism',12),
+ ('pattern:stripes',2),('pattern:checker',2),('pattern:dots',2),('pattern:bricks',3),('pattern:hearts',3),('pattern:stars',3),('pattern:waves',4),('pattern:grid',4),
+ ('ship:leaf',2),('ship:viking',3),('ship:duck',3),('ship:steam',4),('ship:pirate',5),('ship:golden',8)
+on conflict (id) do update set price = excluded.price;
 insert into public.quests(id,kind,stat,goal,reward) values
  ('d_games','daily','games',1,1),('d_terr','daily','terr',3,1),('d_found','daily','found',1,1),
  ('w_games','weekly','games',5,2),('w_wins','weekly','wins',1,3),('w_terr','weekly','terr',8,2),
@@ -344,3 +359,7 @@ where not exists (select 1 from public.news where version='v13');
 insert into public.news(version,title,body)
 select 'v14','Neue Weltkarten-Oberfläche','Die Weltkarte sieht jetzt aus wie bei FrontWars: Bestenliste links oben (Besitz, Gebiete, Truppen), unten die Bauleiste mit den Tasten 1 bis 6 (Wall, Außenposten, Linie, Hafen, Floß, Weg), Material und Truppen mit Anteilsleiste sowie Leisten zum Spenden von Truppen und Material. Unten rechts stehen Ereignisse und das Team. Das Seitenpanel rechts ist weg, Bauen geht über die Leiste oder per Rechtsklick. Die Flüsse winden sich jetzt natürlicher durchs Land, und die Rubys sind jetzt rote Kristalle in der Akzentfarbe.'
 where not exists (select 1 from public.news where version='v14');
+
+insert into public.news(version,title,body)
+select 'v15','Kronen, Muster und Schiffe','Neue Kosmetik im Shop: Kronen, Muster und Schiffe. Die Krone trägt, wer das meiste Land hat: Sie steht über dem Namen seiner Hauptstadt und in der Bestenliste, alle tragen standardmäßig die goldene Krone, im Shop gibt es sieben weitere. Muster färben deine Gebiete auf der Weltkarte (acht Stück), Schiffe ersetzen dein Floß auf dem Wasser (sechs Stück). Alles lässt sich im Inventar ausrüsten. Die Rubys sind jetzt Pixel-Kristalle.'
+where not exists (select 1 from public.news where version='v15');

@@ -8,7 +8,7 @@ let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++};
   for(const s of ['#nmSkip','#ckAll']){const e=await pg.$(s);if(e)await e.click()}
   ok(await pg.evaluate(()=>!!document.querySelector('#rail [data-s="inventory"]')),'Inventar-Knopf im Menü');
   await pg.evaluate(()=>openScreen('inventory'));
-  ok(await pg.evaluate(()=>/Inventar/.test(document.body.innerText)),'Inventar-Screen öffnet');
+  ok(await pg.evaluate(()=>/Inventar|Inventory/.test(document.body.innerText)),'Inventar-Screen öffnet');
   await pg.evaluate(()=>closeScreens());
   await pg.evaluate(()=>{openSet();setTab='gfx';renderSet()});
   const g=await pg.evaluate(()=>document.querySelector('#setBox').innerText);

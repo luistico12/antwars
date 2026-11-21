@@ -34,7 +34,12 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
 16. Update v14 (Weltkarten-HUD, getestet mit `node tests/hud.spec.js`):
     - Neues `js/game-hud.js`: Bestenliste, Bauleiste (Tasten 1–6, vormerken + Klick aufs Gebiet), Material/Blätter, Truppenanteil-Leiste, Spenden-Leisten (`donT`/`donM`, vom Kreismenü genutzt), Ereignisse/Team unten rechts (alle `toast`-Meldungen, im Mehrspieler Gruppen-Chat). Seitenpanel `#side` ist im Spiel ausgeblendet (DOM bleibt für den Spielcode).
     - Flüsse neu (`carveRivers`): Mündung mit langem freiem Landweg, weiche Windungen, 2 Zellen breit. Ruby-Icon/Farbe = Akzent.
+17. Update v15 (Kosmetik, `node tests/cosmetics.spec.js`):
+    - Neue Arten `crown`, `pattern`, `ship` (backend.js `CROWNS/PATTERNS/SHIPS`, Profilfelder `crown/pattern/ship`, Supabase-Spalten + `protect_profile` + shop_items sind live eingespielt). Pixel-Entwürfe und Zeichenfunktionen in `cosmetics.js`.
+    - Krone: Standard goldene Krone für den Gebietsführer (`leaderFid`), über dem Namen seiner Hauptstadt (game-world) und in der Bestenliste; Muster: `drawPatternCell` in `renderOwners` (nur eigene Gebiete); Schiff: `drawShip` in `drawSeaMarch` (nur eigene Flöße). Shop/Inventar mit Reitern (`COS_TABS`).
+    - Rubys-Icon jetzt Pixel-Kristall.
 ## Offen (neu)
+- Kosmetik anderer Spieler (Kronen, Muster, Schiffe) wird nicht synchronisiert, Bots tragen nur die Standardkrone.
 - Bots nutzen die Bauleiste/Spenden nicht, Gebietsbeschriftung auf der Karte noch im alten Stil.
 - Unlimited: Kolonie doppelt so breit/tief (`setColonyDims(2)` in startGame, 80×56 Zellen). Noch größer wäre möglich, Hintergrund-Rendering wird dann teurer.
 - „Kosmetik anderer ausblenden“ wirkt erst, wenn Kosmetik anderer Spieler gerendert/synchronisiert wird (`cosmVisible`).

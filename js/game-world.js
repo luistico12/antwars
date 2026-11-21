@@ -324,9 +324,11 @@ function drawMap(g,now){
   if(hovT!=null)fillT(T[hovT],'rgba(255,255,255,.16)');
   if(selT!=null){fillT(T[selT],'rgba(255,255,255,.22)');for(const ai of T[selT].adj)fillT(T[ai],'rgba(255,255,255,.08)')}
   g.textAlign='center';g.textBaseline='middle';
+  const lead=started?leaderFid(now):-1;
   for(const t of T){
     const px=t.lx*CS+5,py=t.ly*CS+5;
     g.font='600 11px '+PX;g.lineWidth=3;g.strokeStyle='rgba(20,12,4,.85)';g.strokeText(t.name,px,py-17);g.fillStyle='#fff6dc';g.fillText(t.name,px,py-17);
+    if(lead>=0&&t.isCap&&t.owner===lead)drawCrown(g,lead===0?COSM.crown:null,px,py-24,2);
     if(!started){
       if(t.terrain===SP[setupSp].terr&&setupStart!==t.id){g.strokeStyle='rgba(255,255,255,.9)';g.lineWidth=2;g.beginPath();g.arc(px,py,13+Math.sin(now/300)*2,0,6.283);g.stroke()}
       if(setupStart===t.id){drawCapMark(g,px,py,FCOL[0]);drawNest(g,setupSp,px,py+26,1)}

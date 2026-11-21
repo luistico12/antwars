@@ -18,7 +18,7 @@ const EN={
 'Melde dich an, um zu spielen':'Sign in to play','Nur mit Konto spielbar':'Account required',
 'Konto-ID':'Account ID','Mitglied seit':'Member since','Link kopieren':'Copy link','Kopiert':'Copied','Alle Spiele':'All games','Spiele':'Games','Siege':'Wins','Siegquote':'Win rate',
 'Täglich':'Daily','Wöchentlich':'Weekly','Karriere':'Career','Abholen':'Claim','Abgeholt':'Claimed','Fortschritt':'Progress',
-'Hüte':'Hats','Weltflaggen':'World flags','Ameisenflaggen':'Ant flags','Kaufen':'Buy','Ausrüsten':'Equip','Ausgerüstet':'Equipped','Ablegen':'Remove','Nicht genug Rubys':'Not enough Rubys','Rubys':'Rubys',
+'Hüte':'Hats','Kronen':'Crowns','Muster':'Patterns','Schiffe':'Ships','Krone':'Crown','Schiff':'Ship','Hut':'Hat','Flagge':'Flag','Gegenstände':'items','Inventar':'Inventory','SPIELER DES TAGES':'PLAYER OF THE DAY','Siege heute':'wins today','abholbar':'ready','Quests':'Quests','Alles abgeholt':'All claimed','Weltflaggen':'World flags','Ameisenflaggen':'Ant flags','Kaufen':'Buy','Ausrüsten':'Equip','Ausgerüstet':'Equipped','Ablegen':'Remove','Nicht genug Rubys':'Not enough Rubys','Rubys':'Rubys',
 'Clan-Tag':'Clan tag','Beitreten':'Join','Verlassen':'Leave','Speichern':'Save','Spieler':'Players','Clans':'Clans','Siege ':'Wins','Spiele ':'Games','Quote':'Win %','Mitglieder':'Members',
 'Neuigkeiten':'News','Neueste':'Latest','Sprache wählen':'Choose language','Sprachen suchen …':'Search languages …',
 'Eigene Lobby':'Your lobby','Eigener Lobby beitreten':'Join a lobby','Lobby-ID eingeben':'Enter lobby ID','Öffentliche Spiele':'Public games','Lobby beitreten ':'Join lobby',

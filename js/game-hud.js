@@ -79,7 +79,7 @@ function hudBoard(){
   const rows=F.filter(f=>f.alive||f.id===0).map(f=>{const mine=T.filter(t=>t.owner===f.id);return{id:f.id,name:f.name,rgb:f.rgb,share:100*mine.reduce((a,t)=>a+t.cells.length,0)/land,n:mine.length,tr:Math.floor(mine.reduce((a,t)=>a+t.troops,0)),me:f.id===0}})
     .sort((a,b)=>b.share-a.share);
   const tag=AW.profile&&AW.profile.clan_tag?`<span class="ctag">${esc(AW.profile.clan_tag)}</span>`:'';
-  const row=(r,i)=>`<tr class="${r.me?'me':''}"><td>${i+1}</td><td><i class="dot" style="background:${rgb(r.rgb)}"></i>${r.me?tag:''}<b>${esc(r.name)}</b></td><td>${r.share.toFixed(1)}%</td><td>${r.n}</td><td>${fk(r.tr)}</td></tr>`;
+  const row=(r,i)=>`<tr class="${r.me?'me':''}"><td>${i+1}</td><td>${i===0?`<img class="crn" alt="" src="${crownURL(r.me?COSM.crown:null)}">`:`<i class="dot" style="background:${rgb(r.rgb)}"></i>`}${r.me?tag:''}<b>${esc(r.name)}</b></td><td>${r.share.toFixed(1)}%</td><td>${r.n}</td><td>${fk(r.tr)}</td></tr>`;
   const top=lbAll?rows:rows.slice(0,4),mi=rows.findIndex(r=>r.me);
   let b=top.map((r,i)=>row(r,i)).join('');if(mi>=top.length)b+=row(rows[mi],mi);
   return `<div class="wmh">${ico('board')}<span>Team: ${esc(F[0].name)}</span><i class="mode">${modeKey==='unlimited'?'UNLIMITED':'KLASSISCH'}</i></div><table><thead><tr><th>#</th><th>Spieler</th><th>Besitz</th><th>Gebiete</th><th>Truppen</th></tr></thead><tbody>${b}</tbody></table><button type="button" id="wmMore" class="more">${lbAll?'−':'+'}</button>`;

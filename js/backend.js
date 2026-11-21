@@ -10,7 +10,13 @@ const HATS=[['cap','Kappe',1],['flower','Blume',1],['party','Partyhut',1],['helm
 const WORLD_FLAGS=['de','gb','us','fr','es','it','nl','pl','pt','br','ar','mx','ca','au','jp','kr','cn','in','tr','ru','ua','se','no','dk','fi','at','ch','ie','be','gr','cz','hu','ro','bg','rs','sk','si','il','sa','eg','za','bd','mk'];
 const FLAG_NAMES={de:'Deutschland',gb:'Vereinigtes Königreich',us:'USA',fr:'Frankreich',es:'Spanien',it:'Italien',nl:'Niederlande',pl:'Polen',pt:'Portugal',br:'Brasilien',ar:'Argentinien',mx:'Mexiko',ca:'Kanada',au:'Australien',jp:'Japan',kr:'Südkorea',cn:'China',in:'Indien',tr:'Türkei',ru:'Russland',ua:'Ukraine',se:'Schweden',no:'Norwegen',dk:'Dänemark',fi:'Finnland',at:'Österreich',ch:'Schweiz',ie:'Irland',be:'Belgien',gr:'Griechenland',cz:'Tschechien',hu:'Ungarn',ro:'Rumänien',bg:'Bulgarien',rs:'Serbien',sk:'Slowakei',si:'Slowenien',il:'Israel',sa:'Saudi-Arabien',eg:'Ägypten',za:'Südafrika',bd:'Bangladesch',mk:'Nordmazedonien'};
 const ANT_FLAGS=[['a_red','Rote Kolonie',2],['a_green','Blattschneider',2],['a_gold','Goldstern',2],['a_stripe','Streifen',2],['a_mound','Hügelwacht',3],['a_fungus','Pilzgarten',3],['a_swords','Kriegsbanner',3],['a_queen','Königin',3]];
+const CROWNS=[['monarch','Pixel-König',2],['ruby','Rubinzinnen',3],['amethyst','Amethyst-Turm',4],['laurel','Goldlorbeer',6],['halo','Himmelsreif',6],['inferno','Infernokrone',8],['prism','Prisma-Herrscher',12]];
+const PATTERNS=[['stripes','Diagonalen',2],['checker','Schachbrett',2],['dots','Punkte',2],['bricks','Mauerwerk',3],['hearts','Herzchen',3],['stars','Sterne',3],['waves','Wellen',4],['grid','Gitter',4]];
+const SHIPS=[['leaf','Blattkahn',2],['viking','Wikingerboot',3],['duck','Entenboot',3],['steam','Dampfer',4],['pirate','Piratenschiff',5],['golden','Goldgaleone',8]];
 const SHOP=[
+  ...CROWNS.map(([id,n,p])=>({id:'crown:'+id,kind:'crown',key:id,name:n,price:p})),
+  ...PATTERNS.map(([id,n,p])=>({id:'pattern:'+id,kind:'pattern',key:id,name:n,price:p})),
+  ...SHIPS.map(([id,n,p])=>({id:'ship:'+id,kind:'ship',key:id,name:n,price:p})),
   ...HATS.map(([id,n,p])=>({id:'hat:'+id,kind:'hat',key:id,name:n,price:p})),
   ...WORLD_FLAGS.map(id=>({id:'flag:'+id,kind:'flag',key:id,name:FLAG_NAMES[id],price:['de','gb','us','fr','es','it','nl','pl'].includes(id)?1:2})),
   ...ANT_FLAGS.map(([id,n,p])=>({id:'flag:'+id,kind:'flag',key:id,name:n,price:p,custom:true}))
@@ -138,7 +144,7 @@ const LP='aw_local_';
 const Local={
   async init(){
     let p=lsGet(LP+'profile',null);
-    if(!p){p={id:'local',username:lsGet('ak_name','Gast'),tag:randTag(),clan_tag:'',rubys:0,wins:0,games:0,hat:null,flag:null,owned:[],quests:{},stats:{},is_admin:false,created_at:new Date().toISOString()};lsSet(LP+'profile',p)}
+    if(!p){p={id:'local',username:lsGet('ak_name','Gast'),tag:randTag(),clan_tag:'',rubys:0,wins:0,games:0,hat:null,flag:null,crown:null,pattern:null,ship:null,owned:[],quests:{},stats:{},is_admin:false,created_at:new Date().toISOString()};lsSet(LP+'profile',p)}
     if(!p.tag){p.tag=randTag();lsSet(LP+'profile',p)}
     AW.user={id:'local',email:null,phone:null,local:true};AW.profile=p;
   },
@@ -151,6 +157,7 @@ const Local={
   async update(p){const a=AW.profile;if('username' in p){const nm=cleanName(p.username);if(nm.length<2)throw new Error('Name zu kurz');if(nm.toLowerCase()!==String(a.username).toLowerCase())a.tag=randTag();a.username=nm}if('clan_tag' in p)a.clan_tag=String(p.clan_tag||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,5);
     if('hat' in p){if(p.hat&&!a.owned.includes('hat:'+p.hat))throw new Error('Nicht freigeschaltet');a.hat=p.hat}
     if('flag' in p){if(p.flag&&!a.owned.includes('flag:'+p.flag))throw new Error('Nicht freigeschaltet');a.flag=p.flag}
+    for(const k of['crown','pattern','ship'])if(k in p){if(p[k]&&!a.owned.includes(k+':'+p[k]))throw new Error('Nicht freigeschaltet');a[k]=p[k]}
     lsSet('ak_name',a.username);Local.save()},
   async buy(id){const it=SHOP_BY_ID[id],a=AW.profile;if(!it)throw new Error('Unbekannt');if(a.owned.includes(id))throw new Error('Schon gekauft');if(a.rubys<it.price)throw new Error('Nicht genug Rubys');a.rubys-=it.price;a.owned.push(id);Local.save()},
   bucket(kind){const a=AW.profile;a.stats=a.stats||{};const k=periodKey(kind);const b=a.stats[kind]=(a.stats[kind]&&a.stats[kind].k===k)?a.stats[kind]:{k,v:{}};return b},
@@ -185,6 +192,7 @@ const Local={
   }
 };
 const DEFAULT_NEWS=[
+  {id:'d7',version:'v15',title:'Kronen, Muster und Schiffe',body:'Neue Kosmetik im Shop: Kronen, Muster und Schiffe. Die Krone trägt, wer das meiste Land hat: Sie steht über dem Namen seiner Hauptstadt und in der Bestenliste, alle tragen standardmäßig die goldene Krone, im Shop gibt es sieben weitere. Muster färben deine Gebiete auf der Weltkarte (acht Stück), Schiffe ersetzen dein Floß auf dem Wasser (sechs Stück). Alles lässt sich im Inventar ausrüsten. Die Rubys sind jetzt Pixel-Kristalle.',created_at:'2026-11-21T19:00:00Z'},
   {id:'d6',version:'v14',title:'Neue Weltkarten-Oberfläche',body:'Die Weltkarte sieht jetzt aus wie bei FrontWars: Bestenliste links oben (Besitz, Gebiete, Truppen), unten die Bauleiste mit den Tasten 1 bis 6 (Wall, Außenposten, Linie, Hafen, Floß, Weg), Material und Truppen mit Anteilsleiste sowie Leisten zum Spenden von Truppen und Material. Unten rechts stehen Ereignisse und das Team. Das Seitenpanel rechts ist weg, Bauen geht über die Leiste oder per Rechtsklick. Die Flüsse winden sich jetzt natürlicher durchs Land, und die Rubys sind jetzt rote Kristalle in der Akzentfarbe.',created_at:'2026-11-21T14:00:00Z'},
   {id:'d5',version:'v13',title:'Modi, Unlimited, Flüsse und viele Neuerungen',body:'Neuer Modus-Knopf im Startmenü: FFA (7 Gegner) und Unlimited (3,5× große Karte, doppelt so große Kolonie, 5 Gegner, kein Ende). Das Startgebiet wählst du jetzt in 15 Sekunden direkt auf der Karte. Flüsse auf der Karte: baue Häfen und Flöße daran. Flöße fahren jetzt nur noch über Wasser. Spielzeit im Kopf, nach einem Sieg kannst du weiterspielen, Rechtsklick halten baut mehrere Räume. Tasten: Q/R scrollen, 1/2/3 Reiter, Tab wechselt Kolonie und Karte. Neu: Inventar für Kosmetik, Spieler des Tages, mehr Einstellungen (Tasten, VSync, FPS-Limit, Grafikqualität, Interface-Größe, Standard-Truppenanteil), roter Rahmen bei Angriffen und Quest-Anzeige im Spiel.',created_at:'2026-11-21T12:00:00Z'},
   {id:'d4',version:'v12',title:'Tunnelansicht und neue Weltkarte',body:'Taste T zeigt in der Kolonie grün Gegrabenes und rot Unbebaubares: Linksklick markiert, ziehen malt mehrere, Tunnel sind 2,5× schneller. Auf der Weltkarte verschmelzen eigene Gebiete, die Hauptstadt wird mit dem Reich größer. Rechtsklick aufs eigene Gebiet öffnet das Bauen-Menü: Verteidigungswall, Außenposten, Linien, Hafen, Floß, Wege. Marionettenstaaten geben einen Teil der Beute.',created_at:'2026-11-20T20:00:00Z'},

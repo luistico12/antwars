@@ -189,7 +189,7 @@ function renderOwners(m,F){
   const c=makeCanvas(GW*CS,GH*CS),g=c.getContext('2d');
   for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
     const i=y*GW+x,tt=m.tid[i];if(tt<0)continue;const A=m.terrs[tt],o=A.owner;
-    if(o>=0){g.fillStyle=rgb(F[o].rgb,0.36);g.fillRect(x*CS,y*CS,CS,CS)}
+    if(o>=0){g.fillStyle=rgb(F[o].rgb,0.36);g.fillRect(x*CS,y*CS,CS,CS);if(o===0&&typeof COSM!=='undefined'&&COSM.pattern)drawPatternCell(g,COSM.pattern,x,y,CS)}
     for(const[dx,dy]of N4){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=GW||ny>=GH)continue;const j=ny*GW+nx;
       if(m.tid[j]<0||m.tid[j]===tt)continue;const B=m.terrs[m.tid[j]];
       if(mergedTerr(A,B))continue;
