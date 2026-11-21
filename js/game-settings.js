@@ -88,6 +88,7 @@ document.addEventListener('keydown',e=>{
   }else if(k===kb.pause&&!over&&$('#pause').hidden){if(speed>0)prevSpeed=speed;setSpeedUI(0);showPause()}
   else if(k===kb.pause&&!$('#pause').hidden){resumeGame()}
   else if(k===kb.view&&!warping){e.preventDefault();if(view==='colony')setView('map');else if(col)setView('colony')}
+  else if(view==='map'&&/^[0-9]$/.test(k)&&typeof hudKey==='function'){e.preventDefault();hudKey(k)}
   else if(k===kb.tabAnts||k===kb.tabRooms||k===kb.tabUpg){if(!col)return;dockTab=k===kb.tabAnts?'ants':k===kb.tabRooms?'rooms':'upg';if(view!=='colony')setView('colony');renderDock()}
   else if(k===kb.dockLeft||k===kb.dockRight){const b=$('#dockBody');b.scrollBy({left:(k===kb.dockLeft?-1:1)*Math.max(240,b.clientWidth*0.7),behavior:'smooth'})}
   else if(k===kb.tunnel&&view==='colony'&&col&&!e.ctrlKey&&!e.metaKey){col.buildSel=col.buildSel==='tunnel'?null:'tunnel';col.pin=null;refreshLive()}

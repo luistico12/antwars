@@ -31,7 +31,11 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
     - Einstellungen (`game-settings.js`): Steuerung, Grafik (VSync via `nextFrame`, FPS-Limit, Qualität Niedrig/Mittel/Hoch/Ultra), Spiel (Standard-Truppenanteil, Kosmetik anderer ausblenden, Interface-Größe).
     - Roter Angriffsrahmen (`flashHit`), Quest-Pille und Erfolgs-Toasts im Spiel (`qLive` in ui-boot), Inventar (`S.inventory`, Menüknopf), Spieler des Tages (`#potd`, `AW.potd`, View `player_of_day` in schema.sql).
     - News v12 und v13 in `DEFAULT_NEWS` und schema.sql. Regel in CLAUDE.md: nach jedem Update einen News-Release.
+16. Update v14 (Weltkarten-HUD, getestet mit `node tests/hud.spec.js`):
+    - Neues `js/game-hud.js`: Bestenliste, Bauleiste (Tasten 1–6, vormerken + Klick aufs Gebiet), Material/Blätter, Truppenanteil-Leiste, Spenden-Leisten (`donT`/`donM`, vom Kreismenü genutzt), Ereignisse/Team unten rechts (alle `toast`-Meldungen, im Mehrspieler Gruppen-Chat). Seitenpanel `#side` ist im Spiel ausgeblendet (DOM bleibt für den Spielcode).
+    - Flüsse neu (`carveRivers`): Mündung mit langem freiem Landweg, weiche Windungen, 2 Zellen breit. Ruby-Icon/Farbe = Akzent.
 ## Offen (neu)
+- Bots nutzen die Bauleiste/Spenden nicht, Gebietsbeschriftung auf der Karte noch im alten Stil.
 - Unlimited: Kolonie doppelt so breit/tief (`setColonyDims(2)` in startGame, 80×56 Zellen). Noch größer wäre möglich, Hintergrund-Rendering wird dann teurer.
 - „Kosmetik anderer ausblenden“ wirkt erst, wenn Kosmetik anderer Spieler gerendert/synchronisiert wird (`cosmVisible`).
 - schema.sql erneut im Supabase-SQL-Editor ausführen (View `player_of_day`, News v12/v13).

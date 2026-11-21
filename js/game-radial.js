@@ -108,13 +108,13 @@ function openRadial(e){
   const info=f?`${f.name}${sp?` (${sp})`:''}: ${owned.length} Gebiete, ${tot} Soldaten${ally?', verbündet':''}`:`${t.name}: wilde Ameisen, ${Math.floor(t.troops)} Soldaten`;
   const segs=[{k:'info',l:'Info',why:info,info}];
   if(f&&f.alive){
-    const dTr=!ally?'Truppen spenden geht nur an Verbündete':!from?'Kein eigenes Gebiet grenzt an':n<1?'Zu wenige Soldaten in '+from.name:`${n} Soldaten aus ${from.name} nach ${t.name} schicken`;
-    const dMa=!ally?'Materialien spenden geht nur an Verbündete':G.mat<30?'Zu wenig Material (30 nötig)':`30 Material spenden: +3 Soldaten für ${t.name}`;
+    const dTr=!ally?'Truppen spenden geht nur an Verbündete':!from?'Kein eigenes Gebiet grenzt an':Math.floor((Math.floor(from.troops)-1)*donT/100)<1?'Zu wenige Soldaten in '+from.name:`${Math.floor((Math.floor(from.troops)-1)*donT/100)} Soldaten (${donT}%) aus ${from.name} nach ${t.name} schicken`;
+    const dm=Math.max(10,Math.floor(G.mat*donM/100)),dMa=!ally?'Materialien spenden geht nur an Verbündete':G.mat<dm?`Zu wenig Material (${dm} nötig)`:`${dm} Material (${donM}%) spenden: +${Math.max(1,Math.floor(dm/10))} Soldaten für ${t.name}`;
     const cd=!f.allied&&f.dipCool>0;
     if(ally){
-      segs.push({k:'troops',l:'Truppen spenden',dis:!from||n<1,why:dTr});
+      segs.push({k:'troops',l:'Truppen spenden',dis:!from||Math.floor((Math.floor(from.troops)-1)*donT/100)<1,why:dTr});
       segs.push({k:'brk',l:'Bündnis lösen',why:'Bündnis aufheben, danach ist das Gebiet angreifbar'});
-      segs.push({k:'mat',l:'Material spenden',dis:G.mat<30,why:dMa});
+      segs.push({k:'mat',l:'Material spenden',dis:G.mat<dm,why:dMa});
     }else segs.push({k:'ally',l:'Bündnis',dis:cd,why:cd?`${f.name} verhandelt erst in ${Math.ceil(f.dipCool)}s wieder`:'Bündnis vorschlagen'});
   }
   /* Über Wasser: Floß aus einem Hafen, danach den Landepunkt an der Küste wählen */
@@ -163,12 +163,12 @@ $('#radial').addEventListener('click',e=>{
   }else if(k==='brk'){
     const f=F[t.owner];if(f&&f.allied)breakAlliance(t.owner);
   }else if(k==='troops'){
-    if(!ally||!from||from.owner!==0)return;const n=Math.floor((Math.floor(from.troops)-1)*pct/100);
+    if(!ally||!from||from.owner!==0)return;const n=Math.floor((Math.floor(from.troops)-1)*donT/100);
     if(n<1){toast('Zu wenige Soldaten für einen Marsch','bad');return}
     launch(from,t,n,0);toast(`${n} Soldaten ziehen zu ${F[t.owner].name}`,'good');
   }else if(k==='mat'){
-    if(!ally||G.mat<30)return;
-    G.mat-=30;t.troops+=3;toast(`Du spendest ${F[t.owner].name} 30 Material: +3 Soldaten in ${t.name}`,'good');
+    const m=Math.max(10,Math.floor(G.mat*donM/100));if(!ally||G.mat<m)return;
+    G.mat-=m;const sd=Math.max(1,Math.floor(m/10));t.troops+=sd;toast(`Du spendest ${F[t.owner].name} ${m} Material: +${sd} Soldaten in ${t.name}`,'good');
   }else if(k==='ship'){
     const src=seaSource();if(src&&t.coast&&t.coast.length)startLanding(t,src);
   }

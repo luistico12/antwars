@@ -64,21 +64,35 @@ function fillLakes(land){
 }
 /* Flüsse: von der Küste ins Land gegraben (4-verbunden, enden im Land, trennen nichts ab) */
 function carveRivers(land,rnd,count){
+  /* Fluss: von der Küste landeinwärts, weiche Windungen (Kurs ändert sich nur langsam), am Mund breiter */
   const coast=[];
   for(let y=1;y<GH-1;y++)for(let x=1;x<GW-1;x++){const i=y*GW+x;if(!land[i])continue;if(N4.some(([dx,dy])=>!land[(y+dy)*GW+x+dx]))coast.push(i)}
   let cx=0,cy=0,n=0;for(let i=0;i<land.length;i++)if(land[i]){cx+=i%GW;cy+=(i/GW)|0;n++}cx/=n;cy/=n;
+  const SQ=Math.sqrt(GW/96),starts=[];
   for(let r=0;r<count&&coast.length;r++){
-    const s=coast[Math.floor(rnd()*coast.length)];let x=s%GW,y=(s/GW)|0;
-    const len=Math.round((12+rnd()*16)*Math.sqrt(GW/96)),mine=[s];land[s]=0;
-    for(let st=0;st<len;st++){
-      const tx=cx-x+(rnd()-0.5)*30,ty=cy-y+(rnd()-0.5)*30;
-      const horiz=Math.abs(tx)*(0.6+rnd()*0.8)>Math.abs(ty);
-      let nx=x,ny=y;if(horiz)nx+=tx>0?1:-1;else ny+=ty>0?1:-1;
-      if(nx<3||ny<3||nx>=GW-3||ny>=GH-3)break;
-      const j=ny*GW+nx;if(!land[j]){x=nx;y=ny;continue}
-      /* nicht an anderes Wasser stoßen (außer an sich selbst), sonst würde das Land geteilt */
-      if(st>2&&N4.some(([dx,dy])=>{const q=(ny+dy)*GW+nx+dx;return !land[q]&&!mine.includes(q)&&q!==y*GW+x}))break;
-      land[j]=0;mine.push(j);x=nx;y=ny;
+    /* Mündung: Küstenpunkt, von dem aus ein langer Weg ins Landesinnere frei ist, weit weg von anderen Mündungen */
+    let s=0,bs=-1,brun=0;
+    for(let k=0;k<30;k++){const c=coast[Math.floor(rnd()*coast.length)],x0=c%GW,y0=(c/GW)|0,a0=Math.atan2(cy-y0,cx-x0);
+      let run=0;while(run<200){const qx=Math.round(x0+Math.cos(a0)*(run+2)),qy=Math.round(y0+Math.sin(a0)*(run+2));if(qx<0||qy<0||qx>=GW||qy>=GH||!land[qy*GW+qx])break;run++}
+      let d=1e9;for(const[qx,qy]of starts)d=Math.min(d,Math.hypot(qx-x0,qy-y0));
+      const sc=run+Math.min(d,30)*0.5;if(sc>bs){bs=sc;s=c;brun=run}}
+    let x=s%GW,y=(s/GW)|0;starts.push([x,y]);
+    const toC=Math.atan2(cy-y,cx-x),len=Math.max(8,Math.round(brun*(0.7+rnd()*0.25)/0.8));
+    let h=toC+(rnd()-0.5)*0.8,turn=0;const mine=new Set([s]);land[s]=0;
+    let st=0;
+    for(let it=0;it<len*4&&st<len;it++){
+      turn=turn*0.85+(rnd()-0.5)*0.35;h+=turn;
+      let dh=toC-h;while(dh>Math.PI)dh-=2*Math.PI;while(dh<-Math.PI)dh+=2*Math.PI;h+=dh*0.04;
+      x+=Math.cos(h)*0.8;y+=Math.sin(h)*0.8;
+      const ix=Math.round(x),iy=Math.round(y);
+      if(ix<3||iy<3||ix>=GW-3||iy>=GH-3){x-=Math.cos(h)*0.8;y-=Math.sin(h)*0.8;h=toC;continue}
+      const wide=SQ>=1,cells=[[ix,iy]];if(wide){const px=Math.abs(Math.cos(h))<0.7?1:0;cells.push(px?[ix+1,iy]:[ix,iy+1])}
+      let stop=false;
+      for(const[qx,qy]of cells){const j=qy*GW+qx;if(!land[j])continue;
+        if(st>5&&N4.some(([dx,dy])=>{const q=(qy+dy)*GW+qx+dx;return !land[q]&&!mine.has(q)}))stop=true}
+      if(stop)break;
+      for(const[qx,qy]of cells){const j=qy*GW+qx;if(land[j]){land[j]=0;mine.add(j)}}
+      st++;
     }
   }
 }
@@ -96,7 +110,7 @@ function buildMap(seed){
     land=largestComponent(land);fillLakes(land);
     let n=0;for(let i=0;i<land.length;i++)n+=land[i];
     if(n<1900*SC||n>3400*SC)continue;
-    carveRivers(land,rnd,Math.round(2*SC));land=largestComponent(land);
+    carveRivers(land,rnd,Math.max(3,Math.round(3*SC)));land=largestComponent(land);
     const idx=[];for(let i=0;i<land.length;i++)if(land[i])idx.push(i);
     const seeds=[];
     const wantS=Math.round(20*SC);
