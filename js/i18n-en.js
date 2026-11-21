@@ -275,6 +275,8 @@ Object.assign(EN,{
 "Gegner ": "Opponents",
 "Max": "Max",
 "Zielgebiet": "Target",
+"Modus": "Mode",
+"Wähle dein Startgebiet": "Choose your start area",
 "Bauen": "Build",
 "Schließen": "Close",
 "Außenposten": "Outpost",

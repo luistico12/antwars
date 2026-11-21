@@ -94,12 +94,35 @@ function startLanding(t,src){
   placing={kind:'land',tid:t.id,src:src.id,mw:null};
   toast(`Klicke auf die Küste von ${t.name}, wo das Floß landen soll. Esc bricht ab`,'good');
 }
+/* Wasserweg (BFS über Wasserzellen, 8er-Nachbarschaft ohne Ecken über Land). Liefert Punkte von Hafen bis Landepunkt oder null */
+function waterPath(fromIdx,toIdx){
+  const water=(x,y)=>x>=0&&y>=0&&x<GW&&y<GH&&!M.land[y*GW+x];
+  const prev=new Int32Array(GW*GH).fill(-2),q=[],goal=new Set();
+  const nbrs=i=>{const x=i%GW,y=(i/GW)|0,o=[];for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const nx=x+dx,ny=y+dy;if(water(nx,ny))o.push(ny*GW+nx)}return o};
+  for(const j of nbrs(toIdx))goal.add(j);
+  for(const j of nbrs(fromIdx)){prev[j]=-1;q.push(j)}
+  let end=-1;
+  for(let h=0;h<q.length;h++){const i=q[h];if(goal.has(i)){end=i;break}
+    const x=i%GW,y=(i/GW)|0;
+    for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]){
+      const nx=x+dx,ny=y+dy;if(!water(nx,ny))continue;if(dx&&dy&&(!water(x+dx,y)||!water(x,y+dy)))continue;
+      const j=ny*GW+nx;if(prev[j]===-2){prev[j]=i;q.push(j)}}}
+  if(end<0)return null;
+  const pts=[];for(let k=end;k>=0;k=prev[k])pts.push(cellPos(k));pts.reverse();
+  return[cellPos(fromIdx),...pts,cellPos(toIdx)];
+}
+const pathLen=p=>{let L=0;for(let i=1;i<p.length;i++)L+=Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1]);return L};
+function pathAt(p,d){
+  for(let i=1;i<p.length;i++){const l=Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1]);if(d<=l||i===p.length-1){const f=l?Math.min(1,d/l):1;return[p[i-1][0]+(p[i][0]-p[i-1][0])*f,p[i-1][1]+(p[i][1]-p[i-1][1])*f,(p[i][0]-p[i-1][0])/(l||1),(p[i][1]-p[i-1][1])/(l||1)]}d-=l}
+  const e=p[p.length-1];return[e[0],e[1],1,0];
+}
 function launchSea(src,t,n,cell){
   if(!src.port||src.port.rafts<1)return false;
   if(t.owner!==0&&!isFriend(0,t.owner)&&protLeft()>0){toast(`Schutzzeit: noch ${mmss(protLeft())}. Bis dahin kann niemand angreifen`,'bad');return false}
+  const path=waterPath(src.port.idx,cell);if(!path){toast('Kein Seeweg: dorthin kommt das Floß nicht, das Wasser ist nicht verbunden','bad');return false}
   src.port.rafts--;src.troops-=n;
-  const a=cellPos(src.port.idx),b=cellPos(cell),d=Math.hypot(a[0]-b[0],a[1]-b[1])/CS;
-  marches.push({from:src,to:t,n,f:0,t:0,dur:(3+d*0.22)/pwMul('speed'),phase:'walk',ft:0,fdur:2.4,seed:(Math.random()*1e6)|0,sea:true,a,b,land:{x:b[0],y:b[1]},home:src});
+  const a=path[0],b=path[path.length-1],d=pathLen(path)/CS;
+  marches.push({from:src,to:t,n,f:0,t:0,dur:(3+d*0.22)/pwMul('speed'),phase:'walk',ft:0,fdur:2.4,seed:(Math.random()*1e6)|0,sea:true,a,b,path,land:{x:b[0],y:b[1]},home:src});
   if(t.owner>0&&!isFriend(0,t.owner)){F[t.owner].hurt=gtime;addHeat(t.owner)}
   toast(`${n} Soldaten stechen per Floß nach ${t.name} in See`,'good');return true;
 }
@@ -241,8 +264,8 @@ function drawSeaLayer(g,now){
   }
 }
 function drawSeaMarch(g,m,now,ax,ay,bx,by,ux,uy,len,pal){
-  const p=clamp(m.t/m.dur,0,1),hx=ax+ux*len*p,hy=ay+uy*len*p+Math.sin(now/220)*1.5,c=F[m.f].rgb;
-  g.setLineDash([5,5]);g.lineDashOffset=-now/50;g.strokeStyle='rgba(190,230,255,.85)';g.lineWidth=2;g.beginPath();g.moveTo(ax,ay);g.lineTo(bx,by);g.stroke();g.setLineDash([]);
+  const p=clamp(m.t/m.dur,0,1),pp=m.path||[[ax,ay],[bx,by]],[px0,py0,dx0,dy0]=pathAt(pp,pathLen(pp)*p),hx=px0,hy=py0+Math.sin(now/220)*1.5,c=F[m.f].rgb;ux=dx0;uy=dy0;
+  g.setLineDash([5,5]);g.lineDashOffset=-now/50;g.strokeStyle='rgba(190,230,255,.85)';g.lineWidth=2;g.beginPath();pp.forEach((q,i)=>i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1]));g.stroke();g.setLineDash([]);
   g.fillStyle='#22140a';g.fillRect(hx-12,hy-3,24,9);g.fillStyle='#8a5a30';g.fillRect(hx-11,hy-2,22,7);g.fillStyle='#a8764a';g.fillRect(hx-11,hy-2,22,2);
   g.fillStyle='#22140a';g.fillRect(hx-1,hy-17,2,15);g.fillStyle=rgb(c);g.fillRect(hx+1,hy-17,9,7);
   const k=Math.min(3,Math.ceil(m.n/6));for(let i=0;i<k;i++)drawAnt(g,hx-7+i*7,hy-5,ux,uy,now/60+i,'w',F[m.f].species,null,0.42,pal);
@@ -270,9 +293,11 @@ function drawSeaTop(g,now){
     const t=T[placing.tid],src=T[placing.src];
     g.fillStyle='rgba(110,180,255,.75)';for(const i of t.coast){const[cx,cy]=cellPos(i);g.fillRect(cx-1,cy-1,3,3)}
     if(mw){const cell=landingCell(t,mw[0],mw[1]);
-      if(cell>=0&&src.port){const[lx,ly]=cellPos(cell),[sx,sy]=cellPos(src.port.idx);
-        g.setLineDash([5,5]);g.lineDashOffset=-now/50;g.strokeStyle='rgba(190,230,255,.7)';g.lineWidth=2;g.beginPath();g.moveTo(sx,sy);g.lineTo(lx,ly);g.stroke();g.setLineDash([]);
-        drawLandMarker(g,lx,ly,now)}}
+      if(cell>=0&&src.port){const[lx,ly]=cellPos(cell);
+        if(placing.pc!==cell){placing.pc=cell;placing.pp=waterPath(src.port.idx,cell)}
+        const pp=placing.pp;
+        if(pp){g.setLineDash([5,5]);g.lineDashOffset=-now/50;g.strokeStyle='rgba(190,230,255,.7)';g.lineWidth=2;g.beginPath();pp.forEach((q,i)=>i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1]));g.stroke();g.setLineDash([]);drawLandMarker(g,lx,ly,now)}
+        else{g.strokeStyle='#ff6a5a';g.lineWidth=3;g.beginPath();g.moveTo(lx-8,ly-8);g.lineTo(lx+8,ly+8);g.moveTo(lx+8,ly-8);g.lineTo(lx-8,ly+8);g.stroke()}}}
   }
 }
 seaReset();

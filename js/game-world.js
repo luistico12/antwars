@@ -3,8 +3,8 @@ const FCOL=[[74,163,255],[224,82,61],[179,107,224],[230,194,60],[80,200,140],[24
 const FNAME=['Du','Rote Kolonie','Violette Kolonie','Gelbe Kolonie','Grüne Kolonie','Orange Kolonie','Rosa Kolonie','Hellblaue Kolonie'];
 const DIFFS={easy:{regen:0.8,think:7,atk:1,ratio:1.5},normal:{regen:1,think:5,atk:1.05,ratio:1.25},hard:{regen:1.3,think:3.2,atk:1.15,ratio:1.1}};
 const STR_COST={out:[{mat:40,food:20},{mat:80,food:40}],line:[{mat:25,food:10},{mat:45,food:20}]};
-const MW=GW*CS,MH=GH*CS;
-let M=null,F=[],T=[],marches=[],fxs=[],started=false,over=false,speed=1,gtime=0,selT=null,hovT=null,pct=50;
+let MW=GW*CS,MH=GH*CS,modeKey='ffa';
+let contWin=false,M=null,F=[],T=[],marches=[],fxs=[],started=false,over=false,speed=1,gtime=0,selT=null,hovT=null,pct=50;
 let setupSp='ground',setupStart=null,diffKey='normal',baseCanvas=null,ownCanvas=null,strCanvas=null,ownDirty=true,strDirty=true,dockDirty=true;
 let conqQueue=[];
 const mcam={x:0,y:0,z:1};
@@ -16,6 +16,7 @@ function addHeat(fid){H.recent[fid]=gtime;const k=Object.values(H.recent).filter
 const isFriend=(a,b)=>a===b||(a===0&&b>0&&F[b].allied)||(b===0&&a>0&&F[a].allied);
 
 function newMap(seed){
+  setMapDims(MODES[modeKey].scale);MW=GW*CS;MH=GH*CS;if(typeof applyDensity==='function')applyDensity();
   M=buildMap(seed);T=M.terrs;baseCanvas=renderBase(M);
   for(const t of T){t.str=newStr();t.col=null;t.puppet=false;t.item=null;t.walls=[];t.port=null}
   F=[{id:0,isPlayer:true,name:'Du',species:setupSp,rgb:FCOL[0],alive:true,capital:-1}];
@@ -45,7 +46,7 @@ function startGame(){
   const taken=[st],dist=(a,b)=>Math.hypot(a.lx-b.lx,a.ly-b.ly);
   hum.forEach(h=>{const ht=T[h.start];ht.owner=h.fid;ht.isCap=true;ht.troops=3;taken.push(ht);
     F.push({id:h.fid,isPlayer:false,human:true,pid:h.pid,name:h.name,species:h.species,rgb:FCOL[h.fid],alive:true,capital:h.start,allied:false,dipCool:0,hurt:-999})});
-  const total=Math.max(4,1+hum.length);
+  const total=Math.max(2+hum.length,1+MODES[modeKey].bots);
   for(let b=1+hum.length;b<total;b++){
     let best=null,bs=-1;
     for(const t of T){if(t.owner!==-1)continue;const d=Math.min(...taken.map(q=>dist(q,t)));if(d>bs){bs=d;best=t}}
@@ -55,7 +56,7 @@ function startGame(){
     if(free.length){const x=free[Math.floor(Math.random()*free.length)];x.owner=b;x.troops=8}
   }
   placeItems();
-  marches=[];fxs=[];conqQueue=[];H.v=0;H.recent={};started=true;over=false;gtime=0;selT=null;speed=1;ownDirty=true;strDirty=true;
+  contWin=modeKey==='unlimited';marches=[];fxs=[];conqQueue=[];H.v=0;H.recent={};started=true;over=false;gtime=0;selT=null;speed=1;ownDirty=true;strDirty=true;
   newG();st.col=makeColony(st,'capital',setupSp);curT=st.id;col=st.col;
   computeStats(col);syncAnts(true);
 }
@@ -81,6 +82,7 @@ function breakAlliance(fid){const f=F[fid];if(!f||!f.allied)return;f.allied=fals
 const wpos=t=>[t.lx*CS+5,t.ly*CS+5];
 const PROT={easy:150,normal:90,hard:60};
 const protLeft=()=>started?Math.max(0,PROT[diffKey]-gtime):0;
+const clockT=s=>{s=Math.floor(s);const h=Math.floor(s/3600),m=Math.floor(s%3600/60);return(h?h+':'+String(m).padStart(2,'0'):m)+':'+String(s%60).padStart(2,'0')};
 const mmss=s=>Math.floor(s/60)+':'+String(Math.ceil(s%60)%60).padStart(2,'0');
 function launch(from,to,n,fid){
   if(to.owner!==fid&&!isFriend(fid,to.owner)&&protLeft()>0){if(fid===0)toast(`Schutzzeit: noch ${mmss(protLeft())}. Bis dahin kann niemand angreifen`,'bad');return false}
@@ -149,10 +151,11 @@ function eliminate(fid,by){
   const f=F[fid];f.alive=false;marches=marches.filter(m=>m.f!==fid);
   if(fid===0){endGame(false);return}
   toast(`${f.name} wurde ausgelöscht`,by===0?'good':'');
-  if(F.every(x=>x.isPlayer||!x.alive))endGame(true);
+  if(!contWin&&F.every(x=>x.isPlayer||!x.alive))endGame(true);
 }
 function endGame(win){
   over=true;conqQueue=[];$('#conq').hidden=true;
+  $('#endCont').hidden=!win;
   $('#endT').textContent=win?'Sieg!':'Niederlage';
   $('#endP').textContent=win?`Alle Gegner sind besiegt. Dein Volk herrscht über das Land (Tag ${dayNo()}).`:`Du hast kein Gebiet mehr. Die Kolonien sind verloren (Tag ${dayNo()}).`;
   $('#end').hidden=false;

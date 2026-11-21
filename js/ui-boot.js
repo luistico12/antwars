@@ -22,7 +22,8 @@ function homeBuild(){
   <div class="hmain">
     <div class="hhero glass"><div class="lbl">${t('Nächste Karte')}</div><h2 id="hMapName"></h2><div class="hmeta" id="hTags"></div>
       <div class="hopts"><div class="field"><span class="lbl">${t('Art')}</span><div class="spsel" id="hSp"></div></div>
-      <div class="field"><span class="lbl">${t('Gegner')}</span><div class="pills" id="hDf"></div></div></div>
+      <div class="field"><span class="lbl">${t('Gegner')}</span><div class="pills" id="hDf"></div></div>
+      <div class="field"><span class="lbl">${t('Modus')}</span><div class="pills" id="hMode"></div></div></div>
       <div class="row"><button class="btn" id="hReroll" type="button">${ico('refresh')} ${t('Neue Karte')}</button></div></div>
     <div class="hacts">
       <button class="hact pri" id="hSolo" type="button">${ico('play')}<span>${t('Spielen')}</span></button>
@@ -41,7 +42,7 @@ function homeBuild(){
     openScreen(s,undefined,false);
   });
   $('#hReroll').onclick=()=>{newMap((Math.random()*1e6)|0);renderSetup();homeDraw();homeFill()};
-  $('#hSolo').onclick=()=>{if(requireSession()){homeHide();setView('map')}};
+  $('#hSolo').onclick=()=>{if(requireSession()){homeHide();setView('map');pickStart()}};
   $('#hCreate').onclick=()=>lobCreate();
   $('#hJoin').onclick=()=>{if(requireSession())openScreen('lobbyJoin',undefined,false)};
   $('#hTut').onclick=()=>openScreen('tutorial',undefined,false);
@@ -52,6 +53,8 @@ function renderHomeOpts(){
   $('#hSp').onclick=e=>{const b=e.target.closest('[data-sp]');if(!b)return;setupSp=b.dataset.sp;
     if(setupStart!=null&&T[setupStart].terrain!==SP[setupSp].terr){T[setupStart].owner=-1;setupStart=null;ownDirty=true}
     F[0].species=setupSp;renderSetup();homeFill()};
+  $('#hMode').innerHTML=Object.keys(MODES).map(m=>`<button data-m="${m}" type="button" title="${esc(t(MODES[m].d))}">${MODES[m].n}</button>`).join('');
+  $('#hMode').onclick=e=>{const b=e.target.closest('[data-m]');if(!b||modeKey===b.dataset.m)return;modeKey=b.dataset.m;newMap((Math.random()*1e6)|0);renderSetup();homeDraw();homeFill()};
   $('#hDf').onclick=e=>{const b=e.target.closest('[data-d]');if(!b)return;diffKey=b.dataset.d;$$('#diffSeg [data-d]').forEach(x=>x.classList.toggle('on',x.dataset.d===diffKey));homeFill()};
 }
 function homeShow(){closeScreens();$('#home').hidden=false;homeDraw();homeFill();renderHeader()}
@@ -59,9 +62,10 @@ function homeHide(){$('#home').hidden=true;renderHeader()}
 function homeDraw(){const c=$('#homeBg'),g=c.getContext('2d');g.imageSmoothingEnabled=false;g.clearRect(0,0,c.width,c.height);if(baseCanvas){g.drawImage(baseCanvas,0,0,c.width,c.height);if(ownCanvas)g.drawImage(ownCanvas,0,0,c.width,c.height)}}
 function homeFill(){
   $('#hMapName').textContent=mapTitle();
-  $('#hTags').innerHTML=`<span class="tag">${t(DFN[diffKey])}</span><span class="tag">${T.length} ${LANG==='de'?'Gebiete':'areas'}</span><span class="tag ac">3 ${t('Gegner')}</span><span class="tag">${LANG==='de'?'Schutz':'Protection'} ${mmss(PROT[diffKey])}</span>`;
+  $('#hTags').innerHTML=`<span class="tag">${t(DFN[diffKey])}</span><span class="tag">${T.length} ${LANG==='de'?'Gebiete':'areas'}</span><span class="tag ac">${MODES[modeKey].bots} ${t('Gegner')}</span><span class="tag">${MODES[modeKey].n}</span><span class="tag">${LANG==='de'?'Schutz':'Protection'} ${mmss(PROT[diffKey])}</span>`;
   $$('#hSp [data-sp]').forEach(b=>b.classList.toggle('on',b.dataset.sp===setupSp));
   $$('#hDf [data-d]').forEach(b=>b.classList.toggle('on',b.dataset.d===diffKey));
+  $$('#hMode [data-m]').forEach(b=>b.classList.toggle('on',b.dataset.m===modeKey));
   $('#railAdmin').hidden=!AW.isAdmin;
 }
 
@@ -88,7 +92,24 @@ setInterval(()=>{
   if(al&&!rep.allied){rep.allied=true;p.allied=1}
   if(Object.keys(p).length)AW.report(p);
 },3000);
-$('#endBtn').addEventListener('click',()=>setTimeout(()=>{MATCH.seed=null;homeShow()},0));
+$('#endBtn').addEventListener('click',()=>setTimeout(()=>{MATCH.seed=null;pickStop();homeShow()},0));
+
+/* ---------- Startgebiet wählen: 15 Sekunden, danach wird zufällig gewählt ---------- */
+const PICK_SECS=15;let pick15=null;
+document.body.insertAdjacentHTML('beforeend','<div id="pickBar" hidden><b id="pickTxt"></b><i><u id="pickFill"></u></i></div>');
+function pickStart(){
+  pickStop();setupStart!=null&&(T[setupStart].owner=-1);setupStart=null;ownDirty=true;
+  $('#setupPanel').hidden=true;
+  pick15={t:PICK_SECS,iv:setInterval(()=>{
+    if(!pick15)return;pick15.t-=0.1;
+    const sp=SP[setupSp];$('#pickTxt').textContent=`${t('Wähle dein Startgebiet')} (${TERR[sp.terr].name}) · ${Math.max(0,Math.ceil(pick15.t))}s`;
+    $('#pickFill').style.width=Math.max(0,pick15.t/PICK_SECS*100)+'%';
+    if(pick15.t<=0){const opts=T.filter(x=>x.terrain===sp.terr);const x=opts[Math.floor(Math.random()*opts.length)]||T[0];mapClick(x.id)}
+  },100)};
+  $('#pickBar').hidden=false;
+}
+function pickStop(){if(pick15){clearInterval(pick15.iv);pick15=null}$('#pickBar').hidden=true}
+(function(){const mc=mapClick;mapClick=function(id){const before=setupStart;mc(id);if(!started&&pick15&&setupStart!=null&&setupStart!==before){pickStop();$('#btnStart').onclick()}}})();
 
 /* ---------- Start ---------- */
 AW.on(()=>{syncCosmetics();if(!$('#home').hidden)homeFill()});

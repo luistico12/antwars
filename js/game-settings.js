@@ -1,9 +1,9 @@
 /* ===== Einstellungen: Steuerung und Grafik ===== */
-const KB_DEF={up:'w',down:'s',left:'a',right:'d',zoomIn:'+',zoomOut:'-',pause:'p',view:'m'};
-const KB_NAME={up:'Nach oben',down:'Nach unten',left:'Nach links',right:'Nach rechts',zoomIn:'Hineinzoomen',zoomOut:'Herauszoomen',pause:'Pause',view:'Kolonie / Weltkarte wechseln'};
+const KB_DEF={up:'w',down:'s',left:'a',right:'d',zoomIn:'+',zoomOut:'-',pause:'p',view:'Tab',tabAnts:'1',tabRooms:'2',tabUpg:'3',dockLeft:'q',dockRight:'r',tunnel:'t',speed1:'',speed2:'',speed4:'',speed8:''};
+const KB_NAME={up:'Nach oben',down:'Nach unten',left:'Nach links',right:'Nach rechts',zoomIn:'Hineinzoomen',zoomOut:'Herauszoomen',pause:'Pause',view:'Kolonie / Weltkarte wechseln',tabAnts:'Reiter Ameisen',tabRooms:'Reiter Räume',tabUpg:'Reiter Upgrades',dockLeft:'Leiste nach links scrollen',dockRight:'Leiste nach rechts scrollen',tunnel:'Tunnelansicht (Kolonie)',speed1:'Geschwindigkeit x1',speed2:'Geschwindigkeit x2',speed4:'Geschwindigkeit x4',speed8:'Geschwindigkeit x8'};
 const ST=Object.assign({fps:false,density:1,kb:{...KB_DEF}},lsGet('ak_settings',{}));ST.kb=Object.assign({...KB_DEF},ST.kb||{});
 const saveST=()=>lsSet('ak_settings',ST);
-function keyLabel(k){return k===' '?'Leertaste':k.length===1?k.toUpperCase():k}
+function keyLabel(k){return k===''?'—':k===' '?'Leertaste':k.length===1?k.toUpperCase():k}
 function rebuildKeymap(){
   for(const k of Object.keys(KEYMAP))delete KEYMAP[k];
   Object.assign(KEYMAP,{ArrowLeft:'l',ArrowRight:'r',ArrowUp:'u',ArrowDown:'d'});
@@ -21,7 +21,7 @@ function renderSet(){
   let h=`<div style="display:flex;align-items:center;gap:8px"><h2 style="flex:1">Einstellungen</h2><button class="btn sm" id="setClose" type="button">Schließen</button></div>
   <div class="opt"><button class="btn sm${setTab==='kb'?' on':''}" data-st="kb" type="button">Steuerung</button><button class="btn sm${setTab==='gfx'?' on':''}" data-st="gfx" type="button">Grafik</button></div>`;
   if(setTab==='kb'){
-    h+='<p class="note">Klicke auf eine Taste und drücke die neue. Die Pfeiltasten bewegen immer zusätzlich. Esc pausiert und bricht ab.</p>';
+    h+='<p class="note">Klicke auf eine Taste und drücke die neue. Die Pfeiltasten bewegen immer zusätzlich. Esc pausiert und bricht ab. Entf/Rücktaste löscht die Belegung.</p>';
     h+=Object.keys(KB_DEF).map(a=>`<div class="kbrow"><span>${KB_NAME[a]}</span><button class="btn sm${kbWait===a?' wait':''}" data-kb="${a}" type="button">${kbWait===a?'Taste drücken …':esc(keyLabel(ST.kb[a]))}</button></div>`).join('');
     h+='<div><button class="btn sm" id="kbReset" type="button">Standard wiederherstellen</button></div>';
   }else{
@@ -47,7 +47,8 @@ document.addEventListener('keydown',e=>{
   if(kbWait&&!$('#set').hidden){
     e.preventDefault();e.stopImmediatePropagation();
     if(e.key==='Escape'){kbWait=null;renderSet();return}
-    if(/^(Shift|Control|Alt|Meta|Tab|Enter)$/.test(e.key))return;
+    if(/^(Shift|Control|Alt|Meta|Enter)$/.test(e.key))return;
+    if(e.key==='Backspace'||e.key==='Delete'){ST.kb[kbWait]='';kbWait=null;rebuildKeymap();saveST();renderSet();return}
     const k=e.key.length===1?e.key.toLowerCase():e.key;
     for(const a of Object.keys(ST.kb))if(ST.kb[a]===k&&a!==kbWait)ST.kb[a]=ST.kb[kbWait];
     ST.kb[kbWait]=k;kbWait=null;rebuildKeymap();saveST();renderSet();return;
@@ -64,7 +65,11 @@ document.addEventListener('keydown',e=>{
     else if(view==='map'){mcam.x+=MW/mcam.z/2;mcam.y+=MH/mcam.z/2;mcam.z=clamp(mcam.z*f,1,4);mcam.x-=MW/mcam.z/2;mcam.y-=MH/mcam.z/2;clampMapCam()}
   }else if(k===kb.pause&&!over&&$('#pause').hidden){if(speed>0)prevSpeed=speed;setSpeedUI(0);showPause()}
   else if(k===kb.pause&&!$('#pause').hidden){resumeGame()}
-  else if(k===kb.view&&!warping){if(view==='colony')setView('map');else if(col)setView('colony')}
+  else if(k===kb.view&&!warping){e.preventDefault();if(view==='colony')setView('map');else if(col)setView('colony')}
+  else if(k===kb.tabAnts||k===kb.tabRooms||k===kb.tabUpg){if(!col)return;dockTab=k===kb.tabAnts?'ants':k===kb.tabRooms?'rooms':'upg';if(view!=='colony')setView('colony');renderDock()}
+  else if(k===kb.dockLeft||k===kb.dockRight){const b=$('#dockBody');b.scrollBy({left:(k===kb.dockLeft?-1:1)*Math.max(240,b.clientWidth*0.7),behavior:'smooth'})}
+  else if(k===kb.tunnel&&view==='colony'&&col&&!e.ctrlKey&&!e.metaKey){col.buildSel=col.buildSel==='tunnel'?null:'tunnel';col.pin=null;refreshLive()}
+  else{const sp=[kb.speed1,kb.speed2,kb.speed4,kb.speed8].indexOf(k);if(sp>=0){const v=[1,2,4,8][sp];prevSpeed=v;setSpeedUI(v)}}
 });
 $('#pause .box').insertAdjacentHTML('beforeend','');
 $('#pEnd').insertAdjacentHTML('beforebegin','<button class="btn" id="pSet" type="button">Einstellungen</button>');

@@ -242,7 +242,7 @@ function refreshLive(){
   $('#cT').textContent=owned;$('#cTm').textContent='/'+T.length;
   $('#cH').textContent=heatStage();
   $('#chipFood').classList.toggle('warn',G.food<10);
-  {const pl=protLeft();if(pl>0)prevProt=1;else if(prevProt){prevProt=0;toast('Die Schutzzeit ist vorbei. Ab jetzt sind Angriffe möglich','bad')}$('#dayLabel').textContent=`Tag ${dayNo()}`+(pl>0?` · Schutz ${mmss(pl)}`:'')}
+  {const pl=protLeft();if(pl>0)prevProt=1;else if(prevProt){prevProt=0;toast('Die Schutzzeit ist vorbei. Ab jetzt sind Angriffe möglich','bad')}$('#dayLabel').textContent=`Tag ${dayNo()} · ${clockT(gtime)}`+(pl>0?` · Schutz ${mmss(pl)}`:'')}
   renderStat();renderColSwitch();renderPw();
   if(!col)return;
   const e=econC(col),t=T[col.tid];
@@ -356,6 +356,17 @@ function warp(dir,id){
     setTimeout(()=>{to.classList.remove('warp-arrive-out','warp-arrive-in');warping=false},550);
   },450);
 }
+/* Baumodus: Rechtsklick halten und über Zellen ziehen baut mehrere (kurzer Rechtsklick bricht ab) */
+function rpaintCell(p,c,r){
+  const k=c+','+r;if(p.seen.has(k))return;p.seen.add(k);
+  const why=canPlace(col.buildSel,c,r);if(why){if(/Material|Blätter/.test(why))p.low=true;return}
+  if(placeBuild(col.buildSel,c,r))p.n++;
+}
+function rpaintStep(c,r){
+  const p=col.rpaint;if(!p)return;
+  if(!p.on){if(c===p.c0&&r===p.r0&&performance.now()-p.t0<180)return;p.on=true;rpaintCell(p,p.c0,p.r0)}
+  rpaintCell(p,c,r);
+}
 let drag=null;
 function startDrag(e,cam,el,W,Hh){drag={sx:e.clientX,sy:e.clientY,cx:cam.x,cy:cam.y,moved:false,cam,el,W,Hh};try{el.setPointerCapture(e.pointerId)}catch(_){}}
 function moveDrag(e){
@@ -365,6 +376,9 @@ function moveDrag(e){
   return drag.moved;
 }
 cv.addEventListener('pointerdown',e=>{
+  if(e.button===2&&col&&col.buildSel&&col.buildSel!=='tunnel'){
+    const[x,y]=colWorld(e);col.rpaint={t0:performance.now(),c0:clamp(Math.floor(x/CELLW),0,COLS-1),r0:clamp(Math.floor(y/CELLH),0,ROWS-1),n:0,on:false,low:false,seen:new Set()};
+    try{cv.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();return}
   if(e.button===2){startDrag(e,ccam,cv,VW,VH);e.preventDefault();return}
   if(e.button===0&&col&&col.buildSel==='tunnel'){
     const[x,y]=colWorld(e);col.paint={n:0,bad:0,low:0,last:null};try{cv.setPointerCapture(e.pointerId)}catch(_){}
@@ -376,10 +390,12 @@ cv.addEventListener('pointermove',e=>{
   if(drag&&drag.el===cv){moveDrag(e);hideTip();return}
   const[x,y]=colWorld(e);col.hover=(x>=0&&y>=0&&x<CW&&y<CH)?{c:Math.floor(x/CELLW),r:Math.floor(y/CELLH)}:null;
   if(col.paint&&col.hover)paintAt(col.hover.c,col.hover.r);
+  if(col.rpaint&&col.hover)rpaintStep(col.hover.c,col.hover.r);
   if(!col.buildSel)showTip(colonyInfoAt(col,x,y),e);else if(col.buildSel==='tunnel')hideTip();else{const k=col.hover&&canPlace(col.buildSel,col.hover.c,col.hover.r);showTip(k?`<span style="color:#ff8a70">${k}</span>`:null,e)}
 });
 cv.addEventListener('pointerup',e=>{
   if(e.button===0&&col&&col.paint){endPaint();refreshLive();return}
+  if(e.button===2&&col&&col.rpaint){const p=col.rpaint;col.rpaint=null;if(!p.on)col.buildSel=null;else{if(p.n>0)toast(`${ROOMS[col.buildSel].n}: ${p.n} gebaut`,'good');else if(p.low)toast('Zu wenig Material','bad')}dockDirty=true;refreshLive();return}
   if(e.button!==2||!drag||drag.el!==cv)return;const moved=drag.moved;drag=null;
   if(!moved&&col){col.buildSel=null;col.pin=null;refreshLive()}
 });
@@ -424,7 +440,6 @@ mv.addEventListener('wheel',e=>{
 const KEYMAP={ArrowLeft:'l',a:'l',A:'l',ArrowRight:'r',d:'r',D:'r',ArrowUp:'u',w:'u',W:'u',ArrowDown:'d',s:'d',S:'d'};
 document.addEventListener('keydown',e=>{
   if(e.target&&/INPUT|TEXTAREA/.test(e.target.tagName))return;
-  if((e.key==='t'||e.key==='T')&&started&&view==='colony'&&col&&!e.ctrlKey&&!e.metaKey){col.buildSel=col.buildSel==='tunnel'?null:'tunnel';col.pin=null;refreshLive();return}
   if(e.key==='Escape'){if(typeof placing!=='undefined'&&placing){placing=null;updateSide()}if(col){col.buildSel=null;col.tun=null;col.pin=null}selT=null;statKey=null;statPin=false;if(started){refreshLive();renderStat()}return}
   const k=KEYMAP[e.key];if(k&&started&&(view==='colony'||view==='map')){keys.add(k);if(e.key.startsWith('Arrow'))e.preventDefault()}
 });
@@ -474,8 +489,9 @@ $('#btnStart').onclick=()=>{
   if(G.items.length)renderPw();
   toast(`Deine ${SP[setupSp].name} starten in ${T[F[0].capital].name}. Baue Räume und wachse.`,'good');
 };
+$('#endCont').onclick=()=>{contWin=true;over=false;$('#end').hidden=true;toast('Du spielst weiter. Es gibt kein Ende mehr','good')};
 $('#endBtn').onclick=()=>{
-  started=false;over=false;col=null;G=null;curT=-1;marches=[];fxs=[];conqQueue=[];statKey=null;$('#statp').hidden=true;$('#end').hidden=true;$('#conq').hidden=true;
+  contWin=false;started=false;over=false;col=null;G=null;curT=-1;marches=[];fxs=[];conqQueue=[];statKey=null;$('#statp').hidden=true;$('#end').hidden=true;$('#conq').hidden=true;
   $('#setupPanel').hidden=false;$('#playPanel').hidden=true;$('#viewtabs').hidden=true;$('#speed').hidden=true;$('#chips').hidden=true;
   $('#dayLabel').textContent='';newMap((Math.random()*1e6)|0);renderSetup();setView('map');
 };

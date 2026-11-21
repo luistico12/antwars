@@ -6,7 +6,7 @@ let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++};
   await pg.route('**/config.js',r=>r.fulfill({body:'window.AW_CONFIG={}',contentType:'text/javascript'}));
   await pg.goto('file://'+path.resolve(__dirname,'../index.html'));await pg.waitForFunction(()=>typeof AW!=='undefined'&&AW.ready);
   for(const s of ['#nmSkip','#ckAll']){const e=await pg.$(s);if(e)await e.click()}
-  await pg.click('#hSolo');await pg.evaluate(()=>{const sp=SP[setupSp];mapClick(T.find(t=>t.terrain===sp.terr).id)});await pg.click('#btnStart');
+  await pg.click('#hSolo');await pg.evaluate(()=>{const sp=SP[setupSp];mapClick(T.find(t=>t.terrain===sp.terr).id)});
   await pg.evaluate(()=>{gtime=999;setSpeedUI(0);setView('map')});
   const open=(owner,ally)=>pg.evaluate(([o,al])=>{const t=T.find(x=>x.owner===o);if(o>0)F[o].allied=al;terrAtEvent=()=>t.id;openRadial({clientX:560,clientY:380});
     return[...document.querySelectorAll('#radial [data-r]')].map(e=>e.dataset.r+(e.classList.contains('dis')?'!':'')).join(',')},[owner,ally]);

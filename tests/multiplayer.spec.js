@@ -29,7 +29,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
     ok(await G.evaluate(g=>T[g].owner===0&&T.filter(t=>t.owner===0).length===1,gs),'Gast besitzt genau sein Startgebiet als „Du“');
     ok(await G.evaluate(h=>{const o=T[h].owner;return o>0&&F[o].name==='Hosty'},hs),'Gast sieht den Host als Gegner mit Namen');
     ok(await H.evaluate(g=>T[g].owner===1&&F[1].human===true,gs),'Host führt den Gast als menschliche Fraktion 1');
-    ok(await H.evaluate(()=>F.length)===4,'vier Fraktionen (Host, Gast, zwei Bots)');
+    ok(await H.evaluate(()=>F.length)===8,'acht Fraktionen (Host, Gast, sechs Bots im FFA)');
     /* Befehl: Gast greift an */
     await H.evaluate(()=>{gtime=1000});
     await G.waitForFunction(()=>gtime>900,null,{timeout:5000});

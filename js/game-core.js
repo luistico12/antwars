@@ -18,7 +18,10 @@ class Heap{constructor(){this.a=[]}get size(){return this.a.length}
   pop(){const a=this.a,top=a[0],last=a.pop();if(a.length){a[0]=last;let i=0;for(;;){const l=i*2+1,r=l+1;let m=i;if(l<a.length&&a[l][0]<a[m][0])m=l;if(r<a.length&&a[r][0]<a[m][0])m=r;if(m===i)break;[a[m],a[i]]=[a[i],a[m]];i=m}}return top}}
 
 /* ===== Daten ===== */
-const GW=96,GH=60,CS=10;
+let GW=96,GH=60;const CS=10;
+/* Spielmodi: Gegnerzahl und Kartengröße (scale = Faktor der Fläche) */
+const MODES={ffa:{n:'FFA',bots:7,scale:1,d:'Jeder gegen jeden: 7 Gegner auf der Standardkarte'},unlimited:{n:'Unlimited',bots:5,scale:3.5,d:'Riesige Karte (3,5× so groß), 5 Gegner, kein Sieg und kein Ende'}};
+function setMapDims(scale){const k=Math.sqrt(scale);GW=Math.round(96*k);GH=Math.round(60*k)}
 const N4=[[1,0],[-1,0],[0,1],[0,-1]];
 const TERR=[
   {id:0,name:'Savanne',base:[204,168,96],alt:[188,150,80],food:0.05,mat:0.30},
@@ -59,26 +62,49 @@ function fillLakes(land){
     for(const[dx,dy]of N4){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=GW||ny>=GH)continue;const j=ny*GW+nx;if(!land[j]&&!sea[j]){sea[j]=1;st.push(j)}}}
   for(let i=0;i<land.length;i++)if(!land[i]&&!sea[i])land[i]=1;
 }
+/* Flüsse: von der Küste ins Land gegraben (4-verbunden, enden im Land, trennen nichts ab) */
+function carveRivers(land,rnd,count){
+  const coast=[];
+  for(let y=1;y<GH-1;y++)for(let x=1;x<GW-1;x++){const i=y*GW+x;if(!land[i])continue;if(N4.some(([dx,dy])=>!land[(y+dy)*GW+x+dx]))coast.push(i)}
+  let cx=0,cy=0,n=0;for(let i=0;i<land.length;i++)if(land[i]){cx+=i%GW;cy+=(i/GW)|0;n++}cx/=n;cy/=n;
+  for(let r=0;r<count&&coast.length;r++){
+    const s=coast[Math.floor(rnd()*coast.length)];let x=s%GW,y=(s/GW)|0;
+    const len=Math.round((12+rnd()*16)*Math.sqrt(GW/96)),mine=[s];land[s]=0;
+    for(let st=0;st<len;st++){
+      const tx=cx-x+(rnd()-0.5)*30,ty=cy-y+(rnd()-0.5)*30;
+      const horiz=Math.abs(tx)*(0.6+rnd()*0.8)>Math.abs(ty);
+      let nx=x,ny=y;if(horiz)nx+=tx>0?1:-1;else ny+=ty>0?1:-1;
+      if(nx<3||ny<3||nx>=GW-3||ny>=GH-3)break;
+      const j=ny*GW+nx;if(!land[j]){x=nx;y=ny;continue}
+      /* nicht an anderes Wasser stoßen (außer an sich selbst), sonst würde das Land geteilt */
+      if(st>2&&N4.some(([dx,dy])=>{const q=(ny+dy)*GW+nx+dx;return !land[q]&&!mine.includes(q)&&q!==y*GW+x}))break;
+      land[j]=0;mine.push(j);x=nx;y=ny;
+    }
+  }
+}
 function buildMap(seed){
+  const SC=GW*GH/(96*60),SQ=Math.sqrt(SC);
   for(let att=0;att<300;att++){
     const s=((seed+att*7919)>>>0)&0xffffff;
     const rnd=mulberry32(s);
     let land=new Uint8Array(GW*GH);
     for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
       const nx=(x/GW-0.5)*2,ny=(y/GH-0.5)*2,d=Math.sqrt(nx*nx*0.85+ny*ny*1.2);
-      const v=fbm(x/20,y/20,s&0xffff)*0.7+(1-d)*0.6;
+      const v=fbm(x/(20*SQ),y/(20*SQ),s&0xffff)*0.7+(1-d)*0.6;
       land[y*GW+x]=(v>0.5&&x>3&&y>3&&x<GW-4&&y<GH-4)?1:0;
     }
     land=largestComponent(land);fillLakes(land);
     let n=0;for(let i=0;i<land.length;i++)n+=land[i];
-    if(n<1900||n>3400)continue;
+    if(n<1900*SC||n>3400*SC)continue;
+    carveRivers(land,rnd,Math.round(2*SC));land=largestComponent(land);
     const idx=[];for(let i=0;i<land.length;i++)if(land[i])idx.push(i);
     const seeds=[];
-    for(let k=0;k<8000&&seeds.length<20;k++){
+    const wantS=Math.round(20*SC);
+    for(let k=0;k<8000*SC&&seeds.length<wantS;k++){
       const i=idx[Math.floor(rnd()*idx.length)],x=i%GW,y=(i/GW)|0;
       if(seeds.every(q=>Math.hypot(q.x-x,q.y-y)>=10.5))seeds.push({x,y,i});
     }
-    if(seeds.length<15)continue;
+    if(seeds.length<wantS*0.75)continue;
     const tid=new Int16Array(GW*GH).fill(-1),dist=new Float64Array(GW*GH).fill(1e9),h=new Heap();
     seeds.forEach((q,k)=>{dist[q.i]=0;tid[q.i]=k;h.push(0,q.i)});
     while(h.size){
@@ -101,7 +127,9 @@ function buildMap(seed){
     order.sort((a,b)=>a.moist-b.moist);
     const nT=terrs.length,nDry=Math.round(nT*0.3),nGrass=Math.round(nT*0.35);
     order.forEach((t,k)=>{t.terrain=k<nDry?0:k<nDry+nGrass?1:2});
-    const names=NAMES.slice();for(let i=names.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[names[i],names[j]]=[names[j],names[i]]}
+    const names=NAMES.slice();
+    const PRE=['Nord','Süd','Ost','West','Alt','Neu','Hoch','Tief'];for(const p of PRE)for(const nm of NAMES)names.push(p+nm.toLowerCase());
+    for(let i=names.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[names[i],names[j]]=[names[j],names[i]]}
     terrs.forEach((t,k)=>t.name=names[k]);
     return{seed:s,land,tid,terrs};
   }

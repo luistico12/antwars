@@ -292,3 +292,5 @@ tr.r1 td{background:rgba(255,200,60,.1)}tr.r2 td{background:rgba(220,228,240,.07
 .sw input:after{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .15s}
 .sw input:checked{background:var(--ac)}.sw input:checked:after{transform:translateX(18px)}.sw input:disabled{opacity:.6}
 @media (prefers-reduced-motion:reduce){.toast{animation:none}}
+
+#pickBar{position:fixed;left:50%;top:calc(var(--hh,60px) + 12px);transform:translateX(-50%);z-index:150;background:rgba(10,14,22,.92);border:1px solid var(--ln);border-radius:12px;padding:10px 16px;min-width:300px;text-align:center;box-shadow:0 8px 28px rgba(0,0,0,.5)}#pickBar b{display:block;font-size:14px;margin-bottom:8px}#pickBar i{display:block;height:5px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden}#pickBar u{display:block;height:100%;background:var(--ac);text-decoration:none;transition:width .1s linear}
