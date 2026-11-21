@@ -47,7 +47,10 @@ bell:'<path d="M6 17V11a6 6 0 0 1 12 0v6l2 2H4zM10 21h4"/>',
 down:'<path d="M6 9l6 6 6-6"/>',
 up:'<path d="M6 15l6-6 6 6"/>'
 };
-function ico(n,cls){return `<svg class="svg ${cls||''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${SV[n]||''}</svg>`}
+/* Rubys als facettierter Kristallhaufen (Akzentfarbe) */
+const RUBY_SVG='<path d="M2 13l3-3.5 3 3.5v6l-3 2.5-3-2.5z" fill="#c92a46"/><path d="M2 13l3-3.5v12L2 19z" fill="#ff7d8e"/><path d="M5 9.5l3 3.5v6l-3 2.5z" fill="#d93552"/><path d="M16 9l3.2-3.5L22 9v8l-2.8 3L16 17z" fill="#c92a46"/><path d="M16 9l3.2-3.5V20L16 17z" fill="#ff7d8e"/><path d="M19.2 5.5L22 9v8l-2.8 3z" fill="#d93552"/><path d="M8 7l4-5 4 5v10l-4 5-4-5z" fill="#ff5757"/><path d="M8 7l4-5v20l-4-5z" fill="#ff8d9c"/><path d="M12 2l4 5-4 2.4L8 7z" fill="#ffd6dc"/><path d="M12 9.4L16 7v10l-4 5z" fill="#cf2f4b"/><path d="M12 9.4v12.6" stroke="#ffe3e7" stroke-width=".5" opacity=".7"/><path d="M3.2 1.5h1.2v1.2H3.2zM20 1h1.2v1.2H20zM21.5 11h1v1h-1z" fill="#ffd6dc"/>';
+function rubyPix(cls){return `<svg class="svg rpx ${cls||''}" viewBox="0 0 24 24" aria-hidden="true">${RUBY_SVG}</svg>`}
+function ico(n,cls){if(n==='ruby')return rubyPix(cls);return `<svg class="svg ${cls||''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${SV[n]||''}</svg>`}
 /* Markenlogos (einfarbig, weiß) für GitHub/Discord */
 const BRAND={
 github:'<svg class="svg" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>',

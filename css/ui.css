@@ -58,7 +58,7 @@ h1,h2,h3,p{margin:0}
 .field{display:flex;flex-direction:column;gap:6px}
 .msg{font-size:13.5px;padding:8px 12px;border-radius:10px;background:var(--g2);border:1px solid var(--ln)}
 .msg.err{border-color:var(--ac-line);background:var(--ac-soft);color:#ffc5c5}.msg.ok{border-color:rgba(47,211,154,.5);background:rgba(47,211,154,.1);color:#9df0d2}
-.ruby{display:inline-flex;align-items:center;gap:5px;font-weight:700;color:var(--ac)}.ruby .svg{width:17px;height:17px;stroke:var(--ac);fill:rgba(255,87,87,.28)}
+.ruby{display:inline-flex;align-items:center;gap:5px;font-weight:700;color:var(--ac)}.ruby .svg{width:18px;height:18px}
 
 /* ---- Kopfzeile ---- */
 #top{position:fixed;z-index:100;left:0;right:var(--adw);top:0;height:var(--hh);padding:0 12px;display:flex;align-items:center;gap:12px;
