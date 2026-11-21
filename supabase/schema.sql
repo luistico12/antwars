@@ -375,3 +375,7 @@ where not exists (select 1 from public.news where version='v16');
 insert into public.news(version,title,body)
 select 'v17','Profilbild hochladen','Du kannst jetzt ein eigenes Profilbild hochladen. Öffne dein Profil, wähle ein Bild (PNG, JPG oder WebP), es wird mittig zugeschnitten und klein gespeichert. Es erscheint im Profil und oben im Header, mit dem Papierkorb-Knopf entfernst du es wieder.'
 where not exists (select 1 from public.news where version='v17');
+
+insert into public.news(version,title,body)
+select 'v18','Flaggen im Mehrspieler','Im Mehrspieler siehst du jetzt auch die Flaggen der anderen: Sie wehen auf der Hauptstadt des jeweiligen Spielers. Wer fremde Kosmetik nicht sehen mag, blendet sie in den Einstellungen unter Spiel aus.'
+where not exists (select 1 from public.news where version='v18');

@@ -76,6 +76,6 @@ function leaderFid(now){if(now-_lead.t<500)return _lead.f;_lead.t=now;const a={}
   return _lead.f=best}
 
 /* Mehrspieler: Kosmetik der Spieler wird beim Start gemeldet und vom Host verteilt (nur Whitelist-Schlüssel) */
-const cosmPack=()=>({crown:COSM.crown,pattern:COSM.pattern,ship:COSM.ship});
-function cosmClean(c){const o={};if(c&&typeof c==='object'){for(const[k,A]of[['crown',CROWN_ART],['pattern',PATTERN_FN],['ship',SHIP_ART]])if(typeof c[k]==='string'&&Object.prototype.hasOwnProperty.call(A,c[k]))o[k]=c[k]}return o}
+const cosmPack=()=>({crown:COSM.crown,pattern:COSM.pattern,ship:COSM.ship,flag:COSM.flag});
+function cosmClean(c){const o={};if(c&&typeof c==='object'){for(const[k,A]of[['crown',CROWN_ART],['pattern',PATTERN_FN],['ship',SHIP_ART],['flag',FL]])if(typeof c[k]==='string'&&Object.prototype.hasOwnProperty.call(A,c[k]))o[k]=c[k]}return o}
 function cosmOf(fid){if(fid===0)return COSM;if(typeof ST!=='undefined'&&ST.hideCosm)return{};return(F[fid]&&F[fid].cosm)||{}}

@@ -3,6 +3,8 @@ const {chromium}=require('playwright');const path=require('path');
 let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++};
 (async()=>{
   const b=await chromium.launch();const pg=await b.newPage({viewport:{width:1280,height:800}});const errs=[];pg.on('pageerror',e=>errs.push(e.message));
+  /* feste Zufallsfolge, damit die Karte (und der Test) bei jedem Lauf gleich ist; anderer Startwert: SEED=n */
+  await pg.addInitScript(sd=>{let a=sd>>>0;Math.random=()=>{a=(a+0x6D2B79F5)>>>0;let t=a;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}},+(process.env.SEED||1));
   await pg.route('**/config.js',r=>r.fulfill({body:'window.AW_CONFIG={}',contentType:'text/javascript'}));
   await pg.goto('file://'+path.resolve(__dirname,'../index.html'));await pg.waitForFunction(()=>typeof AW!=='undefined'&&AW.ready);
   for(const s of ['#nmSkip','#ckAll']){const e=await pg.$(s);if(e)await e.click()}
@@ -35,7 +37,7 @@ let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++};
   /* ---- Weltkarte: verschmelzen, Hauptstadt ---- */
   await pg.evaluate(()=>{setView('map');G.mat=G.matCap=400;G.food=G.foodCap=400});
   const w=await pg.evaluate(()=>{
-    const cap=T[F[0].capital],nb=cap.adj.map(i=>T[i]).filter(x=>x.owner===-1);
+    const cap=T[F[0].capital],nb=cap.adj.map(i=>T[i]).filter(x=>x.owner===-1);if(nb.length<3)nb.push(...cap.adj.map(i=>T[i]).filter(x=>!nb.includes(x)&&x.owner!==0&&!x.isCap).slice(0,3-nb.length));
     nb.slice(0,3).forEach(x=>setOwner(x,0,5));
     ownDirty=true;drawMap(mg,performance.now());
     const a=nb[0];
@@ -44,9 +46,9 @@ let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++};
   ok(w.capSize>w.cityMax,`Hauptstadt (${w.capSize.toFixed(2)}) größer als normale Städte (${w.cityMax.toFixed(2)})`);
   ok(w.reg>w.own,'Hauptstadt wächst mit der Fläche des Reichs');
   ok(w.cols.length===1&&w.cols[0]===w.cap,'Kolonie nur für die Hauptstadt');
-  const rw=await pg.evaluate(()=>{const t=T.find(x=>x.owner===-1&&!x.isCap);t.conqN=5;G.mat=100;G.food=100;const m=G.mat,f=G.food;setOwner(t,0,4);t.conqN=5;conqQueue.push(t.id);chooseConquest(t.id,'keep');return{dm:G.mat-m,hasCol:!!t.col}});
+  const rw=await pg.evaluate(()=>{let t=T.find(x=>x.owner===-1&&!x.isCap);if(!t){t=T.find(x=>x.owner!==0&&!x.isCap);setOwner(t,-1,0)}t.conqN=5;G.mat=100;G.food=100;const m=G.mat,f=G.food;setOwner(t,0,4);t.conqN=5;conqQueue.push(t.id);chooseConquest(t.id,'keep');return{dm:G.mat-m,hasCol:!!t.col}});
   ok(!rw.hasCol&&rw.dm>0,`Behalten gibt Material (${rw.dm}) und keine eigene Kolonie`);
-  const pr=await pg.evaluate(()=>{const t=T.find(x=>x.owner===-1&&!x.isCap);t.conqN=5;setOwner(t,0,4);conqQueue.push(t.id);const m=G.mat;chooseConquest(t.id,'puppet');return{dm:G.mat-m,puppet:t.puppet,merged:mergedTerr(t,T[F[0].capital])}});
+  const pr=await pg.evaluate(()=>{let t=T.find(x=>x.owner===-1&&!x.isCap);if(!t){t=T.find(x=>x.owner!==0&&!x.isCap);setOwner(t,-1,0)}t.conqN=5;setOwner(t,0,4);conqQueue.push(t.id);const m=G.mat;chooseConquest(t.id,'puppet');return{dm:G.mat-m,puppet:t.puppet,merged:mergedTerr(t,T[F[0].capital])}});
   ok(pr.puppet&&pr.dm>0&&pr.dm<rw.dm,'Marionettenstaat gibt einen Teil der Beute');
 
   /* ---- Kreismenü auf eigenem Gebiet ---- */
@@ -76,11 +78,12 @@ let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++};
     buildRaft(t);buildRaft(t);buildRaft(t);buildRaft(t);
     const rafts=t.port.rafts;
     t.troops=40;
-    const foe=T.find(x=>x.owner!==0&&x.coast.length&&!x.adj.includes(t.id)&&x.owner!==-2);
     const src=seaSource();
     gtime=999;
-    const cell=landingCell(foe,cellPos(foe.coast[0])[0],cellPos(foe.coast[0])[1]);
-    const okl=launchSea(src,foe,10,cell);
+    let foe=null,okl=false;
+    for(const x of T.filter(x=>x.owner!==0&&x.coast.length&&!x.adj.includes(t.id)&&x.owner!==-2)){
+      const cell=landingCell(x,cellPos(x.coast[0])[0],cellPos(x.coast[0])[1]);
+      foe=x;okl=launchSea(src,x,10,cell);if(okl)break}
     return{hasPort,rafts,okl,after:t.port.rafts,id:t.id,foe:foe.id}});
   ok(sea.hasPort,'Hafen auf Küstengebiet gebaut');
   ok(sea.rafts===3,'Floß-Maximum 3 pro Hafen');
@@ -90,7 +93,7 @@ let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++};
   ok(await pg.evaluate(()=>!marches.some(m=>m.sea)),'Seemarsch kommt an und wird abgewickelt');
   ok(await pg.evaluate(id=>T[id].port.rafts===3,sea.id),'Floß kehrt zum Hafen zurück');
   const rd2=await pg.evaluate(()=>{
-    const mine=T.filter(t=>t.owner===0&&!t.puppet);const a=mine[0],bb=mine[1];
+    const mine=T.filter(t=>t.owner===0&&!t.puppet);if(mine.length<2){const x=T[mine[0].adj[0]];setOwner(x,0,3);x.puppet=false;mine.push(x)}const a=mine[0],bb=mine[1];
     placing={kind:'road'};paintingRoad={n:0,bad:0,low:0,last:null};
     const pts=[];let x=a.lx,y=a.ly;const tx=bb.lx,ty=bb.ly;
     while(x!==tx||y!==ty){if(x<tx)x++;else if(x>tx)x--;if(y<ty)y++;else if(y>ty)y--;pts.push([x,y])}

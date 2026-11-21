@@ -335,7 +335,8 @@ function drawMap(g,now){
       continue;
     }
     if(t.owner>=0)drawNest(g,F[t.owner].species,px,py+28,nestSize(t));
-    if(t.owner===0&&t.isCap&&typeof COSM!=='undefined'&&COSM.flag){const im=flagImg(COSM.flag);if(im.complete&&im.naturalWidth){g.fillStyle='#d9d0b8';g.fillRect(px-1,py+2,1,16);g.drawImage(im,px,py+2,13,9)}}
+    const flg=t.isCap&&t.owner>=0&&typeof cosmOf==='function'?cosmOf(t.owner).flag:null;
+    if(flg){const im=flagImg(flg);if(im.complete&&im.naturalWidth){g.fillStyle='#d9d0b8';g.fillRect(px-1,py+2,1,16);g.drawImage(im,px,py+2,13,9)}}
     const txt=String(Math.floor(t.troops));g.font='700 13px '+PX;
     const w=g.measureText(txt).width+12,col2=t.owner>=0?F[t.owner].rgb:[170,160,140];
     g.fillStyle='rgba(22,13,6,.86)';g.fillRect(px-w/2,py-8,w,16);

@@ -3,6 +3,7 @@ const {chromium}=require('playwright');const path=require('path');
 let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++};
 (async()=>{
   const b=await chromium.launch();const pg=await b.newPage({viewport:{width:1100,height:760}});const errs=[];pg.on('pageerror',e=>errs.push(e.message));
+  await pg.addInitScript(sd=>{let a=sd>>>0;Math.random=()=>{a=(a+0x6D2B79F5)>>>0;let t=a;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}},+(process.env.SEED||1));
   await pg.route('**/config.js',r=>r.fulfill({body:'window.AW_CONFIG={}',contentType:'text/javascript'}));
   await pg.goto('file://'+path.resolve(__dirname,'../index.html'));await pg.waitForFunction(()=>typeof AW!=='undefined'&&AW.ready);
   for(const s of ['#nmSkip','#ckAll']){const e=await pg.$(s);if(e)await e.click()}

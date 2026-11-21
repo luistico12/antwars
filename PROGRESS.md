@@ -40,6 +40,8 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
     - Rubys-Icon jetzt Pixel-Kristall.
 18. Update v17 (Profilbild, `node tests/avatar.spec.js`): Upload im Profil (PNG/JPG/WebP, mittig auf 96×96 zugeschnitten, als Data-URL ≤30 kB in `profiles.avatar`), `safeAvatar()` validiert (kein SVG), Anzeige im Profil und Header, Entfernen-Knopf; Spalte + Check-Constraint live in Supabase, News v17. Avatare anderer Spieler werden noch nicht angezeigt.
 
+19. Update v18 (Flaggen im Mehrspieler): `cosmPack/cosmClean` tragen `flag`, Weltkarte zeichnet die Flagge jeder Hauptstadt über `cosmOf(owner)`. Hüte bleiben nur in der eigenen Kolonie (fremde Kolonien sind nicht sichtbar). Tests `worldupdate`/`radial` nutzen jetzt feste Zufallsfolge (`SEED=n`), vorher wegen Zufallskarten gelegentlich rot.
+
 ## Offen (neu)
 - Mehrspieler-Kosmetik (v16): Kronen/Muster/Schiffe werden beim Start gemeldet (`ready` → Host → `init`, `cosmPack/cosmClean/cosmOf`), „Kosmetik anderer ausblenden“ wirkt jetzt. Hüte/Flaggen anderer Spieler werden noch nicht synchronisiert; Bots tragen nur die Standardkrone.
 - Bots nutzen die Bauleiste/Spenden nicht, Gebietsbeschriftung auf der Karte noch im alten Stil.
