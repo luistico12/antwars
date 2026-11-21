@@ -61,7 +61,7 @@ $('#set').addEventListener('click',e=>{
     else if(b.dataset.ui){ST.ui=+b.dataset.ui;applyUI();saveST();renderSet()}
   }
   if(e.target.id==='vsCk'){ST.vsync=e.target.checked;saveST()}
-  if(e.target.id==='hideCk'){ST.hideCosm=e.target.checked;saveST()}
+  if(e.target.id==='hideCk'){ST.hideCosm=e.target.checked;saveST();if(typeof ownDirty!=='undefined')ownDirty=true}
   if(e.target.id==='fpsCk'){ST.fps=e.target.checked;saveST();$('#fpsBox').hidden=!ST.fps}
 });
 $('#set').addEventListener('input',e=>{if(e.target.id==='pctSet'){ST.pct=+e.target.value;$('#pctV').textContent=ST.pct+'%';saveST();applyPct()}});

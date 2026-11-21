@@ -51,15 +51,15 @@ const NET={role:null,ch:null,live:false,players:[],humans:[],ready:{},fid:0,host
       const r=this.ready[pid],t0=r&&T[r.start];
       if(!r||!t0||!SP[r.species]||t0.terrain!==SP[r.species].terr||used.has(r.start)){
         ok=false;delete this.ready[pid];this.send({t:'nack',to:pid,why:'start'});continue}
-      used.add(r.start);hum.push({pid,fid:hum.length+1,name:r.name,species:r.species,start:r.start});
+      used.add(r.start);hum.push({pid,fid:hum.length+1,name:r.name,species:r.species,start:r.start,c:r.c});
     }
     if(!ok){toast(LANG==='de'?'Ein Startgebiet war ungültig. Der Spieler wählt neu.':'A start area was invalid. The player picks again.','bad');this.refreshStart();return false}
     this.humans=hum;return true;
   },
   afterStartHost(){
-    this.live=true;
+    this.live=true;for(const h of this.humans)if(F[h.fid])F[h.fid].cosm=h.c;
     this.send({t:'init',...this.snap(),hp:PID,fids:Object.fromEntries(this.humans.map(h=>[h.pid,h.fid])),d:diffKey,
-      Fi:F.map((f,h)=>({n:h===0?AW.name:f.name,sp:f.species,rgb:f.rgb,hum:f.human?1:0}))});
+      Fi:F.map((f,h)=>({n:h===0?AW.name:f.name,sp:f.species,rgb:f.rgb,hum:f.human?1:0,c:h===0?cosmPack():((this.humans.find(x=>x.fid===h)||{}).c||null)}))});
     clearInterval(this.snapIv);this.snapIv=setInterval(()=>{if(this.role==='host'&&this.live&&started)this.send({t:'snap',...this.snap()})},500);
   },
   snap(){
@@ -85,7 +85,7 @@ const NET={role:null,ch:null,live:false,players:[],humans:[],ready:{},fid:0,host
   /* ---------- Gast ---------- */
   applyInit(s){
     this.fid=s.fids[PID];this.hostPid=s.hp;diffKey=s.d;const V=h=>this.V(h),nf=[];
-    s.Fi.forEach((f,h)=>{const i=V(h);nf[i]={id:i,isPlayer:i===0,human:!!f.hum,name:i===0?'Du':f.n,species:f.sp,rgb:f.rgb,alive:!!s.F[h],capital:s.C[h],allied:false,dipCool:0,hurt:-999,timer:99}});
+    s.Fi.forEach((f,h)=>{const i=V(h);nf[i]={id:i,isPlayer:i===0,human:!!f.hum,name:i===0?'Du':f.n,species:f.sp,rgb:f.rgb,alive:!!s.F[h],capital:s.C[h],allied:false,dipCool:0,hurt:-999,timer:99,cosm:cosmClean(f.c)}});
     F=nf;
     T.forEach((x,i)=>{const d=s.T[i];x.owner=V(d[0]);x.troops=d[1];x.isCap=!!d[2];x.str=newStr();x.puppet=false;if(x.owner!==0)x.col=null});
     marches=[];fxs=[];gtime=s.gt;ownDirty=true;strDirty=true;this.live=true;
@@ -113,7 +113,7 @@ const NET={role:null,ch:null,live:false,players:[],humans:[],ready:{},fid:0,host
       if(m.t==='ready'&&!this.live){
         const sp=SP[m.sp],t0=T[m.start];
         if(!sp||!t0||t0.terrain!==sp.terr||m.start===setupStart||Object.entries(this.ready).some(([k,v])=>k!==m.p&&v.start===m.start)){this.send({t:'nack',to:m.p,why:'start'});return}
-        this.ready[m.p]={name:cleanName(m.name)||'Spieler',species:m.sp,start:m.start};this.send({t:'ack',to:m.p});this.refreshStart();
+        this.ready[m.p]={name:cleanName(m.name)||'Spieler',species:m.sp,start:m.start,c:cosmClean(m.c)};this.send({t:'ack',to:m.p});this.refreshStart();
       }else if(m.t==='cmd')this.hostCmd(m);
     }else{
       if(m.t==='nack'&&m.to===PID){this.sent=false;toast(LANG==='de'?'Startgebiet nicht möglich. Wähle ein anderes.':'Start area not possible. Pick another.','bad');this.refreshStart()}
@@ -159,7 +159,7 @@ const NET={role:null,ch:null,live:false,players:[],humans:[],ready:{},fid:0,host
   bs.onclick=function(){
     if(NET.role==='guest'&&!started){
       if(setupStart==null||NET.sent)return;
-      NET.sent=true;NET.sentSp=setupSp;NET.sentStart=setupStart;NET.send({t:'ready',name:AW.name,sp:setupSp,start:setupStart});NET.refreshStart();return}
+      NET.sent=true;NET.sentSp=setupSp;NET.sentStart=setupStart;NET.send({t:'ready',name:AW.name,sp:setupSp,start:setupStart,c:cosmPack()});NET.refreshStart();return}
     if(NET.role==='host'&&!NET.live){
       if(!NET.startHost())return;
       NET.origStart.call(this);NET.afterStartHost();return}

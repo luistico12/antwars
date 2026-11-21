@@ -39,7 +39,7 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
     - Krone: Standard goldene Krone für den Gebietsführer (`leaderFid`), über dem Namen seiner Hauptstadt (game-world) und in der Bestenliste; Muster: `drawPatternCell` in `renderOwners` (nur eigene Gebiete); Schiff: `drawShip` in `drawSeaMarch` (nur eigene Flöße). Shop/Inventar mit Reitern (`COS_TABS`).
     - Rubys-Icon jetzt Pixel-Kristall.
 ## Offen (neu)
-- Kosmetik anderer Spieler (Kronen, Muster, Schiffe) wird nicht synchronisiert, Bots tragen nur die Standardkrone.
+- Mehrspieler-Kosmetik (v16): Kronen/Muster/Schiffe werden beim Start gemeldet (`ready` → Host → `init`, `cosmPack/cosmClean/cosmOf`), „Kosmetik anderer ausblenden“ wirkt jetzt. Hüte/Flaggen anderer Spieler werden noch nicht synchronisiert; Bots tragen nur die Standardkrone.
 - Bots nutzen die Bauleiste/Spenden nicht, Gebietsbeschriftung auf der Karte noch im alten Stil.
 - Unlimited: Kolonie doppelt so breit/tief (`setColonyDims(2)` in startGame, 80×56 Zellen). Noch größer wäre möglich, Hintergrund-Rendering wird dann teurer.
 - „Kosmetik anderer ausblenden“ wirkt erst, wenn Kosmetik anderer Spieler gerendert/synchronisiert wird (`cosmVisible`).

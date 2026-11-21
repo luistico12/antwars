@@ -266,7 +266,7 @@ function drawSeaLayer(g,now){
 function drawSeaMarch(g,m,now,ax,ay,bx,by,ux,uy,len,pal){
   const p=clamp(m.t/m.dur,0,1),pp=m.path||[[ax,ay],[bx,by]],[px0,py0,dx0,dy0]=pathAt(pp,pathLen(pp)*p),hx=px0,hy=py0+Math.sin(now/220)*1.5,c=F[m.f].rgb;ux=dx0;uy=dy0;
   g.setLineDash([5,5]);g.lineDashOffset=-now/50;g.strokeStyle='rgba(190,230,255,.85)';g.lineWidth=2;g.beginPath();pp.forEach((q,i)=>i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1]));g.stroke();g.setLineDash([]);
-  if(!(m.f===0&&COSM.ship&&drawShip(g,COSM.ship,hx,hy,rgb(c)))){
+  if(!(cosmOf(m.f).ship&&drawShip(g,cosmOf(m.f).ship,hx,hy,rgb(c)))){
   g.fillStyle='#22140a';g.fillRect(hx-12,hy-3,24,9);g.fillStyle='#8a5a30';g.fillRect(hx-11,hy-2,22,7);g.fillStyle='#a8764a';g.fillRect(hx-11,hy-2,22,2);
   g.fillStyle='#22140a';g.fillRect(hx-1,hy-17,2,15);g.fillStyle=rgb(c);g.fillRect(hx+1,hy-17,9,7)}
   const k=Math.min(3,Math.ceil(m.n/6));for(let i=0;i<k;i++)drawAnt(g,hx-7+i*7,hy-5,ux,uy,now/60+i,'w',F[m.f].species,null,0.42,pal);

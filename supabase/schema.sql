@@ -363,3 +363,7 @@ where not exists (select 1 from public.news where version='v14');
 insert into public.news(version,title,body)
 select 'v15','Kronen, Muster und Schiffe','Neue Kosmetik im Shop: Kronen, Muster und Schiffe. Die Krone trägt, wer das meiste Land hat: Sie steht über dem Namen seiner Hauptstadt und in der Bestenliste, alle tragen standardmäßig die goldene Krone, im Shop gibt es sieben weitere. Muster färben deine Gebiete auf der Weltkarte (acht Stück), Schiffe ersetzen dein Floß auf dem Wasser (sechs Stück). Alles lässt sich im Inventar ausrüsten. Die Rubys sind jetzt Pixel-Kristalle.'
 where not exists (select 1 from public.news where version='v15');
+
+insert into public.news(version,title,body)
+select 'v16','Kosmetik im Mehrspieler','Im Mehrspieler siehst du jetzt die Kosmetik der anderen: ihre Krone, ihr Muster auf der Karte und ihr Schiff auf dem Wasser. Wer die Kosmetik anderer nicht sehen mag, schaltet sie in den Einstellungen unter Spiel aus.'
+where not exists (select 1 from public.news where version='v16');
