@@ -32,7 +32,7 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
     - Roter Angriffsrahmen (`flashHit`), Quest-Pille und Erfolgs-Toasts im Spiel (`qLive` in ui-boot), Inventar (`S.inventory`, Menüknopf), Spieler des Tages (`#potd`, `AW.potd`, View `player_of_day` in schema.sql).
     - News v12 und v13 in `DEFAULT_NEWS` und schema.sql. Regel in CLAUDE.md: nach jedem Update einen News-Release.
 ## Offen (neu)
-- Unlimited vergrößert nur die Weltkarte, die Kolonie-Fläche (COLS/ROWS) noch nicht („riesige Kolonie“ offen).
+- Unlimited: Kolonie doppelt so breit/tief (`setColonyDims(2)` in startGame, 80×56 Zellen). Noch größer wäre möglich, Hintergrund-Rendering wird dann teurer.
 - „Kosmetik anderer ausblenden“ wirkt erst, wenn Kosmetik anderer Spieler gerendert/synchronisiert wird (`cosmVisible`).
 - schema.sql erneut im Supabase-SQL-Editor ausführen (View `player_of_day`, News v12/v13).
 - Mehrspieler synchronisiert Wälle, Häfen, Wege und Flöße noch nicht (nur Host-Welt, Gäste sehen sie nicht).

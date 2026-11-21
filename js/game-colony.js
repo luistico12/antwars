@@ -1,5 +1,7 @@
 /* ===== Kolonie: Daten ===== */
-const CELLW=48,CELLH=32,COLS=40,MR=12,UR=22,ROWS=MR+UR,CW=COLS*CELLW,CH=ROWS*CELLH,GY=MR*CELLH,ENT_C=20,ENT_X=ENT_C*CELLW+CELLW/2,TREE_X=118,DAYLEN=110,VW=1120,VH=630,EGG_T=120;
+let CELLW=48,CELLH=32,COLS=40,MR=12,UR=22,ROWS=MR+UR,CW=COLS*CELLW,CH=ROWS*CELLH,GY=MR*CELLH,ENT_C=20,ENT_X=ENT_C*CELLW+CELLW/2;const TREE_X=118,DAYLEN=110,VW=1120,VH=630,EGG_T=120;
+/* Unlimited: doppelt so breite und tiefe Kolonie */
+function setColonyDims(k){COLS=40*k;UR=22*k;ROWS=MR+UR;CW=COLS*CELLW;CH=ROWS*CELLH;GY=MR*CELLH;ENT_C=COLS/2;ENT_X=ENT_C*CELLW+CELLW/2}
 const ROOMS={
   tunnel:{n:'Tunnel',mat:1,food:0,need:2,d:'Taste T: Tunnelansicht. Linksklick markiert, Ziehen malt mehrere Abschnitte. Wird 2,5× schneller gegraben'},
   leaf:{n:'Blattlager',mat:2,food:0,need:10,d:'+60 Blattplatz'},
@@ -372,7 +374,7 @@ function buildBg(C){
   const layer=(base,amp,c1,c2,sc)=>{for(let x=0;x<CW;x+=4){const h=base+fbm(x/sc,3,sd)*amp+hash2(x,1,sd)*4;g.fillStyle=hash2(x>>3,5,sd)<0.5?c1:c2;g.fillRect(x,GY-h,4,h)}};
   if(C.sp==='termite'){
     layer(80,50,'#c9b070','#bfa662',200);layer(44,34,'#b89a55','#a98c49',130);
-    for(let i=0;i<14;i++){const x=40+i*140+rnd()*60,h=50+rnd()*40;g.fillStyle='#5a4220';g.fillRect(x,GY-h,4,h);ell(g,x+2,GY-h,28,6,'#6e8a3c');ell(g,x+2,GY-h-3,22,4,'#86a64a')}
+    for(let i=0;i<14*(COLS/40);i++){const x=40+i*140+rnd()*60,h=50+rnd()*40;g.fillStyle='#5a4220';g.fillRect(x,GY-h,4,h);ell(g,x+2,GY-h,28,6,'#6e8a3c');ell(g,x+2,GY-h-3,22,4,'#86a64a')}
   }else{
     layer(120,60,'#7ea06c','#74966a',160);layer(80,50,'#5f8a56','#55804d',120);layer(40,30,'#417a3e','#386e36',90);
     for(let i=0;i<12;i++){const x=rnd()*CW|0,h=70+rnd()*80;g.fillStyle='#4c3a22';g.fillRect(x,GY-h,6,h);ell(g,x+3,GY-h,26,18,'#2f6a34');ell(g,x+3,GY-h-8,19,13,'#3b7d40')}

@@ -38,6 +38,7 @@ function collectItem(t){
   toast(`Powerup: ${PW[t.item.type]} +${t.item.pct}% (${t.name})`,'good');t.item=null;
 }
 function startGame(){
+  setColonyDims(modeKey==='unlimited'?2:1);
   const D=DIFFS[diffKey],st=T[setupStart],hum=(typeof NET!=='undefined'&&NET.role==='host')?NET.humans:[];
   for(const t of T){t.owner=-1;t.isCap=false;t.troops=6+Math.floor(Math.random()*12);t.str=newStr();t.col=null;t.puppet=false;t.item=null;t.walls=[];t.port=null}
   if(typeof seaReset==='function')seaReset();

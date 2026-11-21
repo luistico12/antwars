@@ -25,6 +25,12 @@ let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++};
   ok(f0>5,`Ohne VSync läuft die Schleife (${f0} Aufrufe/s)`);
   await pg.evaluate(()=>{AW.profile&&AW.profile.stats;qLiveRender()});
   ok(await pg.evaluate(()=>!$('#qLive').hidden),'Quest-Pille im Spiel sichtbar');
+  /* Unlimited: große Kolonie */
+  await pg.evaluate(()=>{modeKey='unlimited';started=false;over=false;newMap(5)});
+  await pg.evaluate(()=>{const sp=SP[setupSp];mapClick(T.find(t=>t.terrain===sp.terr).id);startGame()});
+  await pg.waitForTimeout(500);
+  const big=await pg.evaluate(()=>{setSpeedUI(0);setView('colony');for(let i=0;i<20;i++)drawColony(cg,i*50,ccam);return[COLS,ROWS,ENT_C,col.grid.length]});
+  ok(big[0]===80&&big[3]===80*(12+44),'Unlimited: Kolonie 80 Spalten, '+big.join(','));
   ok(errs.length===0,'keine Seitenfehler '+errs.join('|'));
   await b.close();process.exit(fails?1:0);
 })();
