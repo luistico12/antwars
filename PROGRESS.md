@@ -38,6 +38,8 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
     - Neue Arten `crown`, `pattern`, `ship` (backend.js `CROWNS/PATTERNS/SHIPS`, Profilfelder `crown/pattern/ship`, Supabase-Spalten + `protect_profile` + shop_items sind live eingespielt). Pixel-Entwürfe und Zeichenfunktionen in `cosmetics.js`.
     - Krone: Standard goldene Krone für den Gebietsführer (`leaderFid`), über dem Namen seiner Hauptstadt (game-world) und in der Bestenliste; Muster: `drawPatternCell` in `renderOwners` (nur eigene Gebiete); Schiff: `drawShip` in `drawSeaMarch` (nur eigene Flöße). Shop/Inventar mit Reitern (`COS_TABS`).
     - Rubys-Icon jetzt Pixel-Kristall.
+18. Update v17 (Profilbild, `node tests/avatar.spec.js`): Upload im Profil (PNG/JPG/WebP, mittig auf 96×96 zugeschnitten, als Data-URL ≤30 kB in `profiles.avatar`), `safeAvatar()` validiert (kein SVG), Anzeige im Profil und Header, Entfernen-Knopf; Spalte + Check-Constraint live in Supabase, News v17. Avatare anderer Spieler werden noch nicht angezeigt.
+
 ## Offen (neu)
 - Mehrspieler-Kosmetik (v16): Kronen/Muster/Schiffe werden beim Start gemeldet (`ready` → Host → `init`, `cosmPack/cosmClean/cosmOf`), „Kosmetik anderer ausblenden“ wirkt jetzt. Hüte/Flaggen anderer Spieler werden noch nicht synchronisiert; Bots tragen nur die Standardkrone.
 - Bots nutzen die Bauleiste/Spenden nicht, Gebietsbeschriftung auf der Karte noch im alten Stil.

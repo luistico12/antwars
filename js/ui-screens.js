@@ -12,7 +12,8 @@ S.profile=()=>{
   return shell(t('Profil'),{},`
   <div class="grid" style="grid-template-columns:minmax(0,300px) minmax(0,1fr);align-items:start" id="profGrid">
     <div class="panel" style="display:flex;flex-direction:column;gap:12px">
-      <div class="avbig">${esc(initials(p.username))}</div>
+      <div class="avbig">${safeAvatar(p.avatar)?`<img alt="" src="${safeAvatar(p.avatar)}">`:esc(initials(p.username))}</div>
+      <div class="row" style="justify-content:center"><label class="btn sm" for="pAvF">${ico('edit')} ${t('Profilbild')}</label><input type="file" id="pAvF" accept="image/png,image/jpeg,image/webp" hidden>${safeAvatar(p.avatar)?`<button class="btn sm" id="pAvX" type="button">${ico('trash')}</button>`:''}</div>
       <div style="text-align:center"><b style="font-size:19px">${p.clan_tag?`<span class="ctag">${esc(p.clan_tag)}</span>`:''}${esc(p.username||'Gast')}<span class="mini" style="font-weight:400">#${esc(p.tag||'0000')}</span></b>
         <div class="row" style="justify-content:center;margin-top:6px">${flag?flagSVG(flag):''}${hatName?`<span class="tag">${ico('hat')} ${hatName.name}</span>`:''}<span class="ruby">${ico('ruby')} ${p.rubys||0} ${t('Rubys')}</span></div></div>
       <div class="field"><span class="lbl">${t('Konto-ID')}</span><span class="mini" style="word-break:break-all">${esc(li?(p.id||'').slice(0,18)+'…':'local')}</span></div>
@@ -32,7 +33,19 @@ S.profile=()=>{
       <div class="panel"><div class="row" style="margin-bottom:8px"><span class="lbl">${t('Erfolge')}</span><span class="sp"></span><button class="btn sm" data-go="achievements" type="button">→</button></div><div class="grid" style="gap:8px">${qs}</div></div>
     </div></div>`);
 };
+/* Profilbild: mittig zuschneiden, auf 96×96 verkleinern, als webp/jpeg speichern */
+function avatarFromFile(f){return new Promise((ok,no)=>{
+  if(!f||!/^image\/(png|jpeg|webp)$/.test(f.type)||f.size>8e6)return no(new Error(LANG==='de'?'Bitte ein PNG, JPG oder WebP unter 8 MB wählen':'Please choose a PNG, JPG or WebP under 8 MB'));
+  const im=new Image(),u=URL.createObjectURL(f);
+  im.onload=()=>{URL.revokeObjectURL(u);const s=Math.min(im.naturalWidth,im.naturalHeight),c=document.createElement('canvas');c.width=c.height=96;const g=c.getContext('2d');
+    g.fillStyle='#fff';g.fillRect(0,0,96,96);g.drawImage(im,(im.naturalWidth-s)/2,(im.naturalHeight-s)/2,s,s,0,0,96,96);
+    let d=c.toDataURL('image/webp',.85);if(!d.startsWith('data:image/webp'))d=c.toDataURL('image/jpeg',.85);
+    safeAvatar(d)?ok(d):no(new Error('Bild zu groß'))};
+  im.onerror=()=>{URL.revokeObjectURL(u);no(new Error(LANG==='de'?'Bild konnte nicht gelesen werden':'Could not read the image'))};
+  im.src=u})}
 S.profile.bind=p=>{
+  const af=p.querySelector('#pAvF');if(af)af.onchange=async()=>{try{await AW.update({avatar:await avatarFromFile(af.files[0])});toast(t('Gespeichert'),'good')}catch(e){toastErr(e)}};
+  const ax=p.querySelector('#pAvX');if(ax)ax.onclick=async()=>{try{await AW.update({avatar:null})}catch(e){toastErr(e)}};
   const msg=(id,k,x)=>{p.querySelector(id).innerHTML=`<div class="msg ${k}">${esc(x)}</div>`};
   p.querySelector('#pCopy').onclick=()=>{try{navigator.clipboard.writeText(location.origin+location.pathname+'?u='+((AW.profile&&AW.profile.id)||'')).then(()=>toast(t('Kopiert'),'good'))}catch(e){}};
   const o=p.querySelector('#pOut');if(o)o.onclick=async()=>{await AW.signOut();closeScreens()};

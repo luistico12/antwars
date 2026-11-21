@@ -13,6 +13,7 @@ create table if not exists public.profiles(
   games int not null default 0,
   hat text,
   flag text,
+  avatar text check (avatar is null or (length(avatar) <= 30000 and avatar ~ '^data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$')),
   crown text,
   pattern text,
   ship text,
@@ -257,6 +258,9 @@ insert into public.shop_items(id,price)
  select 'flag:'||c, case when c in ('de','gb','us','fr','es','it','nl','pl') then 1 else 2 end
  from unnest(array['de','gb','us','fr','es','it','nl','pl','pt','br','ar','mx','ca','au','jp','kr','cn','in','tr','ru','ua','se','no','dk','fi','at','ch','ie','be','gr','cz','hu','ro','bg','rs','sk','si','il','sa','eg','za','bd','mk']) c
 on conflict (id) do update set price = excluded.price;
+-- Update v17: Profilbild
+alter table public.profiles add column if not exists avatar text;
+do $$ begin alter table public.profiles add constraint profiles_avatar_chk check (avatar is null or (length(avatar) <= 30000 and avatar ~ '^data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$')); exception when duplicate_object then null; end $$;
 -- Update v15: Kronen, Muster, Schiffe
 alter table public.profiles add column if not exists crown text;
 alter table public.profiles add column if not exists pattern text;
@@ -367,3 +371,7 @@ where not exists (select 1 from public.news where version='v15');
 insert into public.news(version,title,body)
 select 'v16','Kosmetik im Mehrspieler','Im Mehrspieler siehst du jetzt die Kosmetik der anderen: ihre Krone, ihr Muster auf der Karte und ihr Schiff auf dem Wasser. Wer die Kosmetik anderer nicht sehen mag, schaltet sie in den Einstellungen unter Spiel aus.'
 where not exists (select 1 from public.news where version='v16');
+
+insert into public.news(version,title,body)
+select 'v17','Profilbild hochladen','Du kannst jetzt ein eigenes Profilbild hochladen. Öffne dein Profil, wähle ein Bild (PNG, JPG oder WebP), es wird mittig zugeschnitten und klein gespeichert. Es erscheint im Profil und oben im Header, mit dem Papierkorb-Knopf entfernst du es wieder.'
+where not exists (select 1 from public.news where version='v17');

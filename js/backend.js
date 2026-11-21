@@ -10,6 +10,8 @@ const HATS=[['cap','Kappe',1],['flower','Blume',1],['party','Partyhut',1],['helm
 const WORLD_FLAGS=['de','gb','us','fr','es','it','nl','pl','pt','br','ar','mx','ca','au','jp','kr','cn','in','tr','ru','ua','se','no','dk','fi','at','ch','ie','be','gr','cz','hu','ro','bg','rs','sk','si','il','sa','eg','za','bd','mk'];
 const FLAG_NAMES={de:'Deutschland',gb:'Vereinigtes Königreich',us:'USA',fr:'Frankreich',es:'Spanien',it:'Italien',nl:'Niederlande',pl:'Polen',pt:'Portugal',br:'Brasilien',ar:'Argentinien',mx:'Mexiko',ca:'Kanada',au:'Australien',jp:'Japan',kr:'Südkorea',cn:'China',in:'Indien',tr:'Türkei',ru:'Russland',ua:'Ukraine',se:'Schweden',no:'Norwegen',dk:'Dänemark',fi:'Finnland',at:'Österreich',ch:'Schweiz',ie:'Irland',be:'Belgien',gr:'Griechenland',cz:'Tschechien',hu:'Ungarn',ro:'Rumänien',bg:'Bulgarien',rs:'Serbien',sk:'Slowakei',si:'Slowenien',il:'Israel',sa:'Saudi-Arabien',eg:'Ägypten',za:'Südafrika',bd:'Bangladesch',mk:'Nordmazedonien'};
 const ANT_FLAGS=[['a_red','Rote Kolonie',2],['a_green','Blattschneider',2],['a_gold','Goldstern',2],['a_stripe','Streifen',2],['a_mound','Hügelwacht',3],['a_fungus','Pilzgarten',3],['a_swords','Kriegsbanner',3],['a_queen','Königin',3]];
+/* Profilbild: kleines Bild als Data-URL (nur png/jpeg/webp, höchstens 30 kB), wird nur per <img> angezeigt */
+const safeAvatar=s=>typeof s==='string'&&s.length<=30000&&/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+\/=]+$/.test(s)?s:null;
 const CROWNS=[['monarch','Pixel-König',2],['ruby','Rubinzinnen',3],['amethyst','Amethyst-Turm',4],['laurel','Goldlorbeer',6],['halo','Himmelsreif',6],['inferno','Infernokrone',8],['prism','Prisma-Herrscher',12]];
 const PATTERNS=[['stripes','Diagonalen',2],['checker','Schachbrett',2],['dots','Punkte',2],['bricks','Mauerwerk',3],['hearts','Herzchen',3],['stars','Sterne',3],['waves','Wellen',4],['grid','Gitter',4]];
 const SHIPS=[['leaf','Blattkahn',2],['viking','Wikingerboot',3],['duck','Entenboot',3],['steam','Dampfer',4],['pirate','Piratenschiff',5],['golden','Goldgaleone',8]];
@@ -106,7 +108,7 @@ const Remote={
   async setPhone(phone){const{error}=await AW.sb.auth.updateUser({phone});if(error)throw new Error('Nummer konnte nicht gespeichert werden')},
   async verifyPhone(phone,token){const{error}=await AW.sb.auth.verifyOtp({phone,token,type:'phone_change'});if(error)throw new Error('Code ungültig');await Remote.loadProfile()},
   async update(p){
-    p={...p};
+    p={...p};if('avatar' in p)p.avatar=safeAvatar(p.avatar);
     if('username' in p){const nm=cleanName(p.username);if(nm.length<2)throw new Error('Name zu kurz');delete p.username;const{error}=await AW.sb.rpc('set_username',{n:nm});if(error)throw new Error('Name konnte nicht gespeichert werden')}
     if(Object.keys(p).length){const{error}=await AW.sb.from('profiles').update(p).eq('id',AW.user.id);if(error)throw new Error('Speichern nicht möglich')}
     await Remote.loadProfile()},
@@ -144,7 +146,7 @@ const LP='aw_local_';
 const Local={
   async init(){
     let p=lsGet(LP+'profile',null);
-    if(!p){p={id:'local',username:lsGet('ak_name','Gast'),tag:randTag(),clan_tag:'',rubys:0,wins:0,games:0,hat:null,flag:null,crown:null,pattern:null,ship:null,owned:[],quests:{},stats:{},is_admin:false,created_at:new Date().toISOString()};lsSet(LP+'profile',p)}
+    if(!p){p={id:'local',username:lsGet('ak_name','Gast'),tag:randTag(),clan_tag:'',rubys:0,wins:0,games:0,avatar:null,hat:null,flag:null,crown:null,pattern:null,ship:null,owned:[],quests:{},stats:{},is_admin:false,created_at:new Date().toISOString()};lsSet(LP+'profile',p)}
     if(!p.tag){p.tag=randTag();lsSet(LP+'profile',p)}
     AW.user={id:'local',email:null,phone:null,local:true};AW.profile=p;
   },
@@ -155,6 +157,7 @@ const Local={
   async oauth(){throw noServer()},
   async signOut(){},async reset(){},async setPhone(){throw new Error('Nur mit Server-Konto möglich')},async verifyPhone(){},
   async update(p){const a=AW.profile;if('username' in p){const nm=cleanName(p.username);if(nm.length<2)throw new Error('Name zu kurz');if(nm.toLowerCase()!==String(a.username).toLowerCase())a.tag=randTag();a.username=nm}if('clan_tag' in p)a.clan_tag=String(p.clan_tag||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,5);
+    if('avatar' in p)a.avatar=safeAvatar(p.avatar);
     if('hat' in p){if(p.hat&&!a.owned.includes('hat:'+p.hat))throw new Error('Nicht freigeschaltet');a.hat=p.hat}
     if('flag' in p){if(p.flag&&!a.owned.includes('flag:'+p.flag))throw new Error('Nicht freigeschaltet');a.flag=p.flag}
     for(const k of['crown','pattern','ship'])if(k in p){if(p[k]&&!a.owned.includes(k+':'+p[k]))throw new Error('Nicht freigeschaltet');a[k]=p[k]}
@@ -192,6 +195,7 @@ const Local={
   }
 };
 const DEFAULT_NEWS=[
+  {id:'d9',version:'v17',title:'Profilbild hochladen',body:'Du kannst jetzt ein eigenes Profilbild hochladen. Öffne dein Profil, wähle ein Bild (PNG, JPG oder WebP), es wird mittig zugeschnitten und klein gespeichert. Es erscheint im Profil und oben im Header, mit dem Papierkorb-Knopf entfernst du es wieder.',created_at:'2026-11-21T21:00:00Z'},
   {id:'d8',version:'v16',title:'Kosmetik im Mehrspieler',body:'Im Mehrspieler siehst du jetzt die Kosmetik der anderen: ihre Krone, ihr Muster auf der Karte und ihr Schiff auf dem Wasser. Wer die Kosmetik anderer nicht sehen mag, schaltet sie in den Einstellungen unter Spiel aus.',created_at:'2026-11-21T20:00:00Z'},
   {id:'d7',version:'v15',title:'Kronen, Muster und Schiffe',body:'Neue Kosmetik im Shop: Kronen, Muster und Schiffe. Die Krone trägt, wer das meiste Land hat: Sie steht über dem Namen seiner Hauptstadt und in der Bestenliste, alle tragen standardmäßig die goldene Krone, im Shop gibt es sieben weitere. Muster färben deine Gebiete auf der Weltkarte (acht Stück), Schiffe ersetzen dein Floß auf dem Wasser (sechs Stück). Alles lässt sich im Inventar ausrüsten. Die Rubys sind jetzt Pixel-Kristalle.',created_at:'2026-11-21T19:00:00Z'},
   {id:'d6',version:'v14',title:'Neue Weltkarten-Oberfläche',body:'Die Weltkarte sieht jetzt aus wie bei FrontWars: Bestenliste links oben (Besitz, Gebiete, Truppen), unten die Bauleiste mit den Tasten 1 bis 6 (Wall, Außenposten, Linie, Hafen, Floß, Weg), Material und Truppen mit Anteilsleiste sowie Leisten zum Spenden von Truppen und Material. Unten rechts stehen Ereignisse und das Team. Das Seitenpanel rechts ist weg, Bauen geht über die Leiste oder per Rechtsklick. Die Flüsse winden sich jetzt natürlicher durchs Land, und die Rubys sind jetzt rote Kristalle in der Akzentfarbe.',created_at:'2026-11-21T14:00:00Z'},

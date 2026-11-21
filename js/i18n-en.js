@@ -103,6 +103,7 @@ Object.assign(EN,{
 "Gemeinsame Karte gestartet – wähle dein Startgebiet": "Shared map started – choose your start area",
 "Gerade keine öffentlichen Lobbys.": "No public lobbies right now.",
 "Gespeichert": "Saved",
+"Profilbild": "Profile picture",
 "Gewinne 5 Partien": "Win 5 games",
 "Gewinne eine Partie": "Win a game",
 "Goldstern": "Gold star",
