@@ -63,7 +63,7 @@ function homeHide(){$('#home').hidden=true;renderHeader()}
 function homeDraw(){const c=$('#homeBg'),g=c.getContext('2d');g.imageSmoothingEnabled=false;g.clearRect(0,0,c.width,c.height);if(baseCanvas){g.drawImage(baseCanvas,0,0,c.width,c.height);if(ownCanvas)g.drawImage(ownCanvas,0,0,c.width,c.height)}}
 function homeFill(){
   $('#hMapName').textContent=mapTitle();
-  $('#hTags').innerHTML=`<span class="tag">${t(DFN[diffKey])}</span><span class="tag">${T.length} ${LANG==='de'?'Gebiete':'areas'}</span><span class="tag ac">${MODES[modeKey].bots} ${t('Gegner')}</span><span class="tag">${MODES[modeKey].n}</span><span class="tag">${LANG==='de'?'Schutz':'Protection'} ${mmss(PROT[diffKey])}</span>`;
+  $('#hTags').innerHTML=`<span class="tag">${t(DFN[diffKey])}</span><span class="tag">${T.length} ${LANG==='de'?'Gebiete':'areas'}</span><span class="tag ac">${MODES[modeKey].bots} ${t('Gegner')}</span><span class="tag">${MODES[modeKey].n} · ${MODES[modeKey].spd}x</span><span class="tag">${LANG==='de'?'Schutz':'Protection'} ${mmss(PROT[diffKey])}</span>`;
   $$('#hSp [data-sp]').forEach(b=>b.classList.toggle('on',b.dataset.sp===setupSp));
   $$('#hDf [data-d]').forEach(b=>b.classList.toggle('on',b.dataset.d===diffKey));
   $$('#hMode [data-m]').forEach(b=>b.classList.toggle('on',b.dataset.m===modeKey));
@@ -77,13 +77,14 @@ let rep={terr:0,score:0,found:0,allied:false};
   startGame=function(){
     if(!requireSession())return;
     if(MATCH.seed!=null&&MATCH.seed===CUR.seed){const o=Math.random;Math.random=seededRandom(CUR.seed+7);try{sg()}finally{Math.random=o}}else sg();
-    rep={terr:0,score:0,found:0,allied:false};AW.report({games:1});syncCosmetics();renderHeader();
+    rep={terr:0,score:0,found:0,allied:false};AW.report({games:1});Hist.begin();syncCosmetics();renderHeader();
     setTimeout(()=>toast(LANG==='de'?`Schutzzeit: ${mmss(PROT[diffKey])} lang kann niemand angreifen`:`Protection: nobody can attack for ${mmss(PROT[diffKey])}`,'good'),400);
   };
   const eg=endGame;
-  endGame=function(win){eg(win);AW.report({wins:win?1:0,score:myScore()});lbReset();renderHeader();setTimeout(potdRefresh,1500)};
+  endGame=function(win){eg(win);Hist.end(win);AW.report({wins:win?1:0,score:myScore()});lbReset();renderHeader();setTimeout(potdRefresh,1500)};
 })();
 function seededRandom(seed){let a=seed>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+let qSec=0;
 setInterval(()=>{
   if(!started||!G||over)return;const p={};
   const own=T.filter(x=>x.owner===0).length,sc=myScore(),f=G.items.length,al=F.some(x=>!x.isPlayer&&x.allied);
@@ -91,7 +92,9 @@ setInterval(()=>{
   if(sc>rep.score+20){rep.score=sc;p.score=sc}
   if(f>rep.found){p.found=f-rep.found;rep.found=f}
   if(al&&!rep.allied){rep.allied=true;p.allied=1}
-  if(Object.keys(p).length)AW.report(p);
+  Object.assign(p,qTake());
+  if(speed>0){qSec+=3;if(qSec>=60){qSec-=60;p.mins=1}}
+  if(Object.keys(p).length){AW.report(p);Hist.add(p)}else Hist.tick();
 },3000);
 $('#endBtn').addEventListener('click',()=>setTimeout(()=>{MATCH.seed=null;pickStop();homeShow()},0));
 
@@ -108,6 +111,7 @@ function pickStart(){
     if(pick15.t<=0){const opts=T.filter(x=>x.terrain===sp.terr);const x=opts[Math.floor(Math.random()*opts.length)]||T[0];mapClick(x.id)}
   },100)};
   $('#pickBar').hidden=false;
+  if(MODES[modeKey].rnd){const sp=SP[setupSp],opts=T.filter(x=>x.terrain===sp.terr);mapClick((opts[Math.floor(Math.random()*opts.length)]||T[0]).id)}
 }
 function pickStop(){if(pick15){clearInterval(pick15.iv);pick15=null}$('#pickBar').hidden=true}
 (function(){const mc=mapClick;mapClick=function(id){const before=setupStart;mc(id);if(!started&&pick15&&setupStart!=null&&setupStart!==before){pickStop();$('#btnStart').onclick()}}})();
@@ -117,14 +121,14 @@ document.body.insertAdjacentHTML('beforeend','<div id="qLive" hidden></div>');
 let qOpen=false,qSeen=new Set(),qInit=false;
 function qCheck(){
   if(!started||!AW.profile)return;
-  for(const q of QUESTS){const g=qProg(q);
+  for(const q of activeQuests()){const g=qProg(q);
     if(g.done&&!g.claimed&&!qSeen.has(q[0])){qSeen.add(q[0]);if(qInit)toast(`${LANG==='de'?'Erfolg':'Achievement'}: ${t(q[5])} (+${q[4]} Rubys)`,'good')}}
   qInit=true;
 }
 function qLiveRender(){
   const el=$('#qLive');
   if(!started||!AW.profile||over){el.hidden=true;return}
-  const L=QUESTS.filter(q=>!qProg(q).claimed).sort((a,b)=>qProg(b).done-qProg(a).done||qProg(b).v/b[3]-qProg(a).v/a[3]).slice(0,7),ready=L.filter(q=>qProg(q).done).length;
+  const L=activeQuests().filter(q=>!qProg(q).claimed).sort((a,b)=>qProg(b).done-qProg(a).done||qProg(b).v/b[3]-qProg(a).v/a[3]).slice(0,7),ready=L.filter(q=>qProg(q).done).length;
   el.hidden=false;
   setHTML(el,`<button type="button" class="qpill${ready?' rdy':''}" id="qTog">${ico('trophy')} ${ready?`${ready} ${t('abholbar')}`:t('Quests')}</button>`+(qOpen?`<div class="qbox">${L.map(q=>{const g=qProg(q);return `<div class="qrow${g.done?' done':''}"><span>${t(q[5])}</span><div class="bar"><i style="width:${Math.round(100*g.v/q[3])}%"></i></div>${g.done?`<button class="btn sm pri" data-qc="${q[0]}" type="button">+${q[4]}</button>`:`<small>${g.v}/${q[3]}</small>`}</div>`}).join('')||`<div class="mini">${t('Alles abgeholt')}</div>`}</div>`:''));
 }

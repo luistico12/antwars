@@ -3,10 +3,9 @@ const FCOL=[[74,163,255],[224,82,61],[179,107,224],[230,194,60],[80,200,140],[24
 const FNAME=['Du','Rote Kolonie','Violette Kolonie','Gelbe Kolonie','Grüne Kolonie','Orange Kolonie','Rosa Kolonie','Hellblaue Kolonie'];
 const DIFFS={easy:{regen:0.8,think:7,atk:1,ratio:1.5},normal:{regen:1,think:5,atk:1.05,ratio:1.25},hard:{regen:1.3,think:3.2,atk:1.15,ratio:1.1}};
 const STR_COST={out:[{mat:40,food:20},{mat:80,food:40}],line:[{mat:25,food:10},{mat:45,food:20}]};
-let MW=GW*CS,MH=GH*CS,modeKey='ffa';
+let MW=GW*CS,MH=GH*CS,modeKey='classic';
 let contWin=false,M=null,F=[],T=[],marches=[],fxs=[],started=false,over=false,speed=1,gtime=0,selT=null,hovT=null,pct=50;
 let setupSp='ground',setupStart=null,diffKey='normal',baseCanvas=null,ownCanvas=null,strCanvas=null,ownDirty=true,strDirty=true,dockDirty=true;
-let conqQueue=[];
 const mcam={x:0,y:0,z:1};
 const H={v:0,recent:{}};
 const PX="'Chakra Petch',system-ui,sans-serif";
@@ -18,7 +17,7 @@ const isFriend=(a,b)=>a===b||(a===0&&b>0&&F[b].allied)||(b===0&&a>0&&F[a].allied
 function newMap(seed){
   setMapDims(MODES[modeKey].scale);MW=GW*CS;MH=GH*CS;if(typeof applyDensity==='function')applyDensity();
   M=buildMap(seed);T=M.terrs;baseCanvas=renderBase(M);
-  for(const t of T){t.str=newStr();t.col=null;t.puppet=false;t.item=null;t.walls=[];t.port=null}
+  for(const t of T){t.str=newStr();t.col=null;t.item=null;t.walls=[];t.port=null}
   F=[{id:0,isPlayer:true,name:'Du',species:setupSp,rgb:FCOL[0],alive:true,capital:-1}];
   if(typeof seaReset==='function')seaReset();
   setupStart=null;selT=null;hovT=null;ownDirty=true;strDirty=true;mcam.x=0;mcam.y=0;mcam.z=1;
@@ -40,7 +39,7 @@ function collectItem(t){
 function startGame(){
   setColonyDims(modeKey==='unlimited'?2:1);
   const D=DIFFS[diffKey],st=T[setupStart],hum=(typeof NET!=='undefined'&&NET.role==='host')?NET.humans:[];
-  for(const t of T){t.owner=-1;t.isCap=false;t.troops=6+Math.floor(Math.random()*12);t.str=newStr();t.col=null;t.puppet=false;t.item=null;t.walls=[];t.port=null}
+  for(const t of T){t.owner=-1;t.isCap=false;t.troops=6+Math.floor(Math.random()*12);t.str=newStr();t.col=null;t.item=null;t.walls=[];t.port=null}
   if(typeof seaReset==='function')seaReset();
   F=[{id:0,isPlayer:true,name:'Du',species:setupSp,rgb:FCOL[0],alive:true,capital:setupStart}];
   st.owner=0;st.isCap=true;st.troops=3;
@@ -50,14 +49,15 @@ function startGame(){
   const total=Math.max(2+hum.length,1+MODES[modeKey].bots);
   for(let b=1+hum.length;b<total;b++){
     let best=null,bs=-1;
-    for(const t of T){if(t.owner!==-1)continue;const d=Math.min(...taken.map(q=>dist(q,t)));if(d>bs){bs=d;best=t}}
+    if(MODES[modeKey].rnd){const fr=T.filter(q=>q.owner===-1&&q.adj.some(i=>T[i].owner===-1));best=fr[Math.floor(Math.random()*fr.length)]||null}
+    if(!best)for(const t of T){if(t.owner!==-1)continue;const d=Math.min(...taken.map(q=>dist(q,t)));if(d>bs){bs=d;best=t}}
     best.owner=b;best.isCap=true;best.troops=14;taken.push(best);
     F.push({id:b,isPlayer:false,name:FNAME[b],species:SP_BY_TERR[best.terrain],rgb:FCOL[b],alive:true,capital:best.id,timer:D.think*(1+b*0.4),allied:false,dipCool:0,hurt:-999});
     const free=best.adj.map(i=>T[i]).filter(x=>x.owner===-1);
     if(free.length){const x=free[Math.floor(Math.random()*free.length)];x.owner=b;x.troops=8}
   }
   placeItems();
-  contWin=modeKey==='unlimited';marches=[];fxs=[];conqQueue=[];H.v=0;H.recent={};started=true;over=false;gtime=0;selT=null;speed=1;ownDirty=true;strDirty=true;
+  contWin=modeKey==='unlimited';marches=[];fxs=[];H.v=0;H.recent={};started=true;over=false;gtime=0;selT=null;SIMV=MODES[modeKey].spd;speed=SIMV;ownDirty=true;strDirty=true;
   newG();st.col=makeColony(st,'capital',setupSp);curT=st.id;col=st.col;
   computeStats(col);syncAnts(true);
 }
@@ -82,7 +82,8 @@ function breakAlliance(fid){const f=F[fid];if(!f||!f.allied)return;f.allied=fals
 /* ===== Märsche und Kämpfe ===== */
 const wpos=t=>[t.lx*CS+5,t.ly*CS+5];
 const PROT={easy:150,normal:90,hard:60};
-const protLeft=()=>started?Math.max(0,PROT[diffKey]-gtime):0;
+const rtime=()=>gtime/SIMV;
+const protLeft=()=>started?Math.max(0,PROT[diffKey]-rtime()):0;
 const clockT=s=>{s=Math.floor(s);const h=Math.floor(s/3600),m=Math.floor(s%3600/60);return(h?h+':'+String(m).padStart(2,'0'):m)+':'+String(s%60).padStart(2,'0')};
 const mmss=s=>Math.floor(s/60)+':'+String(Math.ceil(s%60)%60).padStart(2,'0');
 function launch(from,to,n,fid){
@@ -120,7 +121,7 @@ function resolve(m){
     addFloat(px,py-24,'-'+lost,'#ff8a70');
     setOwner(to,m.f,surv);
     fxs.push({k:'ripple',x:px,y:py,t:0,dur:1.6,c:f.rgb});
-    if(mineAtk){toast(`${to.name} erobert!`,'good');to.conqN=clamp(3+Math.round(lost/7)+(wasCap?3:0),3,10);askConquest(to)}
+    if(mineAtk){qStat('conq');toast(`${to.name} erobert!`,'good');to.conqN=clamp(3+Math.round(lost/7)+(wasCap?3:0),3,10);askConquest(to)}
     else if(mine)toast(`${to.name} ist verloren`,'bad');
   }else{
     const loss=A/dm;to.troops=Math.max(1,to.troops-loss);
@@ -130,7 +131,7 @@ function resolve(m){
 }
 function setOwner(t,nw,troops){
   const old=t.owner,wasCap=t.isCap;
-  t.owner=nw;t.troops=troops;t.isCap=false;t.str=newStr();ownDirty=true;strDirty=true;t.puppet=false;t.walls=[];t.port=null;if(typeof roadsChanged==='function')roadsChanged();
+  t.owner=nw;t.troops=troops;t.isCap=false;t.str=newStr();ownDirty=true;strDirty=true;t.walls=[];t.port=null;if(typeof roadsChanged==='function')roadsChanged();
   if(old===0){t.col=null;renderColSwitch()}
   if(nw===0)t.col=null;
   if(nw===0)collectItem(t);
@@ -145,7 +146,7 @@ function relocateCapital(fid){
   const best=own.reduce((a,b)=>sc(b)>sc(a)?b:a);
   best.isCap=true;f.capital=best.id;
   if(fid===0){
-    if(best.puppet||(!best.col&&!conqQueue.includes(best.id))){best.puppet=false;best.col=makeColony(best,'conquest',F[0].species,3);renderColSwitch()}
+    if(!best.col){best.col=makeColony(best,'conquest',F[0].species,3);renderColSwitch()}
     toast(`Hauptstadt verloren! Neue Hauptstadt: ${best.name}`,'bad');
   }else toast(`${f.name} verlegt ihre Hauptstadt nach ${best.name}`,'');
 }
@@ -156,7 +157,7 @@ function eliminate(fid,by){
   if(!contWin&&F.every(x=>x.isPlayer||!x.alive))endGame(true);
 }
 function endGame(win){
-  over=true;conqQueue=[];$('#conq').hidden=true;
+  over=true;
   $('#endCont').hidden=!win;
   $('#endT').textContent=win?'Sieg!':'Niederlage';
   $('#endP').textContent=win?`Alle Gegner sind besiegt. Dein Volk herrscht über das Land (Tag ${dayNo()}).`:`Du hast kein Gebiet mehr. Die Kolonien sind verloren (Tag ${dayNo()}).`;
@@ -164,20 +165,12 @@ function endGame(win){
 }
 const dayNo=()=>G?Math.floor(G.time/DAYLEN)+1:1;
 
-/* ===== Eroberte Gebiete: behalten oder Marionettenstaat ===== */
-function askConquest(t){conqQueue.push(t.id);showConquest()}
-function chooseConquest(id,mode){
-  const t=T[id];conqQueue=conqQueue.filter(x=>x!==id);
-  if(t.owner===0){
-    if(mode==='keep'){const n=t.conqN||4,m=n*6,fo=n*4;G.mat=Math.min(G.matCap,G.mat+m);G.food=Math.min(G.foodCap,G.food+fo);toast(`${t.name} gehört jetzt zu deinem Reich: +${m} Erde, +${fo} Blätter`,'good');renderColSwitch()}
-    else{t.puppet=true;const n=t.conqN||4,m=Math.round(n*6*0.4),fo=Math.round(n*4*0.4),tr=Math.max(1,Math.round(n/2)),cp=T[F[0].capital];G.mat=Math.min(G.matCap,G.mat+m);G.food=Math.min(G.foodCap,G.food+fo);if(cp&&cp.owner===0)addTroops(cp,tr);ownDirty=true;toast(`${t.name} ist ein Marionettenstaat: ein Teil der Beute (+${m} Erde, +${fo} Blätter, +${tr} Soldaten) und laufend Tribut`,'good')}
-  }
-  ownDirty=true;showConquest();
-}
-function annex(id){
-  const t=T[id];if(t.owner!==0||!t.puppet)return;
-  if(G.mat<30||G.food<30)return toast('Annektieren kostet 30 Erde und 30 Blätter','bad');
-  G.mat-=30;G.food-=30;t.puppet=false;ownDirty=true;if(typeof roadsChanged==='function')roadsChanged();renderColSwitch();toast(`${t.name} wurde annektiert und gehört jetzt zu deinem Reich`,'good');
+/* ===== Eroberte Gebiete: werden immer behalten und verschmelzen mit dem Reich ===== */
+function askConquest(t){chooseConquest(t.id)}
+function chooseConquest(id){
+  const t=T[id];
+  if(t.owner===0){const n=t.conqN||4,m=n*6,fo=n*4;G.mat=Math.min(G.matCap,G.mat+m);G.food=Math.min(G.foodCap,G.food+fo);toast(`${t.name} gehört jetzt zu deinem Reich: +${m} Erde, +${fo} Blätter`,'good');renderColSwitch()}
+  ownDirty=true;
 }
 
 function updateWorld(dt){
@@ -186,7 +179,7 @@ function updateWorld(dt){
   H.v=Math.max(0,H.v-0.25*dt);
   for(const f of F)if(f.dipCool>0)f.dipCool=Math.max(0,f.dipCool-dt);
   for(const t of T){
-    if(t.owner===0){const o=t.str.out;if(o&&t.troops<30)t.troops=Math.min(30,t.troops+0.05*o*dt);if(t.puppet&&t.troops<20)t.troops=Math.min(20,t.troops+0.05*dt)}
+    if(t.owner===0){const o=t.str.out;if(o&&t.troops<30)t.troops=Math.min(30,t.troops+0.05*o*dt)}
     else if(t.owner>0&&!F[t.owner].human){const cp=t.isCap,mx=cp?60:30;if(t.troops<mx)t.troops=Math.min(mx,t.troops+(cp?0.5:0.15)*D.regen*dt+0.05*t.str.out*dt)}
   }
   for(let i=marches.length-1;i>=0;i--){const m=marches[i];
@@ -233,6 +226,7 @@ function buildStr(t,kind,nid){
   if(G.mat<c.mat)return toast('Zu wenig Material','bad');if(G.food<c.food)return toast('Zu wenig Blätter','bad');
   G.mat-=c.mat;G.food-=c.food;
   if(kind==='out')t.str.out++;else t.str.lines[nid]=lv+1;
+  qStat('built');
   strDirty=true;const[px,py]=wpos(t);fxs.push({k:'ripple',x:px,y:py,t:0,dur:1,c:[240,200,110]});
   toast(kind==='out'?`Außenposten in ${t.name} (Stufe ${lv+1})`:`Verteidigungslinie gegen ${T[nid].name} (Stufe ${lv+1})`,'good');
 }
@@ -319,6 +313,7 @@ function drawMap(g,now){
   if(ownDirty){ownCanvas=renderOwners(M,F);computeRegions();ownDirty=false}
   if(strDirty){strCanvas=renderStructures();strDirty=false}
   g.drawImage(ownCanvas,0,0);g.drawImage(strCanvas,0,0);
+  if(typeof drawRoadLayer==='function')drawRoadLayer(g,now);
   const fillT=(t,style)=>{g.fillStyle=style;for(const i of t.cells)g.fillRect((i%GW)*CS,((i/GW)|0)*CS,CS,CS)};
   if(!started){for(const t of T)if(t.terrain!==SP[setupSp].terr)fillT(t,'rgba(12,8,3,.5)')}
   if(hovT!=null)fillT(T[hovT],'rgba(255,255,255,.16)');
@@ -334,16 +329,15 @@ function drawMap(g,now){
       if(setupStart===t.id){drawCapMark(g,px,py,FCOL[0]);drawNest(g,setupSp,px,py+26,1)}
       continue;
     }
-    if(t.owner>=0)drawNest(g,F[t.owner].species,px,py+28,nestSize(t));
+    if(t.owner>=0&&!svDraw(g,'city',cosmOf(t.owner).bskin||'default',rgb(F[t.owner].rgb),px,py+30,nestSize(t)*0.55,F[t.owner].species))drawNest(g,F[t.owner].species,px,py+28,nestSize(t));
     const flg=t.isCap&&t.owner>=0&&typeof cosmOf==='function'?cosmOf(t.owner).flag:null;
     if(flg){const im=flagImg(flg);if(im.complete&&im.naturalWidth){g.fillStyle='#d9d0b8';g.fillRect(px-1,py+2,1,16);g.drawImage(im,px,py+2,13,9)}}
     const txt=String(Math.floor(t.troops));g.font='700 13px '+PX;
     const w=g.measureText(txt).width+12,col2=t.owner>=0?F[t.owner].rgb:[170,160,140];
     g.fillStyle='rgba(22,13,6,.86)';g.fillRect(px-w/2,py-8,w,16);
-    g.strokeStyle=rgb(col2);g.lineWidth=2;if(t.puppet)g.setLineDash([3,2]);g.strokeRect(px-w/2+1,py-7,w-2,14);g.setLineDash([]);
+    g.strokeStyle=rgb(col2);g.lineWidth=2;g.strokeRect(px-w/2+1,py-7,w-2,14);g.setLineDash([]);
     g.fillStyle='#fff';g.fillText(txt,px,py+1);
     if(t.isCap)drawCapMark(g,px-w/2-8,py,col2);
-    if(t.str.out>0)drawTower(g,px+w/2+12,py-2,t.str.out,col2);
     if(t.item)drawGem(g,px,py-66,now,t.item);
   }
   if(typeof drawSeaLayer==='function')drawSeaLayer(g,now);
@@ -408,10 +402,10 @@ function mapClick(id){
     if(setupStart!=null)T[setupStart].owner=-1;
     setupStart=id;t.owner=0;ownDirty=true;updateSetupPanel();return;
   }
-  if(over||conqQueue.length)return;
+  if(over)return;
   if(id==null){selT=null;return}
   const t=T[id];
-  if(selT!=null&&selT!==id&&T[selT].owner===0&&!T[selT].puppet&&T[selT].adj.includes(id)&&sideTab==='info'&&t.owner===0){
+  if(selT!=null&&selT!==id&&T[selT].owner===0&&T[selT].adj.includes(id)&&sideTab==='info'&&t.owner===0){
     const from=T[selT],n=Math.floor((Math.floor(from.troops)-1)*pct/100);
     if(n<1){toast('Zu wenige Soldaten für einen Marsch','bad');return}
     launch(from,t,n,0);return;

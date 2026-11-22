@@ -14,7 +14,7 @@ let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++};
   const g=await pg.evaluate(()=>document.querySelector('#setBox').innerText);
   ok(/VSync/.test(g)&&/FPS-Limit/.test(g)&&/Ultra/.test(g),'Grafik-Tab: VSync, FPS-Limit, Qualität');
   await pg.evaluate(()=>{ST.q='ultra';ST.density=QUAL.ultra.d;applyDensity();ST.fpsMax=30;ST.ui=115;applyUI();ST.pct=40;saveST()});
-  ok(await pg.evaluate(()=>RD===2),'Ultra setzt Renderdichte 2');
+  ok(await pg.evaluate(()=>RD===2.5),'Ultra setzt Renderdichte 2,5');
   await pg.evaluate(()=>{$('#set').hidden=true});
   await pg.click('#hSolo');await pg.evaluate(()=>{const sp=SP[setupSp];mapClick(T.find(t=>t.terrain===sp.terr).id)});
   await pg.waitForTimeout(800);

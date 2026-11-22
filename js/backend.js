@@ -19,27 +19,48 @@ const SHOP=[
   ...CROWNS.map(([id,n,p])=>({id:'crown:'+id,kind:'crown',key:id,name:n,price:p})),
   ...PATTERNS.map(([id,n,p])=>({id:'pattern:'+id,kind:'pattern',key:id,name:n,price:p})),
   ...SHIPS.map(([id,n,p])=>({id:'ship:'+id,kind:'ship',key:id,name:n,price:p})),
+  ...Object.entries(BSKINS).filter(([id])=>id!=='default').map(([id,x])=>({id:'bskin:'+id,kind:'bskin',key:id,name:x.n,price:x.price})),
+  ...Object.entries(TSKINS).filter(([id])=>id!=='default').map(([id,x])=>({id:'tskin:'+id,kind:'tskin',key:id,name:x.n,price:x.price})),
+  ...Object.entries(RSKINS).filter(([id])=>id!=='default').map(([id,x])=>({id:'rskin:'+id,kind:'rskin',key:id,name:x.n,price:x.price})),
   ...HATS.map(([id,n,p])=>({id:'hat:'+id,kind:'hat',key:id,name:n,price:p})),
   ...WORLD_FLAGS.map(id=>({id:'flag:'+id,kind:'flag',key:id,name:FLAG_NAMES[id],price:['de','gb','us','fr','es','it','nl','pl'].includes(id)?1:2})),
   ...ANT_FLAGS.map(([id,n,p])=>({id:'flag:'+id,kind:'flag',key:id,name:n,price:p,custom:true}))
 ];
 const SHOP_BY_ID=Object.fromEntries(SHOP.map(i=>[i.id,i]));
 /* Quests: [id, Art, Statistik, Ziel, Belohnung (Rubys), Titel] */
-const QUESTS=[
-  ['d_games','daily','games',1,1,'Starte ein Spiel'],
-  ['d_terr','daily','terr',3,1,'Besitze 3 Gebiete gleichzeitig'],
-  ['d_found','daily','found',1,1,'Grabe einen Fund aus'],
-  ['w_games','weekly','games',5,2,'Spiele 5 Partien'],
-  ['w_wins','weekly','wins',1,3,'Gewinne eine Partie'],
-  ['w_terr','weekly','terr',8,2,'Besitze 8 Gebiete gleichzeitig'],
-  ['c_games','career','games',10,2,'Spiele 10 Partien'],
-  ['c_wins','career','wins',5,5,'Gewinne 5 Partien'],
-  ['c_terr','career','terr',12,3,'Besitze 12 Gebiete gleichzeitig'],
-  ['c_found','career','found',25,3,'Grabe 25 Funde aus'],
-  ['c_allied','career','allied',1,1,'Schließe ein Bündnis'],
-  ['c_score','career','score',300,3,'Erreiche 300 Punkte']
+/*Q-BEGIN*/
+/* Quest: [id, Art, Stat, Ziel, Belohnung, Titel, Beschreibung, Symbol, Kategorie, Extra]. Stat 'bonus' = alle anderen Quests der Art abgeholt */
+const Q=(id,kind,stat,goal,reward,title,desc,ic,cat,extra)=>[id,kind,stat,goal,reward,title,desc||'',ic||'trophy',cat||'',extra||{}];
+const CAREER=[
+  ['games','Matches','Veteran','Spiele Partien','Jede gestartete Partie zählt, auch Solo.','gamepad','games',[5,15,40,100,250],[10,20,40,80,160]],
+  ['days','Matches','Stammgast','Spiele an verschiedenen Tagen','Jeder Tag mit mindestens einer Partie zählt.','calendar','days',[3,7,20,50],[10,25,60,130]],
+  ['mins','Matches','Dienstzeit','Minuten in Partien','Zeit, die du in Partien verbringst.','clock','mins',[30,120,480,1500],[8,20,55,130]],
+  ['wins','Sieg','Sieger','Gewinne Partien','Jeder Sieg zählt.','trophy','wins',[1,5,15,40,100],[12,25,50,100,200]],
+  ['conq','Kriegsführung','Eroberer','Erobere Gebiete','Jede Eroberung zählt.','swords','conq',[10,50,150,400],[12,30,70,140]],
+  ['built','Bauen','Baumeister','Baue Gebäude','Außenposten, Häfen, Wälle und Schiffe zählen.','hammer','built',[10,50,150,400],[10,25,60,120]],
+  ['sunk','Seekrieg','Seewolf','Versenke gegnerische Schiffe','Deine Kriegsschiffe zählen.','anchor','sunk',[1,5,15,40],[15,35,80,160]],
+  ['allied','Diplomatie','Diplomat','Schließe Bündnisse','Jedes neue Bündnis zählt.','handshake','allied',[1,5,15],[8,25,60]],
+  ['found','Sammlung','Schatzsucher','Grabe Funde aus','Vergrabene Funde in der Kolonie.','gem','found',[5,25,75,200],[8,20,50,110]],
+  ['terr','Meisterleistungen','Reichsgründer','Besitze Gebiete gleichzeitig','Die höchste Zahl in einer Partie.','map','terr',[5,10,20,35],[8,20,50,110]],
+  ['score','Meisterleistungen','Punktejäger','Erreiche Punkte','Dein höchster Punktestand in einer Partie.','star','score',[300,1000,3000],[10,30,80]]
 ];
+const QUESTS=[
+  Q('d_games','daily','games',2,3,'Spiele Partien','Jede gestartete Partie zählt, auch Solo.','gamepad','daily'),
+  Q('d_terr','daily','terr',3,4,'Besitze Gebiete','Besitze gleichzeitig 3 Gebiete.','map','daily'),
+  Q('d_build','daily','built',8,6,'Baue Gebäude','Außenposten, Häfen, Wälle und Schiffe zählen.','hammer','daily'),
+  Q('b_daily','daily','bonus',3,4,'Bonus für alle erledigten Quests','Schließe alle Quests oben ab, um ihn freizuschalten.','chest','daily'),
+  Q('w_games','weekly','games',5,10,'Spiele Partien','Jede gestartete Partie zählt, auch Solo.','gamepad','weekly'),
+  Q('w_wins','weekly','wins',1,14,'Gewinne eine Partie','Ein Sieg in beliebigem Modus.','trophy','weekly'),
+  Q('w_days','weekly','days',3,14,'Spiele an verschiedenen Tagen','Spiele an einem Tag mindestens eine Partie.','calendar','weekly'),
+  Q('w_conq','weekly','conq',10,12,'Erobere Gebiete','Jede Eroberung zählt.','swords','weekly'),
+  Q('w_build','weekly','built',40,14,'Baue Gebäude','Außenposten, Häfen, Wälle und Schiffe zählen.','hammer','weekly'),
+  Q('w_sunk','weekly','sunk',3,16,'Versenke gegnerische Schiffe','Deine Kriegsschiffe zählen.','anchor','weekly'),
+  Q('b_weekly','weekly','bonus',6,16,'Bonus für alle erledigten Quests','Schließe alle Quests oben ab, um ihn freizuschalten.','chest','weekly')
+];
+for(const[key,cat,title,desc,sub,ic,stat,goals,rew]of CAREER)goals.forEach((g,i)=>QUESTS.push(Q(`c_${key}_${i+1}`,'career',stat,g,rew[i],title,desc,ic,cat,{key,tier:i+1,tiers:goals.length,sub})));
+/*Q-END*/
 const MAX_STATS=['terr','score'];
+const REPORT_KEYS=['games','wins','found','allied','terr','score','built','conq','sunk','mins'];
 const dayKey=()=>new Date().toISOString().slice(0,10);
 const weekKey=()=>{const d=new Date(Date.UTC(...(()=>{const n=new Date();return[n.getUTCFullYear(),n.getUTCMonth(),n.getUTCDate()]})()));const day=d.getUTCDay()||7;d.setUTCDate(d.getUTCDate()+4-day);const y=d.getUTCFullYear();return y+'-W'+Math.ceil(((d-Date.UTC(y,0,1))/864e5+1)/7)};
 const periodKey=k=>k==='daily'?dayKey():k==='weekly'?weekKey():'c';
@@ -146,7 +167,7 @@ const LP='aw_local_';
 const Local={
   async init(){
     let p=lsGet(LP+'profile',null);
-    if(!p){p={id:'local',username:lsGet('ak_name','Gast'),tag:randTag(),clan_tag:'',rubys:0,wins:0,games:0,avatar:null,hat:null,flag:null,crown:null,pattern:null,ship:null,owned:[],quests:{},stats:{},is_admin:false,created_at:new Date().toISOString()};lsSet(LP+'profile',p)}
+    if(!p){p={id:'local',username:lsGet('ak_name','Gast'),tag:randTag(),clan_tag:'',rubys:0,wins:0,games:0,avatar:null,hat:null,flag:null,crown:null,pattern:null,ship:null,bskin:null,tskin:null,rskin:null,owned:[],quests:{},stats:{},is_admin:false,created_at:new Date().toISOString()};lsSet(LP+'profile',p)}
     if(!p.tag){p.tag=randTag();lsSet(LP+'profile',p)}
     AW.user={id:'local',email:null,phone:null,local:true};AW.profile=p;
   },
@@ -160,13 +181,21 @@ const Local={
     if('avatar' in p)a.avatar=safeAvatar(p.avatar);
     if('hat' in p){if(p.hat&&!a.owned.includes('hat:'+p.hat))throw new Error('Nicht freigeschaltet');a.hat=p.hat}
     if('flag' in p){if(p.flag&&!a.owned.includes('flag:'+p.flag))throw new Error('Nicht freigeschaltet');a.flag=p.flag}
-    for(const k of['crown','pattern','ship'])if(k in p){if(p[k]&&!a.owned.includes(k+':'+p[k]))throw new Error('Nicht freigeschaltet');a[k]=p[k]}
+    for(const k of['crown','pattern','ship','bskin','tskin','rskin'])if(k in p){if(p[k]&&!a.owned.includes(k+':'+p[k]))throw new Error('Nicht freigeschaltet');a[k]=p[k]}
     lsSet('ak_name',a.username);Local.save()},
   async buy(id){const it=SHOP_BY_ID[id],a=AW.profile;if(!it)throw new Error('Unbekannt');if(a.owned.includes(id))throw new Error('Schon gekauft');if(a.rubys<it.price)throw new Error('Nicht genug Rubys');a.rubys-=it.price;a.owned.push(id);Local.save()},
   bucket(kind){const a=AW.profile;a.stats=a.stats||{};const k=periodKey(kind);const b=a.stats[kind]=(a.stats[kind]&&a.stats[kind].k===k)?a.stats[kind]:{k,v:{}};return b},
   async claim(id){const q=QUESTS.find(x=>x[0]===id),a=AW.profile;if(!q)throw new Error('Unbekannt');const b=Local.bucket(q[1]);
-    if((a.quests[id])===b.k)throw new Error('Schon abgeholt');if((b.v[q[2]]||0)<q[3])throw new Error('Noch nicht geschafft');a.quests[id]=b.k;a.rubys+=q[4];Local.save()},
-  async report(p){const a=AW.profile;for(const kind of['daily','weekly','career']){const b=Local.bucket(kind);for(const k in p){const v=Math.max(0,Math.min(500,+p[k]||0));b.v[k]=MAX_STATS.includes(k)?Math.max(b.v[k]||0,v):(b.v[k]||0)+Math.min(v,50)}}
+    if((a.quests[id])===b.k)throw new Error('Schon abgeholt');
+    if(q[2]==='bonus'){if(!QUESTS.filter(x=>x[1]===q[1]&&x[2]!=='bonus').every(x=>a.quests[x[0]]===b.k))throw new Error('Noch nicht geschafft')}
+    else if((b.v[q[2]]||0)<q[3])throw new Error('Noch nicht geschafft');
+    a.quests[id]=b.k;a.rubys+=q[4];Local.save()},
+  async report(p){const a=AW.profile,today=dayKey();
+    for(const kind of['daily','weekly','career']){const b=Local.bucket(kind);
+      for(const k in p){if(!REPORT_KEYS.includes(k))continue;const v=Math.max(0,Math.min(500,+p[k]||0));b.v[k]=MAX_STATS.includes(k)?Math.max(b.v[k]||0,v):(b.v[k]||0)+Math.min(v,50)}
+      if(p.games&&b.v.dl!==today){b.v.dl=today;b.v.days=(b.v.days||0)+1}}
+    if(p.games){const st=a.stats.streak||{n:0,last:''},y=new Date(Date.now()-864e5).toISOString().slice(0,10);
+      if(st.last!==today){st.n=st.last===y?st.n+1:1;st.last=today}a.stats.streak=st}
     a.games+=Math.min(1,+p.games||0);a.wins+=Math.min(1,+p.wins||0);Local.save()},
   async players(){const a=AW.profile;return[{username:a.username,tag:a.tag,clan_tag:a.clan_tag,wins:a.wins,games:a.games}].concat(lsGet(LP+'fake',[]))},
   async clans(){const a=AW.profile;return a.clan_tag?[{clan_tag:a.clan_tag,wins:a.wins,games:a.games,members:1}]:[]},
@@ -195,6 +224,7 @@ const Local={
   }
 };
 const DEFAULT_NEWS=[
+  {id:'d11',version:'v19',title:'Erfolge, Profil und Weltkarte neu',body:'Großes Update im Stil von FrontWars: Erfolge mit Täglich, Wöchentlich, Karriere und Events, dazu Tagesserie und Bonus-Belohnungen. Das Profil zeigt Statistiken, Modi und die letzten Spiele, dein Profilbild schneidest du selbst zu. Neu im Spiel: automatische Wege mit Händlern, Kriegsschiffe, feste Modi (Klassisch 2x, Schnell 3x, Chaos), keine Marionettenstaaten mehr, Skins für Gebäude, Händler und Wege sowie schärfere Grafik. Außerdem behoben: Tasten nach dem Benutzen der Regler und der VSync-Fehler.',created_at:'2026-11-22T12:00:00Z'},
   {id:'d10',version:'v18',title:'Flaggen im Mehrspieler',body:'Im Mehrspieler siehst du jetzt auch die Flaggen der anderen: Sie wehen auf der Hauptstadt des jeweiligen Spielers. Wer fremde Kosmetik nicht sehen mag, blendet sie in den Einstellungen unter Spiel aus.',created_at:'2026-11-21T22:30:00Z'},
   {id:'d9',version:'v17',title:'Profilbild hochladen',body:'Du kannst jetzt ein eigenes Profilbild hochladen. Öffne dein Profil, wähle ein Bild (PNG, JPG oder WebP), es wird mittig zugeschnitten und klein gespeichert. Es erscheint im Profil und oben im Header, mit dem Papierkorb-Knopf entfernst du es wieder.',created_at:'2026-11-21T21:00:00Z'},
   {id:'d8',version:'v16',title:'Kosmetik im Mehrspieler',body:'Im Mehrspieler siehst du jetzt die Kosmetik der anderen: ihre Krone, ihr Muster auf der Karte und ihr Schiff auf dem Wasser. Wer die Kosmetik anderer nicht sehen mag, schaltet sie in den Einstellungen unter Spiel aus.',created_at:'2026-11-21T20:00:00Z'},

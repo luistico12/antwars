@@ -20,7 +20,16 @@ class Heap{constructor(){this.a=[]}get size(){return this.a.length}
 /* ===== Daten ===== */
 let GW=96,GH=60;const CS=10;
 /* Spielmodi: Gegnerzahl und Kartengröße (scale = Faktor der Fläche) */
-const MODES={ffa:{n:'FFA',bots:7,scale:1,d:'Jeder gegen jeden: 7 Gegner auf der Standardkarte'},unlimited:{n:'Unlimited',bots:5,scale:3.5,d:'Riesige Karte (3,5× so groß), 5 Gegner, kein Sieg und kein Ende'}};
+const MODES={
+  classic:{n:'Klassisch',bots:7,scale:1,spd:2,d:'Standardspiel: 7 Gegner, Tempo 2x'},
+  fast:{n:'Schnell',bots:7,scale:1,spd:3,d:'Wie Klassisch, aber mit Tempo 3x'},
+  chaos:{n:'Chaos',bots:7,scale:1,spd:3,rnd:true,d:'Zufällige Startpunkte für alle, Tempo 3x'},
+  unlimited:{n:'Unlimited',bots:5,scale:3.5,spd:3,d:'Riesige Karte (3,5× so groß), 5 Gegner, kein Sieg und kein Ende, Tempo 3x'}};
+/* Feste Spielgeschwindigkeit des gewählten Modus (SIMV). Timer laufen in Echtzeit: rtime() = Spielzeit / SIMV */
+let SIMV=2;
+/* Zähler für Quests: wird alle paar Sekunden an AW.report geschickt */
+const QSTAT={};const qStat=(k,n)=>{QSTAT[k]=(QSTAT[k]||0)+(n||1)};
+function qTake(){const o={};for(const k in QSTAT){if(QSTAT[k]){o[k]=QSTAT[k];QSTAT[k]=0}}return o}
 function setMapDims(scale){const k=Math.sqrt(scale);GW=Math.round(96*k);GH=Math.round(60*k)}
 const N4=[[1,0],[-1,0],[0,1],[0,-1]];
 const TERR=[
@@ -184,7 +193,7 @@ function renderBase(m){
   return c;
 }
 /* Zwei Gebiete verschmelzen, wenn sie demselben Volk gehören (Marionettenstaaten und wilde Gebiete nicht) */
-function mergedTerr(a,b){return a.owner>=0&&a.owner===b.owner&&!a.puppet&&!b.puppet}
+function mergedTerr(a,b){return a.owner>=0&&a.owner===b.owner}
 function renderOwners(m,F){
   const c=makeCanvas(GW*CS,GH*CS),g=c.getContext('2d');
   for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){

@@ -10,7 +10,7 @@ wizard:{p:{b:'#5b3fd1',y:'#ffd23f',d:'#3a2796'},m:['...b...','..bb...','..byb..'
 crown:{p:{y:'#ffcf3a',o:'#d99a12',r:'#ff4d6d'},m:['y.y.y.y','yyyyyyy','yryoyry','ooooooo']},
 halo:{p:{y:'#fff3a8',o:'#ffd23f'},m:['.yyyyy.','y.....y','.ooooo.']}
 };
-const COSM={hat:null,flag:null,crown:null,pattern:null,ship:null};
+const COSM={hat:null,flag:null,crown:null,pattern:null,ship:null,bskin:null,tskin:null,rskin:null};
 function drawHat(g,id,cx,by,px){
   const a=HAT_ART[id];if(!a)return;const w=a.m.reduce((m,r)=>Math.max(m,r.length),0),h=a.m.length;
   const x0=Math.round(cx-w*px/2),y0=Math.round(by-h*px);
@@ -20,7 +20,7 @@ function hatPreview(id,size){const c=document.createElement('canvas');c.width=64
   /* kleiner Ameisenkopf als Träger */
   g.fillStyle='#2a1a10';g.beginPath();g.arc(32,40,11,0,7);g.fill();g.fillStyle='#fff';g.fillRect(27,38,3,3);g.fillRect(35,38,3,3);g.fillStyle='#000';g.fillRect(28,39,2,2);g.fillRect(36,39,2,2);
   drawHat(g,id,32,32,5);return c}
-function syncCosmetics(){const p=AW.profile;COSM.hat=p&&p.hat?p.hat:null;COSM.flag=p&&p.flag?p.flag:null;COSM.crown=p&&p.crown?p.crown:null;COSM.pattern=p&&p.pattern?p.pattern:null;COSM.ship=p&&p.ship?p.ship:null;
+function syncCosmetics(){const p=AW.profile;COSM.hat=p&&p.hat?p.hat:null;COSM.flag=p&&p.flag?p.flag:null;COSM.crown=p&&p.crown?p.crown:null;COSM.pattern=p&&p.pattern?p.pattern:null;COSM.ship=p&&p.ship?p.ship:null;COSM.bskin=p&&p.bskin?p.bskin:null;COSM.tskin=p&&p.tskin?p.tskin:null;COSM.rskin=p&&p.rskin?p.rskin:null;
   if(typeof ownDirty!=='undefined')ownDirty=true}
 
 const _flagImgs={};
@@ -76,6 +76,6 @@ function leaderFid(now){if(now-_lead.t<500)return _lead.f;_lead.t=now;const a={}
   return _lead.f=best}
 
 /* Mehrspieler: Kosmetik der Spieler wird beim Start gemeldet und vom Host verteilt (nur Whitelist-Schlüssel) */
-const cosmPack=()=>({crown:COSM.crown,pattern:COSM.pattern,ship:COSM.ship,flag:COSM.flag});
-function cosmClean(c){const o={};if(c&&typeof c==='object'){for(const[k,A]of[['crown',CROWN_ART],['pattern',PATTERN_FN],['ship',SHIP_ART],['flag',FL]])if(typeof c[k]==='string'&&Object.prototype.hasOwnProperty.call(A,c[k]))o[k]=c[k]}return o}
+const cosmPack=()=>({crown:COSM.crown,pattern:COSM.pattern,ship:COSM.ship,flag:COSM.flag,bskin:COSM.bskin});
+function cosmClean(c){const o={};if(c&&typeof c==='object'){for(const[k,A]of[['crown',CROWN_ART],['pattern',PATTERN_FN],['ship',SHIP_ART],['flag',FL],['bskin',BSKINS]])if(typeof c[k]==='string'&&Object.prototype.hasOwnProperty.call(A,c[k]))o[k]=c[k]}return o}
 function cosmOf(fid){if(fid===0)return COSM;if(typeof ST!=='undefined'&&ST.hideCosm)return{};return(F[fid]&&F[fid].cosm)||{}}

@@ -379,3 +379,155 @@ where not exists (select 1 from public.news where version='v17');
 insert into public.news(version,title,body)
 select 'v18','Flaggen im Mehrspieler','Im Mehrspieler siehst du jetzt auch die Flaggen der anderen: Sie wehen auf der Hauptstadt des jeweiligen Spielers. Wer fremde Kosmetik nicht sehen mag, blendet sie in den Einstellungen unter Spiel aus.'
 where not exists (select 1 from public.news where version='v18');
+
+-- ============ Update v19: Skins, neue Quests, Tagesserie ============
+alter table public.profiles add column if not exists bskin text;
+alter table public.profiles add column if not exists tskin text;
+alter table public.profiles add column if not exists rskin text;
+create or replace function public.protect_profile() returns trigger
+language plpgsql security definer set search_path=public as $$
+begin
+  -- auth.uid() ist null bei Änderungen aus dem Supabase-Dashboard/SQL-Editor (kein Spieler-Token): die dürfen alles.
+  if auth.uid() is null or coalesce(current_setting('app.rpc', true),'') = '1' or public.is_admin() then return new; end if;
+  new.rubys := old.rubys; new.wins := old.wins; new.games := old.games; new.owned := old.owned;
+  new.username := old.username; new.tag := old.tag; new.quests := old.quests; new.stats := old.stats; new.is_admin := old.is_admin; new.id := old.id; new.created_at := old.created_at;
+  if new.hat is not null and not ('hat:'||new.hat) = any(old.owned) then new.hat := old.hat; end if;
+  if new.flag is not null and not ('flag:'||new.flag) = any(old.owned) then new.flag := old.flag; end if;
+  if new.crown is not null and not ('crown:'||new.crown) = any(old.owned) then new.crown := old.crown; end if;
+  if new.pattern is not null and not ('pattern:'||new.pattern) = any(old.owned) then new.pattern := old.pattern; end if;
+  if new.ship is not null and not ('ship:'||new.ship) = any(old.owned) then new.ship := old.ship; end if;
+  if new.bskin is not null and not ('bskin:'||new.bskin) = any(old.owned) then new.bskin := old.bskin; end if;
+  if new.tskin is not null and not ('tskin:'||new.tskin) = any(old.owned) then new.tskin := old.tskin; end if;
+  if new.rskin is not null and not ('rskin:'||new.rskin) = any(old.owned) then new.rskin := old.rskin; end if;
+  return new;
+end $$;
+insert into public.shop_items(id,price) values
+ ('bskin:stone',70), ('bskin:mush',90), ('bskin:frost',110), ('bskin:crystal',140), ('bskin:golden',200), ('tskin:moss',60), ('tskin:mail',90), ('tskin:royal',130), ('tskin:golden',180), ('rskin:cobble',70), ('rskin:moss',90), ('rskin:gold',160), ('rskin:neon',180)
+on conflict (id) do update set price = excluded.price;
+-- Quests: alte Einträge entfernen, neue samt höheren Belohnungen eintragen (stat 'bonus' = alle anderen Quests der Art abgeholt)
+delete from public.quests where id not in ('d_games','d_terr','d_build','b_daily','w_games','w_wins','w_days','w_conq','w_build','w_sunk','b_weekly','c_games_1','c_games_2','c_games_3','c_games_4','c_games_5','c_days_1','c_days_2','c_days_3','c_days_4','c_mins_1','c_mins_2','c_mins_3','c_mins_4','c_wins_1','c_wins_2','c_wins_3','c_wins_4','c_wins_5','c_conq_1','c_conq_2','c_conq_3','c_conq_4','c_built_1','c_built_2','c_built_3','c_built_4','c_sunk_1','c_sunk_2','c_sunk_3','c_sunk_4','c_allied_1','c_allied_2','c_allied_3','c_found_1','c_found_2','c_found_3','c_found_4','c_terr_1','c_terr_2','c_terr_3','c_terr_4','c_score_1','c_score_2','c_score_3');
+insert into public.quests(id,kind,stat,goal,reward) values
+ ('d_games','daily','games',2,3),
+ ('d_terr','daily','terr',3,4),
+ ('d_build','daily','built',8,6),
+ ('b_daily','daily','bonus',3,4),
+ ('w_games','weekly','games',5,10),
+ ('w_wins','weekly','wins',1,14),
+ ('w_days','weekly','days',3,14),
+ ('w_conq','weekly','conq',10,12),
+ ('w_build','weekly','built',40,14),
+ ('w_sunk','weekly','sunk',3,16),
+ ('b_weekly','weekly','bonus',6,16),
+ ('c_games_1','career','games',5,10),
+ ('c_games_2','career','games',15,20),
+ ('c_games_3','career','games',40,40),
+ ('c_games_4','career','games',100,80),
+ ('c_games_5','career','games',250,160),
+ ('c_days_1','career','days',3,10),
+ ('c_days_2','career','days',7,25),
+ ('c_days_3','career','days',20,60),
+ ('c_days_4','career','days',50,130),
+ ('c_mins_1','career','mins',30,8),
+ ('c_mins_2','career','mins',120,20),
+ ('c_mins_3','career','mins',480,55),
+ ('c_mins_4','career','mins',1500,130),
+ ('c_wins_1','career','wins',1,12),
+ ('c_wins_2','career','wins',5,25),
+ ('c_wins_3','career','wins',15,50),
+ ('c_wins_4','career','wins',40,100),
+ ('c_wins_5','career','wins',100,200),
+ ('c_conq_1','career','conq',10,12),
+ ('c_conq_2','career','conq',50,30),
+ ('c_conq_3','career','conq',150,70),
+ ('c_conq_4','career','conq',400,140),
+ ('c_built_1','career','built',10,10),
+ ('c_built_2','career','built',50,25),
+ ('c_built_3','career','built',150,60),
+ ('c_built_4','career','built',400,120),
+ ('c_sunk_1','career','sunk',1,15),
+ ('c_sunk_2','career','sunk',5,35),
+ ('c_sunk_3','career','sunk',15,80),
+ ('c_sunk_4','career','sunk',40,160),
+ ('c_allied_1','career','allied',1,8),
+ ('c_allied_2','career','allied',5,25),
+ ('c_allied_3','career','allied',15,60),
+ ('c_found_1','career','found',5,8),
+ ('c_found_2','career','found',25,20),
+ ('c_found_3','career','found',75,50),
+ ('c_found_4','career','found',200,110),
+ ('c_terr_1','career','terr',5,8),
+ ('c_terr_2','career','terr',10,20),
+ ('c_terr_3','career','terr',20,50),
+ ('c_terr_4','career','terr',35,110),
+ ('c_score_1','career','score',300,10),
+ ('c_score_2','career','score',1000,30),
+ ('c_score_3','career','score',3000,80)
+on conflict (id) do update set kind=excluded.kind, stat=excluded.stat, goal=excluded.goal, reward=excluded.reward;
+create or replace function public.report_stats(p jsonb) returns void
+language plpgsql security definer set search_path=public as $$
+declare me public.profiles; st jsonb; kind text; k text; key text; v numeric; cur numeric; b jsonb; nowk text;
+        keys text[] := array['games','wins','found','allied','terr','score','built','conq','sunk','mins'];
+begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
+  select * into me from public.profiles where id = auth.uid() for update;
+  st := me.stats;
+  foreach kind in array array['daily','weekly','career'] loop
+    nowk := case kind when 'daily' then to_char(now() at time zone 'utc','YYYY-MM-DD')
+                      when 'weekly' then to_char(now() at time zone 'utc','IYYY-"W"IW') else 'c' end;
+    b := st->kind;
+    if b is null or b->>'k' is distinct from nowk then b := jsonb_build_object('k',nowk,'v','{}'::jsonb); end if;
+    foreach key in array keys loop
+      if p ? key then
+        v := greatest(0, least(500, coalesce((p->>key)::numeric,0)));
+        cur := coalesce((b->'v'->>key)::numeric,0);
+        if key in ('terr','score') then cur := greatest(cur, v); else cur := cur + least(v,50); end if;
+        b := jsonb_set(b, array['v',key], to_jsonb(cur));
+      end if;
+    end loop;
+    if coalesce((p->>'games')::int,0) > 0 and coalesce(b->'v'->>'dl','') <> to_char(now() at time zone 'utc','YYYY-MM-DD') then
+      b := jsonb_set(b, array['v','dl'], to_jsonb(to_char(now() at time zone 'utc','YYYY-MM-DD')));
+      b := jsonb_set(b, array['v','days'], to_jsonb(coalesce((b->'v'->>'days')::numeric,0) + 1));
+    end if;
+    st := jsonb_set(coalesce(st,'{}'::jsonb), array[kind], b);
+  end loop;
+  -- Tagesserie: aufeinanderfolgende Tage mit mindestens einer Partie
+  if coalesce((p->>'games')::int,0) > 0 then
+    st := jsonb_set(st, '{streak}', case
+      when coalesce(st->'streak'->>'last','') = to_char(now() at time zone 'utc','YYYY-MM-DD') then st->'streak'
+      when coalesce(st->'streak'->>'last','') = to_char((now() at time zone 'utc') - interval '1 day','YYYY-MM-DD')
+        then jsonb_build_object('n', coalesce((st->'streak'->>'n')::int,0) + 1, 'last', to_char(now() at time zone 'utc','YYYY-MM-DD'))
+      else jsonb_build_object('n', 1, 'last', to_char(now() at time zone 'utc','YYYY-MM-DD')) end);
+  end if;
+  perform set_config('app.rpc','1',true);
+  update public.profiles set stats = st,
+    games = games + least(1, greatest(0, coalesce((p->>'games')::int,0))),
+    wins  = wins  + least(1, greatest(0, coalesce((p->>'wins')::int,0)))
+  where id = auth.uid();
+end $$;
+create or replace function public.claim_quest(qid text) returns void
+language plpgsql security definer set search_path=public as $$
+declare q public.quests; me public.profiles; b jsonb; nowk text; have numeric;
+begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
+  select * into q from public.quests where id = qid;
+  if q.id is null then raise exception 'Unbekannt'; end if;
+  select * into me from public.profiles where id = auth.uid() for update;
+  nowk := case q.kind when 'daily' then to_char(now() at time zone 'utc','YYYY-MM-DD')
+                      when 'weekly' then to_char(now() at time zone 'utc','IYYY-"W"IW') else 'c' end;
+  b := me.stats->q.kind;
+  if b is null or b->>'k' is distinct from nowk then raise exception 'Noch nicht geschafft'; end if;
+  if q.stat = 'bonus' then
+    if exists (select 1 from public.quests o where o.kind = q.kind and o.stat <> 'bonus' and coalesce(me.quests->>o.id,'') is distinct from nowk) then raise exception 'Noch nicht geschafft'; end if;
+  else
+    have := coalesce((b->'v'->>q.stat)::numeric,0);
+    if have < q.goal then raise exception 'Noch nicht geschafft'; end if;
+  end if;
+  if me.quests->>qid = nowk then raise exception 'Schon abgeholt'; end if;
+  perform set_config('app.rpc','1',true);
+  update public.profiles set rubys = rubys + q.reward, quests = jsonb_set(quests, array[qid], to_jsonb(nowk)) where id = auth.uid();
+end $$;
+
+-- News v19
+insert into public.news (version, title, body)
+select 'v19', 'Erfolge, Profil und Weltkarte neu', 'Großes Update im Stil von FrontWars: Erfolge mit Täglich, Wöchentlich, Karriere und Events, dazu Tagesserie und Bonus-Belohnungen. Das Profil zeigt Statistiken, Modi und die letzten Spiele, dein Profilbild schneidest du selbst zu. Neu im Spiel: automatische Wege mit Händlern, Kriegsschiffe, feste Modi (Klassisch 2x, Schnell 3x, Chaos), keine Marionettenstaaten mehr, Skins für Gebäude, Händler und Wege sowie schärfere Grafik. Außerdem behoben: Tasten nach dem Benutzen der Regler und der VSync-Fehler.'
+where not exists (select 1 from public.news where version = 'v19');

@@ -46,10 +46,9 @@ let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++};
   ok(w.capSize>w.cityMax,`Hauptstadt (${w.capSize.toFixed(2)}) größer als normale Städte (${w.cityMax.toFixed(2)})`);
   ok(w.reg>w.own,'Hauptstadt wächst mit der Fläche des Reichs');
   ok(w.cols.length===1&&w.cols[0]===w.cap,'Kolonie nur für die Hauptstadt');
-  const rw=await pg.evaluate(()=>{let t=T.find(x=>x.owner===-1&&!x.isCap);if(!t){t=T.find(x=>x.owner!==0&&!x.isCap);setOwner(t,-1,0)}t.conqN=5;G.mat=100;G.food=100;const m=G.mat,f=G.food;setOwner(t,0,4);t.conqN=5;conqQueue.push(t.id);chooseConquest(t.id,'keep');return{dm:G.mat-m,hasCol:!!t.col}});
-  ok(!rw.hasCol&&rw.dm>0,`Behalten gibt Material (${rw.dm}) und keine eigene Kolonie`);
-  const pr=await pg.evaluate(()=>{let t=T.find(x=>x.owner===-1&&!x.isCap);if(!t){t=T.find(x=>x.owner!==0&&!x.isCap);setOwner(t,-1,0)}t.conqN=5;setOwner(t,0,4);conqQueue.push(t.id);const m=G.mat;chooseConquest(t.id,'puppet');return{dm:G.mat-m,puppet:t.puppet,merged:mergedTerr(t,T[F[0].capital])}});
-  ok(pr.puppet&&pr.dm>0&&pr.dm<rw.dm,'Marionettenstaat gibt einen Teil der Beute');
+  const rw=await pg.evaluate(()=>{let t=T.find(x=>x.owner===-1&&!x.isCap);if(!t){t=T.find(x=>x.owner!==0&&!x.isCap);setOwner(t,-1,0)}t.conqN=5;G.mat=100;G.food=100;const m=G.mat;setOwner(t,0,4);t.conqN=5;chooseConquest(t.id);return{dm:G.mat-m,hasCol:!!t.col,puppet:T.some(x=>x.puppet)}});
+  ok(!rw.hasCol&&rw.dm>0,`Eroberung wird immer behalten (+${rw.dm} Material) ohne eigene Kolonie`);
+  ok(!rw.puppet,'es gibt keine Marionettenstaaten mehr');
 
   /* ---- Kreismenü auf eigenem Gebiet ---- */
   await pg.evaluate(()=>{G.mat=G.matCap=400;G.food=G.foodCap=400});
@@ -59,7 +58,7 @@ let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++};
   ok(clean(await open())==='info,build,x,atk','Eigenes Gebiet: Info, Bauen, Schließen, Wall in der Mitte');
   await pg.click('#radial [data-r=build]');
   const bm=clean(await pg.evaluate(()=>[...document.querySelectorAll('#radial [data-r]')].map(e=>e.dataset.r).join(',')));
-  ok(/^back,out,line,port,road,atk$|^back,out,line,port,raft,road,atk$/.test(bm),'Bauen-Menü: Außenposten, Linie, Hafen, Weg: '+bm);
+  ok(/^back,out,line,port(,raft,war)?(,ship)?,atk$/.test(bm)&&!/road/.test(bm),'Bauen-Menü: Außenposten, Linie, Hafen (ohne Weg): '+bm);
   await pg.click('#radial [data-r=out]');
   ok(await pg.evaluate(()=>T[F[0].capital].str.out)===1,'Außenposten per Kreismenü gebaut');
   await open();await pg.click('#radial [data-r=atk]');
@@ -93,15 +92,27 @@ let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++};
   ok(await pg.evaluate(()=>!marches.some(m=>m.sea)),'Seemarsch kommt an und wird abgewickelt');
   ok(await pg.evaluate(id=>T[id].port.rafts===3,sea.id),'Floß kehrt zum Hafen zurück');
   const rd2=await pg.evaluate(()=>{
-    const mine=T.filter(t=>t.owner===0&&!t.puppet);if(mine.length<2){const x=T[mine[0].adj[0]];setOwner(x,0,3);x.puppet=false;mine.push(x)}const a=mine[0],bb=mine[1];
-    placing={kind:'road'};paintingRoad={n:0,bad:0,low:0,last:null};
-    const pts=[];let x=a.lx,y=a.ly;const tx=bb.lx,ty=bb.ly;
-    while(x!==tx||y!==ty){if(x<tx)x++;else if(x>tx)x--;if(y<ty)y++;else if(y>ty)y--;pts.push([x,y])}
-    pts.push([a.lx,a.ly]);for(const[px,py]of pts)paintRoadAt(px*CS+5,py*CS+5);
-    const painted=paintingRoad.n;endRoad();
-    for(let i=0;i<400;i++)updateSea(0.1);
-    return{painted,link:roadLink(a,bb),rd:rd.size,trade:tradeW}});
-  ok(rd2.painted>0,`Weg gemalt (${rd2.painted} Abschnitte, ${rd2.rd} gesamt)`);
+    const mine=T.filter(t=>t.owner===0);if(mine.length<2){const x=T[mine[0].adj[0]];setOwner(x,0,3);mine.push(x)}
+    const a=mine[0],bb=T[a.adj.find(i=>T[i].owner===0)];
+    G.mat=50;G.food=50;const m0=G.mat;
+    for(let i=0;i<600;i++)updateSea(0.1);
+    return{links:links.length,done:links.filter(l=>l.p>=1).length,link:roadLink(a,bb),tr:traders.length,gift:G.mat>m0,hasDel:typeof startRoad!=='undefined'}});
+  ok(rd2.links>0&&rd2.done===rd2.links,`Wege entstehen automatisch (${rd2.links} Verbindungen fertig)`);
+  ok(rd2.link,'Städte sind per Weg verbunden');
+  ok(rd2.tr>0,`Händler laufen auf den Wegen (${rd2.tr})`);
+  ok(rd2.gift,'Händler geben beim Betreten eines Gebäudes Material ab');
+  ok(!rd2.hasDel,'Weg-Maltool ist entfernt');
+  const war=await pg.evaluate(()=>{
+    G.mat=G.matCap=400;G.food=G.foodCap=400;const t=T.find(x=>x.owner===0&&x.port);if(!t)return{err:1};
+    buildWar(t);const[px,py]=cellPos(t.port.idx);let spot=null;
+    for(let r=20;r<200&&!spot;r+=10)for(let a=0;a<6.28&&!spot;a+=0.4){const x=px+Math.cos(a)*r,y=py+Math.sin(a)*r,i=cellOf(x,y);if(i>=0&&!M.land[i])spot=[x,y]}
+    const ok1=spot&&placeWar(spot[0],spot[1]);
+    const foe=T.find(x=>x.owner>0);
+    marches.push({from:foe,to:t,n:20,f:foe.owner,t:0,dur:50,phase:'walk',ft:0,fdur:2,seed:1,sea:true,a:[spot[0]+20,spot[1]],b:[spot[0]+30,spot[1]],path:[[spot[0]+20,spot[1]],[spot[0]+30,spot[1]]],land:{x:0,y:0},home:null});
+    for(let i=0;i<40;i++)updateWarships(0.5);
+    return{placed:ok1,ships:warships.length,left:marches.find(m=>m.dur===50)?marches.find(m=>m.dur===50).n:0}});
+  ok(war.placed&&war.ships===1,'Kriegsschiff lässt sich platzieren');
+  ok(war.left<20,`Kriegsschiff greift gegnerische Schiffe an (${war.left}/20 übrig)`);
   await pg.evaluate(()=>{setView('map');drawMap(mg,performance.now())});
   await pg.screenshot({path:'/tmp/map-final.png'});
   ok(errs.length===0,'keine pageerror: '+errs.join('|'));

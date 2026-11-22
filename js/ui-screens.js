@@ -81,13 +81,13 @@ S.achievements.bind=p=>{p.querySelectorAll('#achT [data-k]').forEach(b=>b.onclic
 
 /* ---------- Shop: Hüte, Weltflaggen, Ameisenflaggen ---------- */
 /* Vorschau und Ausrüstungsstatus für alle Kosmetik-Arten */
-const COS_TABS=[['hat','Hüte'],['crown','Kronen'],['pattern','Muster'],['ship','Schiffe'],['world','Weltflaggen'],['ant','Ameisenflaggen']];
+const COS_TABS=[['hat','Hüte'],['crown','Kronen'],['pattern','Muster'],['ship','Schiffe'],['bskin','Gebäude'],['tskin','Händler'],['rskin','Wege'],['world','Weltflaggen'],['ant','Ameisenflaggen']];
 const cosKind=tab=>tab==='world'||tab==='ant'?'flag':tab;
 const cosFilter=(tab,i)=>tab==='world'?i.kind==='flag'&&!i.custom:tab==='ant'?i.kind==='flag'&&i.custom:i.kind===tab;
 const cosEq=(i,p)=>p[i.kind]===i.key;
 const cosPv=i=>i.kind==='flag'?flagSVG(i.key):`<span data-cos="${i.kind}:${i.key}"></span>`;
 function cosBind(p){p.querySelectorAll('[data-cos]').forEach(c=>{const[k,id]=c.dataset.cos.split(':');
-  c.appendChild(k==='hat'?hatPreview(id):k==='crown'?crownPreview(id):k==='pattern'?patternPreview(id):shipPreview(id))})}
+  c.appendChild(k==='hat'?hatPreview(id):k==='crown'?crownPreview(id):k==='pattern'?patternPreview(id):k==='ship'?shipPreview(id):svPreview(k,id))})}
 UI.shopTab='hat';
 S.shop=()=>{
   const p=AW.profile||{owned:[]},tab=UI.shopTab;
@@ -101,7 +101,7 @@ S.shop=()=>{
   return shell(t('Shop'),{right:`<span class="ruby" style="font-size:17px">${ico('ruby')} ${p.rubys||0}</span>`},
    `<div class="pills" id="shopT" style="align-self:flex-start">${COS_TABS.map(([k,n])=>`<button data-k="${k}" class="${tab===k?'on':''}" type="button">${t(n)}</button>`).join('')}</div>
     ${needLogin()?`<div class="msg">${t('Melde dich an, um zu spielen')}</div>`:''}
-    <div class="msg">${LANG==='de'?'Rubys verdienst du mit Quests (Erfolge). Hüte tragen deine Ameisen, die Flagge steht auf deinem Hügel, Muster färben deine Gebiete, Schiffe fahren über Wasser und die Krone trägt, wer das meiste Land hat.':'Earn Rubys with quests (Achievements). Hats are worn by your ants, the flag flies on your mound, patterns cover your territories, ships sail the seas and the crown goes to whoever holds the most land.'}</div>
+    <div class="msg">${LANG==='de'?'Rubys verdienst du mit Quests (Erfolge). Hüte tragen deine Ameisen, die Flagge steht auf deinem Hügel, Muster färben deine Gebiete, Schiffe fahren über Wasser und die Krone trägt, wer das meiste Land hat. Gebäude-, Händler- und Wegskins verändern dein Reich auf der Weltkarte.':'Earn Rubys with quests (Achievements). Hats are worn by your ants, the flag flies on your mound, patterns cover your territories, ships sail the seas and the crown goes to whoever holds the most land.'}</div>
     <div class="shopgrid">${items.map(card).join('')}</div>`);
 };
 S.shop.bind=p=>{
@@ -124,7 +124,7 @@ S.inventory=()=>{
     return `<div class="shopit ${eq?'eq':''}"><div class="pv">${pv}</div><b>${esc(i.name)}</b><button class="btn sm ${eq?'':'pri'} block" data-eq="${i.id}" type="button">${eq?t('Ablegen'):t('Ausrüsten')}</button></div>`;
   };
   return shell(t('Inventar'),{right:`<span class="tag">${own.length} ${t('Gegenstände')}</span>`},
-   `<div class="panel row" style="gap:18px;flex-wrap:wrap">${[['hat','Hut'],['crown','Krone'],['pattern','Muster'],['ship','Schiff']].map(([k,n])=>`<div class="field"><span class="lbl">${t(n)}</span><b>${slot(k)}</b></div>`).join('')}<div class="field"><span class="lbl">${t('Flagge')}</span><b>${(p.flag&&SHOP_BY_ID['flag:'+p.flag]?esc(SHOP_BY_ID['flag:'+p.flag].name):'—')}</b></div></div>
+   `<div class="panel row" style="gap:18px;flex-wrap:wrap">${[['hat','Hut'],['crown','Krone'],['pattern','Muster'],['ship','Schiff'],['bskin','Gebäude'],['tskin','Händler'],['rskin','Weg']].map(([k,n])=>`<div class="field"><span class="lbl">${t(n)}</span><b>${slot(k)}</b></div>`).join('')}<div class="field"><span class="lbl">${t('Flagge')}</span><b>${(p.flag&&SHOP_BY_ID['flag:'+p.flag]?esc(SHOP_BY_ID['flag:'+p.flag].name):'—')}</b></div></div>
     <div class="pills" id="invT" style="align-self:flex-start;flex-wrap:wrap">${COS_TABS.map(([k,n])=>`<button data-k="${k}" class="${tab===k?'on':''}" type="button">${t(n)}</button>`).join('')}</div>
     ${items.length?`<div class="shopgrid">${items.map(card).join('')}</div>`:`<div class="msg">${LANG==='de'?'Hier liegt noch nichts. Im Shop kaufst du Hüte und Flaggen mit Rubys, die du durch Quests verdienst.':'Nothing here yet. Buy hats and flags in the shop with Rubys earned from quests.'}</div><button class="btn pri" data-go="shop" type="button" style="align-self:flex-start">${ico('shop')} ${t('Shop')}</button>`}`);
 };
@@ -216,7 +216,7 @@ S.tutorial=()=>shell(t('Tutorial'),{narrow:true},`<ul style="margin:0;padding-le
  <li><b>1.</b> ${LANG==='de'?'Wähle Termiten, Blattschneider oder Bodenameisen und klicke ein passendes Startgebiet.':'Pick termites, leafcutters or ground ants and click a matching start territory.'}</li>
  <li><b>2.</b> ${LANG==='de'?'Baue Räume und Tunnel. Die Königin legt Eier, wenn Platz und Pilze da sind. Vergrabene Funde grabst du aus.':'Build rooms and tunnels. The queen lays eggs when there is space and fungus. Dig up buried finds.'}</li>
  <li><b>3.</b> ${LANG==='de'?'Zoome heraus zur Weltkarte. Rechtsklick (am Handy: lange drücken) auf ein fremdes Gebiet: Angriff, Bündnis, Spenden.':'Zoom out to the world map. Right-click (on mobile: long-press) a foreign territory: attack, alliance, donate.'}</li>
- <li><b>4.</b> ${LANG==='de'?'Zu Beginn schützt dich die Schutzzeit. Erobertes kannst du behalten oder als Marionettenstaat führen.':'A protection period shields you at the start. Conquered land can be kept or run as a puppet state.'}</li></ul>`);
+ <li><b>4.</b> ${LANG==='de'?'Zu Beginn schützt dich die Schutzzeit. Eroberte Gebiete gehören sofort zu deinem Reich.':'A protection period shields you at the start. Conquered land joins your realm right away.'}</li></ul>`);
 
 /* ---------- Lobby (Bild 6): erstellen, beitreten ---------- */
 const LOB={code:null,host:false,ch:null,players:[],chat:[],cfg:{diff:'normal',max:8,pub:true,seed:0,tab:'map'}};

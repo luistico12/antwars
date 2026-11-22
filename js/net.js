@@ -63,7 +63,7 @@ const NET={role:null,ch:null,live:false,players:[],humans:[],ready:{},fid:0,host
     clearInterval(this.snapIv);this.snapIv=setInterval(()=>{if(this.role==='host'&&this.live&&started)this.send({t:'snap',...this.snap()})},500);
   },
   snap(){
-    return{gt:+gtime.toFixed(1),sp:speed,T:T.map(x=>[x.owner,Math.round(x.troops*10)/10,x.isCap?1:0]),F:F.map(f=>f.alive?1:0),C:F.map(f=>f.capital),
+    return{gt:+gtime.toFixed(1),sp:speed,sm:SIMV,T:T.map(x=>[x.owner,Math.round(x.troops*10)/10,x.isCap?1:0]),F:F.map(f=>f.alive?1:0),C:F.map(f=>f.capital),
       M:marches.map(m=>({f:m.f,a:m.from.id,b:m.to.id,n:m.n,t:+(m.t||0).toFixed(2),dur:+m.dur.toFixed(2),ph:m.phase,ft:+(m.ft||0).toFixed(2),fd:m.fdur,sd:m.seed,A:m.A,Dp:m.Dp,D0:m.D0,w:m.win?1:0,ar:m.attRem,dr:m.defRem,dO:m.dOwner}))};
   },
   /* Befehl eines Gastes prüfen und ausführen; alles Unsinnige wird verworfen */
@@ -84,10 +84,10 @@ const NET={role:null,ch:null,live:false,players:[],humans:[],ready:{},fid:0,host
 
   /* ---------- Gast ---------- */
   applyInit(s){
-    this.fid=s.fids[PID];this.hostPid=s.hp;diffKey=s.d;const V=h=>this.V(h),nf=[];
+    SIMV=s.sm||2;this.fid=s.fids[PID];this.hostPid=s.hp;diffKey=s.d;const V=h=>this.V(h),nf=[];
     s.Fi.forEach((f,h)=>{const i=V(h);nf[i]={id:i,isPlayer:i===0,human:!!f.hum,name:i===0?'Du':f.n,species:f.sp,rgb:f.rgb,alive:!!s.F[h],capital:s.C[h],allied:false,dipCool:0,hurt:-999,timer:99,cosm:cosmClean(f.c)}});
     F=nf;
-    T.forEach((x,i)=>{const d=s.T[i];x.owner=V(d[0]);x.troops=d[1];x.isCap=!!d[2];x.str=newStr();x.puppet=false;if(x.owner!==0)x.col=null});
+    T.forEach((x,i)=>{const d=s.T[i];x.owner=V(d[0]);x.troops=d[1];x.isCap=!!d[2];x.str=newStr();if(x.owner!==0)x.col=null});
     marches=[];fxs=[];gtime=s.gt;ownDirty=true;strDirty=true;this.live=true;
   },
   applySnap(s){

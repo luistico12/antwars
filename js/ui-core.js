@@ -63,7 +63,7 @@ function renderHeader(){
     <button class="ibtn" id="hdrMenu" type="button" aria-label="${t('Menü')}" ${started?'':'hidden'}>${ico('menu')}</button>
     <button class="ibtn" id="hdrNews" type="button" aria-label="${t('Neuigkeiten')}">${ico('news')}${newsUnseen()?'<i class="dot"></i>':''}</button>
     <button class="ibtn" id="hdrLang" type="button" aria-label="${t('Sprache wählen')}">${flagSVG(lg[3])}</button>
-    <button id="hdrProf" type="button" aria-label="${t('Profil')}"><span class="av">${p&&safeAvatar(p.avatar)?`<img alt="" src="${safeAvatar(p.avatar)}">`:AW.loggedIn&&p?esc(initials(p.username)):ico('user')}</span><span class="nm">${AW.loggedIn?esc(p&&p.username||''):t('Anmelden')}</span>${AW.loggedIn&&p?`<span class="ruby">${ico('ruby')}${p.rubys}</span>`:''}</button>`;
+    <button id="hdrProf" type="button" aria-label="${t('Profil')}"><span class="av">${p&&safeAvatar(p.avatar)?`<img alt="" src="${safeAvatar(p.avatar)}">`:ico('user')}</span><span class="nm">${AW.loggedIn?esc(p&&p.username||''):t('Anmelden')}</span>${AW.loggedIn&&p?`<span class="ruby">${ico('ruby')}${p.rubys}</span>`:''}</button>`;
   $('#hdrMenu').onclick=()=>{if(started&&!over){const k=$('#speed [data-sp="0"]');k&&k.click()}};
   $('#hdrNews').onclick=()=>openScreen('news',undefined,false);
   $('#hdrLang').onclick=()=>openScreen('lang',undefined,false);
