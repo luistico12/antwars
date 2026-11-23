@@ -1,10 +1,21 @@
 #!/usr/bin/env bash
 # Richtet den Ant-Wars-Spielserver auf Ubuntu ein. Idempotent, braucht root.
-# Aufruf: sudo bash deploy/harden.sh [--dry-run]
+# Aufruf: sudo bash deploy/harden.sh [--dry-run] [--root /mnt/storage/antwars]
+# Ohne --root gilt /opt/antwars; /opt/antwars zeigt dann als Symlink auf --root.
 set -euo pipefail
 
 DRY=0
-[ "${1:-}" = "--dry-run" ] && DRY=1
+ROOT="${AW_ROOT:-/opt/antwars}"
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --dry-run) DRY=1 ;;
+    --root) shift; ROOT="${1:?--root braucht einen Pfad}" ;;
+    *) echo "Unbekannte Option: $1"; exit 1 ;;
+  esac
+  shift
+done
+ROOT="${ROOT%/}"
+case "$ROOT" in /*) ;; *) echo "--root braucht einen absoluten Pfad: $ROOT"; exit 1 ;; esac
 
 run() {
   if [ "$DRY" -eq 1 ]; then echo "PLAN: $*"; else echo "+ $*"; "$@"; fi
@@ -35,12 +46,27 @@ fi
 
 say "Benutzer und Verzeichnis"
 if ! id antwars >/dev/null 2>&1; then
-  run useradd --system --create-home --home-dir /opt/antwars --shell /usr/sbin/nologin antwars
+  run useradd --system --create-home --home-dir "$ROOT" --shell /usr/sbin/nologin antwars
 else
   echo "Benutzer antwars existiert"
 fi
-run install -d -o antwars -g antwars -m 750 /opt/antwars
-# /opt/antwars/server entsteht durch das git clone (Schritt 3 der Anleitung).
+run install -d -o antwars -g antwars -m 750 "$ROOT"
+# "$ROOT/server" entsteht durch das git clone (Schritt 3 der Anleitung).
+
+if [ "$ROOT" != "/opt/antwars" ]; then
+  say "Kurzer Pfad /opt/antwars zeigt auf $ROOT"
+  if [ -L /opt/antwars ]; then
+    run ln -sfn "$ROOT" /opt/antwars
+  elif [ -d /opt/antwars ]; then
+    if rmdir /opt/antwars 2>/dev/null; then
+      run ln -sfn "$ROOT" /opt/antwars
+    else
+      echo "Hinweis: /opt/antwars ist nicht leer, Symlink wird übersprungen."
+    fi
+  else
+    run ln -sfn "$ROOT" /opt/antwars
+  fi
+fi
 
 say "SSH: erst Schlüssel prüfen, dann Passwort-Login aus"
 KEYS=""

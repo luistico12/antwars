@@ -45,7 +45,7 @@ fi
 
 # 6. Rechte
 if [ -d /opt/antwars ]; then
-  perm=$(find /opt/antwars -maxdepth 0 -printf '%m %u' 2>/dev/null || stat -c '%a %U' /opt/antwars 2>/dev/null)
+  perm=$(find -L /opt/antwars -maxdepth 0 -printf '%m %u' 2>/dev/null || stat -Lc '%a %U' /opt/antwars 2>/dev/null)
   case "$perm" in
     755\ antwars|750\ antwars|700\ antwars) say 0 "/opt/antwars gehört antwars (${perm})" ;;
     *) say 1 "/opt/antwars gehört nicht antwars (${perm:-?})" ;;

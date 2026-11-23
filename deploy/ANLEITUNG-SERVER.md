@@ -34,6 +34,14 @@ sudo bash deploy/harden.sh --dry-run   # zeigt nur, was passieren würde
 sudo bash deploy/harden.sh
 ```
 
+Liegt das Projekt nicht auf der Systemplatte, sondern z. B. auf `/mnt/storage`,
+mit `--root` arbeiten. `/opt/antwars` wird dann zum Symlink auf diesen Pfad, die
+Dienstdatei bleibt unverändert gültig:
+
+```bash
+sudo bash deploy/harden.sh --root /mnt/storage/antwars
+```
+
 Das Skript ist idempotent und macht:
 
 - Benutzer `antwars` ohne Login-Shell, Verzeichnis `/opt/antwars`
@@ -56,13 +64,20 @@ grep -R PasswordAuthentication /etc/ssh/sshd_config /etc/ssh/sshd_config.d/
 
 ## 3. Projekt auf den Server bringen
 
+`harden.sh` legt den Zielordner leer an; das Projekt kommt danach hinein.
+
 ```bash
-sudo -u antwars git clone https://github.com/luistico12/antwars.git /opt/antwars
-cd /opt/antwars/server
+ROOT=/opt/antwars                      # oder /mnt/storage/antwars (dann harden.sh --root)
+sudo git clone https://github.com/luistico12/antwars.git /tmp/antwars
+sudo cp -a /tmp/antwars/. "$ROOT"/ && sudo rm -rf /tmp/antwars
+sudo chown -R antwars:antwars "$ROOT"
+cd "$ROOT/server"
 sudo -u antwars npm ci --omit=dev || sudo -u antwars npm install --omit=dev
+git log --oneline -1                   # muss den Server-Commit zeigen
 ```
 
-Erwartet: `node_modules/ws` und `node_modules/jose` liegen in `/opt/antwars/server`.
+Erwartet: `node_modules/ws` und `node_modules/jose` liegen in `$ROOT/server`. Zeigt
+`git log` noch den Stand ohne `server/`, fehlt der Push auf `main`.
 
 Auf dem Spielserver liegt **kein Geheimnis**. Die Tokenprüfung nutzt ausschließlich die
 öffentlichen Schlüssel des Supabase-Projekts (`/auth/v1/.well-known/jwks.json`). Die
@@ -71,7 +86,7 @@ Supabase-URL steht öffentlich in der Dienstdatei.
 Kurztest von Hand:
 
 ```bash
-sudo -u antwars SUPABASE_URL=https://hkrnduhssueuijveffof.supabase.co node /opt/antwars/server/index.js
+sudo -u antwars SUPABASE_URL=https://hkrnduhssueuijveffof.supabase.co node "$ROOT/server/index.js"
 ```
 
 Erwartet: `Ant Wars Server läuft auf 127.0.0.1:8787`. Mit `Ctrl+C` beenden.
