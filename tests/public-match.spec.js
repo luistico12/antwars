@@ -64,7 +64,7 @@ function staticServer() {
     A = await mk('A', 'tokenAAAAAAAAAAAA');
     B = await mk('B', 'tokenBBBBBBBBBBBB');
 
-    await A.click('#hPublic');
+    await A.evaluate(() => openScreen('publicMatches', undefined, false));
     await A.waitForSelector('#pmRetry');
     ok((await A.textContent('#scrP')).includes('Server nicht erreichbar'), 'ohne SERVER_URL erscheint „Server nicht erreichbar“');
 
