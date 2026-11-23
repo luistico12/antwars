@@ -18,7 +18,7 @@ jobs:
         run: if [ -n "$SUPABASE_URL" ]; then ./scripts/gen-config.sh; else echo "Keine Secrets, nutze eingechecktes config.js"; fi
       - run: mkdir _site && cp -r index.html config.js css js img _site/
       - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v4
         with: { path: _site }
       - id: d
         uses: actions/deploy-pages@v4
