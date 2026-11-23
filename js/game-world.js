@@ -37,17 +37,18 @@ function collectItem(t){
   G.items.push({type:t.item.type,pct:t.item.pct,from:t.name});
   toast(`Powerup: ${PW[t.item.type]} +${t.item.pct}% (${t.name})`,'good');t.item=null;
 }
-function startGame(){
-  setColonyDims(modeKey==='unlimited'?2:1);
-  const D=DIFFS[diffKey],st=T[setupStart],hum=(typeof NET!=='undefined'&&NET.role==='host')?NET.humans:[];
+/* Weltteil des Spielstarts (auch vom Server genutzt). hostStart===null: F[0] ist ein toter Platzhalter ohne Gebiet, alle Menschen sind Fraktionen 1..n. */
+function initWorld({hostStart,humans}){
+  const D=DIFFS[diffKey],hum=humans,srv=hostStart===null,st=srv?null:T[hostStart];
   for(const t of T){t.owner=-1;t.isCap=false;t.troops=6+Math.floor(Math.random()*12);t.str=newStr();t.col=null;t.puppet=false;t.item=null;t.walls=[];t.port=null}
   if(typeof seaReset==='function')seaReset();
-  F=[{id:0,isPlayer:true,name:'Du',species:setupSp,rgb:FCOL[0],alive:true,capital:setupStart}];
-  st.owner=0;st.isCap=true;st.troops=3;
-  const taken=[st],dist=(a,b)=>Math.hypot(a.lx-b.lx,a.ly-b.ly);
+  const taken=[],dist=(a,b)=>Math.hypot(a.lx-b.lx,a.ly-b.ly);
+  if(srv)F=[{id:0,isPlayer:true,alive:false,capital:-1,name:'Server'}];
+  else{F=[{id:0,isPlayer:true,name:'Du',species:setupSp,rgb:FCOL[0],alive:true,capital:hostStart}];
+    st.owner=0;st.isCap=true;st.troops=3;taken.push(st)}
   hum.forEach(h=>{const ht=T[h.start];ht.owner=h.fid;ht.isCap=true;ht.troops=3;taken.push(ht);
     F.push({id:h.fid,isPlayer:false,human:true,pid:h.pid,name:h.name,species:h.species,rgb:FCOL[h.fid],alive:true,capital:h.start,allied:false,dipCool:0,hurt:-999})});
-  const total=Math.max(2+hum.length,1+MODES[modeKey].bots);
+  const total=srv?Math.max(hum.length+1,1+MODES[modeKey].bots)+1:Math.max(2+hum.length,1+MODES[modeKey].bots);
   for(let b=1+hum.length;b<total;b++){
     let best=null,bs=-1;
     for(const t of T){if(t.owner!==-1)continue;const d=Math.min(...taken.map(q=>dist(q,t)));if(d>bs){bs=d;best=t}}
@@ -58,6 +59,11 @@ function startGame(){
   }
   placeItems();
   contWin=modeKey==='unlimited';marches=[];fxs=[];conqQueue=[];H.v=0;H.recent={};started=true;over=false;gtime=0;selT=null;speed=1;ownDirty=true;strDirty=true;
+}
+function startGame(){
+  setColonyDims(modeKey==='unlimited'?2:1);
+  const st=T[setupStart],hum=(typeof NET!=='undefined'&&NET.role==='host')?NET.humans:[];
+  initWorld({hostStart:setupStart,humans:hum});
   newG();st.col=makeColony(st,'capital',setupSp);curT=st.id;col=st.col;
   computeStats(col);syncAnts(true);
 }
