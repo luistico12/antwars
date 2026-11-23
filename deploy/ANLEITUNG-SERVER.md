@@ -71,7 +71,7 @@ Supabase-URL steht öffentlich in der Dienstdatei.
 Kurztest von Hand:
 
 ```bash
-sudo -u antwars SUPABASE_URL=https://hkrnduhssueijveffof.supabase.co node /opt/antwars/server/index.js
+sudo -u antwars SUPABASE_URL=https://hkrnduhssueuijveffof.supabase.co node /opt/antwars/server/index.js
 ```
 
 Erwartet: `Ant Wars Server läuft auf 127.0.0.1:8787`. Mit `Ctrl+C` beenden.
@@ -176,15 +176,21 @@ journalctl -u antwars-server -n 50 --no-pager
 
 ## 6. Client konfigurieren
 
-In `config.js` (oder über `SERVER_URL` in `.env` und `scripts/gen-config.sh`):
+Der Client liest die Serveradresse aus `window.AW_CONFIG.SERVER_URL`. GitHub Pages baut
+`config.js` bei jedem Push aus den Repository-Secrets neu (`scripts/gen-config.sh`).
 
-```js
-window.AW_CONFIG={SUPABASE_URL:"…",SUPABASE_ANON_KEY:"…",SERVER_URL:"https://play.deine-domain.de"};
-```
+In GitHub → **Settings → Secrets and variables → Actions** alle drei Secrets setzen:
 
-Danach GitHub Pages neu bauen. Ohne `SERVER_URL` zeigt der Bildschirm „Öffentliche
-Spiele“ die Karte **Server nicht erreichbar**; Einzelspiel und private Lobbys laufen
-unverändert weiter.
+| Secret | Wert |
+| --- | --- |
+| `SUPABASE_URL` | `https://hkrnduhssueuijveffof.supabase.co` |
+| `SUPABASE_ANON_KEY` | publishable Key aus Supabase |
+| `SERVER_URL` | `https://play.deine-domain.de` (ohne Schrägstrich am Ende) |
+
+Danach einen Push auf `main` machen (oder Actions → „Deploy to GitHub Pages“ →
+„Run workflow“). Fehlt `SUPABASE_URL`, nutzt der Workflow das eingecheckte `config.js`;
+steht dort `SERVER_URL:""`, zeigt der Bildschirm „Öffentliche Spiele“ die Karte
+**Server nicht erreichbar**. Einzelspiel und private Lobbys laufen unverändert weiter.
 
 Der erlaubte Origin steht in `server/config.js` und in der Dienstdatei:
 

@@ -40,7 +40,7 @@ else
   echo "Benutzer antwars existiert"
 fi
 run install -d -o antwars -g antwars -m 750 /opt/antwars
-run install -d -o antwars -g antwars -m 750 /opt/antwars/server
+# /opt/antwars/server entsteht durch das git clone (Schritt 3 der Anleitung).
 
 say "SSH: erst Schlüssel prüfen, dann Passwort-Login aus"
 KEYS=""
