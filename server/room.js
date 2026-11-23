@@ -81,7 +81,8 @@ class Room{
     const info=this.world.initInfo(),fids={};
     for(const o of this.humans.values())if(o.fid!=null)fids[o.pid]=o.fid;
     for(const o of this.humans.values())if(o.fid!=null&&info.Fi&&info.Fi[o.fid])info.Fi[o.fid].c=o.info.c;
-    this._send2(h.sub,{t:'init',...info,fids,hp:null,d:info.d});
+    const w=this.world.snap();/* aktueller Weltzustand (auch beim Wiedereintritt) */
+    this._send2(h.sub,{t:'init',...info,T:w.T,F:w.F,C:w.C,M:w.M,sp:w.sp,gt:w.gt,fids,hp:null,d:info.d});
   }
 
   cmd(sub,c){

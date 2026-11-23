@@ -24,6 +24,9 @@ function running(opts){
   return h;
 }
 
+/* Schutzzeit (normal: 90 s) ablaufen lassen, damit Angriffe grundsaetzlich erlaubt sind */
+function aged(){const h=running();for(let i=0;i<95;i++)h.room.tick(1);assert.strictEqual(h.room.state,'running');return h}
+
 test('countdown startet erst ab 2 bereiten Menschen und fällt zurück, wenn einer geht',()=>{
   const h=mk();const r=h.room;
   r.join('s1','aaaa','A');r.join('s2','bbbb','B');
@@ -43,6 +46,12 @@ test('init geht an alle, jeder sieht fids für alle pids und hp null',()=>{
     const i=h.of(sub,'init');assert.strictEqual(i.length,1);
     assert.deepStrictEqual(i[0].fids,{aaaa:1,bbbb:2});
     assert.strictEqual(i[0].hp,null);assert.ok(Array.isArray(i[0].Fi));assert.ok(i[0].d);
+    const w=h.room.world.snap();
+    assert.ok(Array.isArray(i[0].T)&&i[0].T.length===w.T.length);assert.deepStrictEqual(i[0].T[S.ground],w.T[S.ground]);
+    assert.strictEqual(i[0].T[S.ground][0],1);assert.strictEqual(i[0].T[S.leaf][0],2);
+    assert.deepStrictEqual(i[0].F,w.F);assert.deepStrictEqual(i[0].C,w.C);assert.strictEqual(typeof i[0].gt,'number');
+    assert.ok(Array.isArray(i[0].M));
+    assert.strictEqual(typeof i[0].Fi[1].c,'object');assert.ok('c' in i[0].Fi[2]);
   }
   assert.strictEqual(h.room.state,'running');
   h.room.tick(1);assert.ok(h.of('s1','snap').length>=1);
@@ -54,6 +63,8 @@ test('Abbruch: nach 29 s Rückkehr mit neuem pid bekommt dieselbe Fraktion, nach
   h.room.leave('s2');h.room.tick(29);
   assert.strictEqual(h.room.join('s2','cccc','B'),'ok');
   const i=h.of('s2','init');assert.strictEqual(i.length,2);
+  assert.ok(Array.isArray(i[1].T)&&Array.isArray(i[1].F)&&Array.isArray(i[1].C));
+  assert.deepStrictEqual(i[1].T,h.room.world.snap().T);   /* aktueller Zustand, nicht der vom Start */
   assert.deepStrictEqual(i[1].fids,{aaaa:1,cccc:2});assert.strictEqual(i[1].Fi[2].hum,1);
   h.room.tick(60);assert.strictEqual(h.room.state,'running');
   h.room.leave('s1');h.room.leave('s2');
@@ -75,24 +86,39 @@ test('Bot nach Frist: Fraktion nicht mehr menschlich',()=>{
 });
 
 test('feindliche Befehle werden ignoriert und werfen nicht',()=>{
-  const h=running();const r=h.room;const w=h;
+  const h=aged();const r=h.room;
   const ns=[NaN,-1,0,1.5,1e9,'5',null,undefined,{},[]],ids=[-1,99999,'a',null,2.5,undefined,{},NaN];
-  const before=JSON.stringify(h.of('s1','snap'));
+  const state=()=>{const x=r.world.snap();return JSON.stringify({T:x.T,M:x.M,F:x.F})};
+  const before=state();
   assert.doesNotThrow(()=>{
     for(const n of ns)r.cmd('s1',{k:'launch',from:S.ground,to:S.leaf,n});
     for(const a of ids)for(const b of ids){r.cmd('s1',{k:'launch',from:a,to:b,n:1});r.cmd('s1',{k:'tr',tile:a})}
     r.cmd('s1',{k:'launch',from:S.ground,to:S.leaf,n:1});     /* nicht benachbart */
     r.cmd('s1',{k:'launch',from:S.leaf,to:S.ground,n:1});     /* fremdes Gebiet */
+    r.cmd('s1',{k:'launch',from:S.leaf,to:r.world.adj(S.leaf)[0],n:1});  /* fremdes Gebiet, benachbartes Ziel */
+    r.cmd('s1',{k:'launch',from:S.ground,to:r.world.adj(S.ground)[0],n:99});  /* mehr als vorhanden */
     r.cmd('nobody',{k:'launch',from:S.ground,to:S.leaf,n:1});
     for(const bad of[null,undefined,5,'x',[],{k:'zzz'},{k:'launch'},{__proto__:{k:'tr'}}])r.cmd('s1',bad);
     r.cmd('s1',{k:'tr',tile:S.leaf});
   });
+  assert.strictEqual(state(),before,'feindliche Befehle duerfen Truppen, Besitzer und Maersche nicht aendern');
   r.tick(0.1);
   r.leave('s1');r.leave('s2');
   const h2=mk();h2.room.join('s1','aaaa','A');
   assert.doesNotThrow(()=>{h2.room.cmd('s1',{k:'launch',from:0,to:1,n:1});h2.room.cmd('s1',{k:'tr',tile:S.ground})});
   assert.strictEqual(h2.room.state,'waiting');
   h2.room.leave('s1');
+});
+
+test('Kontrollfall: ein legitimer Angriff veraendert den Zustand',()=>{
+  const h=aged();const r=h.room;
+  const x=r.world.snap();let ok=false;
+  const before=JSON.stringify({T:x.T,M:x.M});
+  for(let i=0;i<x.T.length&&!ok;i++)if(x.T[i][0]===1&&x.T[i][1]>=3)for(const t of r.world.adj(i))if(x.T[t][0]!==1){ok=r.world.launch(1,i,t,1);if(ok)break}
+  assert.ok(ok,'legitimer Start muss klappen');
+  const y=r.world.snap();
+  assert.notStrictEqual(JSON.stringify({T:y.T,M:y.M}),before);
+  r.leave('s1');r.leave('s2');
 });
 
 test('tr-Dauerfeuer: 100 Befehle in einer Sekunde erhöhen die Truppen um höchstens 12+6',()=>{
