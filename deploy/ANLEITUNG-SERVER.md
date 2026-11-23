@@ -138,11 +138,13 @@ Alternativ die Tunnel-ID und die JSON-Zugangsdatei nach `/etc/cloudflared/` lege
 
 In der Cloudflare-Oberfläche unter **Public Hostname**:
 
-- Subdomain: `play`
-- Domain: `deine-domain.de`
+- Subdomain: `antwars`
+- Domain: `123lumc.de`
 - Service: `HTTP` → `127.0.0.1:8787`
 
-Damit zeigt `https://play.deine-domain.de` auf den lokalen Server.
+Damit zeigt `https://antwars.123lumc.de` auf den lokalen Server. Den DNS-Eintrag
+(`CNAME` auf `<tunnel-id>.cfargotunnel.com`, proxied) legt Cloudflare dabei selbst an –
+es darf **kein** A-Eintrag auf die eigene IP entstehen.
 
 ### 4.3 cloudflared als Dienst
 
@@ -156,7 +158,7 @@ Erwartet: `systemctl status cloudflared` zeigt `active (running)`.
 Prüfen von außen:
 
 ```bash
-curl -s https://play.deine-domain.de/healthz
+curl -s https://antwars.123lumc.de/healthz
 # Erwartet: ok
 ```
 
@@ -200,7 +202,7 @@ In GitHub → **Settings → Secrets and variables → Actions** alle drei Secre
 | --- | --- |
 | `SUPABASE_URL` | `https://hkrnduhssueuijveffof.supabase.co` |
 | `SUPABASE_ANON_KEY` | publishable Key aus Supabase |
-| `SERVER_URL` | `https://play.deine-domain.de` (ohne Schrägstrich am Ende) |
+| `SERVER_URL` | `https://antwars.123lumc.de` (ohne Schrägstrich am Ende) |
 
 Danach einen Push auf `main` machen (oder Actions → „Deploy to GitHub Pages“ →
 „Run workflow“). Fehlt `SUPABASE_URL`, nutzt der Workflow das eingecheckte `config.js`;
@@ -216,7 +218,7 @@ ALLOWED_ORIGINS=https://luistico12.github.io
 Für eine eigene Spieldomain dort ergänzen, zum Beispiel:
 
 ```
-ALLOWED_ORIGINS=https://luistico12.github.io,https://play.deine-domain.de
+ALLOWED_ORIGINS=https://luistico12.github.io,https://antwars.123lumc.de
 ```
 
 Danach `sudo systemctl restart antwars-server`.
