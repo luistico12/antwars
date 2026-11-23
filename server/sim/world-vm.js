@@ -15,11 +15,13 @@ function createWorld({mode,mapSeed,seed}){
   run(`modeKey=${JSON.stringify(mode)};newMap(${+mapSeed});`,'world-vm-init');
   const ev=code=>run(code,'world-vm-eval');
   const W={
-    initWorld(humans){
+    initWorld(humans,reseed){
+      if(reseed!=null){ctx.__rng=seeded(reseed);run('Math.random=__rng','world-vm-rng')}
       humans.forEach((h,i)=>{h.fid=i+1});
       ctx.__humans=humans;
       ev('initWorld({hostStart:null,humans:__humans})');
     },
+    adj(id){return JSON.parse(ev(`JSON.stringify(T[${+id}].adj)`))},
     step(dt){ctx.__dt=dt;ev('updateWorld(__dt)')},
     snap(){return JSON.parse(ev(`JSON.stringify({gt:+gtime.toFixed(1),sp:speed,T:T.map(x=>[x.owner,Math.round(x.troops*10)/10,x.isCap?1:0]),F:F.map(f=>f.alive?1:0),C:F.map(f=>f.capital),
       M:marches.map(m=>({f:m.f,a:m.from.id,b:m.to.id,n:m.n,t:+(m.t||0).toFixed(2),dur:+m.dur.toFixed(2),ph:m.phase,ft:+(m.ft||0).toFixed(2),fd:m.fdur,sd:m.seed,A:m.A,Dp:m.Dp,D0:m.D0,w:m.win?1:0,ar:m.attRem,dr:m.defRem,dO:m.dOwner}))})`))},
