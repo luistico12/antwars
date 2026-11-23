@@ -64,7 +64,7 @@ Diese Fälle nennt der Entwurf nicht ausdrücklich, sie treffen aber reale Spiel
 
 **Files:**
 - Modify: `js/game-world.js:40-63` (`startGame`)
-- Create: `server/package.json` (einzige Abhängigkeit `ws`; Skript `"test": "node --test test/"`), `server/sim/world-vm.js`, `server/sim/stubs.js`, `server/test/world-vm.test.js`
+- Create: `server/package.json` (einzige Abhängigkeit `ws`; Skript `"test": "node --test test/*.test.js"`), `server/sim/world-vm.js`, `server/sim/stubs.js`, `server/test/world-vm.test.js`
 
 **Interfaces:**
 - Produces in `js/game-world.js`: `initWorld({hostStart: number|null, humans: Array<{pid:string,fid:number,name:string,species:string,start:number,c:object|null}>}) => void`. Setzt Gebiete, Fraktionen, Bots, Märsche zurück wie der bisherige Weltteil von `startGame()`. Bei `hostStart===null` ist `F[0]` ein toter Platzhalter `{id:0,isPlayer:true,alive:false,capital:-1,name:'Server'}` ohne Gebiet. `startGame()` ruft `initWorld({hostStart:setupStart,humans:hum})` und führt danach unverändert den Kolonieteil aus (`newG`, `makeColony`, `syncAnts` …).
@@ -73,7 +73,7 @@ Diese Fälle nennt der Entwurf nicht ausdrücklich, sie treffen aber reale Spiel
   - `World.step(dt:number) => void`,
   - `World.snap() => object` (Form wie `NET.snap()`),
   - `World.initInfo() => {Fi:Array,d:string,gt:number}` (wie die Felder der bisherigen `init`-Nachricht, Platzhalter `n:'Server'`),
-  - `World.launch(fid,fromId,toId,n) => boolean` und `World.troopTick(fid,tileId) => boolean` (Regeln aus `NET.hostCmd`: Besitz, Nachbarschaft, `n>=1`, `n<=floor(troops)-1`; `tr`: Eimer 12, +6/s, nur wenn `troops<100`),
+  - `World.launch(fid,fromId,toId,n) => boolean` und `World.troopTick(fid,tileId,nowMs) => boolean` (Zeit wird eingespeist, nie `Date.now()` im Weltkontext) (Regeln aus `NET.hostCmd`: Besitz, Nachbarschaft, `n>=1`, `n<=floor(troops)-1`; `tr`: Eimer 12, +6/s, nur wenn `troops<100`),
   - `World.validStart(species,tileId) => boolean` (`T[id].terrain===SP[species].terr`),
   - `World.over() => {over:boolean,winnerFid:number|null}`, `World.dispose() => void`.
 
