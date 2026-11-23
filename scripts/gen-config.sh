@@ -3,6 +3,6 @@
 set -e
 [ -f .env ] && . ./.env
 cat > config.js <<EOF
-window.AW_CONFIG={SUPABASE_URL:"${SUPABASE_URL:-}",SUPABASE_ANON_KEY:"${SUPABASE_ANON_KEY:-}",SERVER_URL:"${SERVER_URL:-}"};
+window.AW_CONFIG={SUPABASE_URL:"${SUPABASE_URL:-}",SUPABASE_ANON_KEY:"${SUPABASE_ANON_KEY:-}"};
 EOF
 echo "config.js geschrieben"

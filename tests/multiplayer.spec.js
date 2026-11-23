@@ -18,7 +18,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
     await H.waitForFunction(()=>LOB.players.length===2,null,{timeout:15000});ok(true,'Gast ist in der Lobby');
     await H.click('#lobStart');
     await G.waitForFunction(()=>NET.active()&&!$('#home').offsetParent,null,{timeout:10000});
-    await H.waitForFunction(()=>NET.role==='host',null,{timeout:5000});await G.waitForFunction(()=>NET.role==='guest',null,{timeout:5000});ok(true,'Rollen Host/Gast gesetzt');
+    ok(await H.evaluate(()=>NET.role)==='host'&&await G.evaluate(()=>NET.role)==='guest','Rollen Host/Gast gesetzt');
     const pick=async(pg,first)=>pg.evaluate(f=>{const sp=SP[setupSp],ids=T.filter(t=>t.terrain===sp.terr).map(t=>t.id);const id=f?ids[0]:ids[ids.length-1];mapClick(id);return id},first);
     const hs=await pick(H,true),gs=await pick(G,false);
     ok(await H.$eval('#btnStart',e=>e.disabled),'Host-Start gesperrt, bis der Gast bereit ist');

@@ -14,11 +14,10 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          SERVER_URL: ${{ secrets.SERVER_URL || 'https://antwars.123lumc.de' }}
         run: if [ -n "$SUPABASE_URL" ]; then ./scripts/gen-config.sh; else echo "Keine Secrets, nutze eingechecktes config.js"; fi
       - run: mkdir _site && cp -r index.html config.js css js img _site/
       - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v4
+      - uses: actions/upload-pages-artifact@v3
         with: { path: _site }
       - id: d
         uses: actions/deploy-pages@v4

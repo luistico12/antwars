@@ -190,7 +190,7 @@ S.friends.bind=async p=>{
 };
 
 /* ---------- Neuigkeiten (Bild 5) ---------- */
-// S.news=()=>{
+S.news=()=>{
   const l=UI.news;
   return shell(t('Neuigkeiten'),{right:l&&l[0]?`<span class="tag">${esc(l[0].version)}</span>`:''},
    l?l.map((n,i)=>`<div class="nitem ${i===0?'latest':''}"><button type="button" data-n="${i}"><span class="ver">${esc(n.version||'')}</span>${i===0?`<span class="tag ac">${t('Neueste')}</span>`:''}<b>${esc(n.title)}</b><span class="dt">${fmtDate(n.created_at)}</span>${ico(UI.nOpen===i||(UI.nOpen==null&&i===0)?'up':'down')}</button>${UI.nOpen===i||(UI.nOpen==null&&i===0)?`<div class="bd">${esc(n.body).replace(/\n/g,'<br>')}</div>`:''}</div>`).join(''):spinner());
@@ -323,66 +323,6 @@ S.lobbyJoin.bind=async p=>{
   p.querySelector('#jRef').onclick=()=>{UI.lobbies=null;render()};
   p.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>lobJoin(b.dataset.c));
   if(!UI.lobbies){try{UI.lobbies=await AW.lobbies()}catch(e){UI.lobbies=[]}if(SCR.cur&&SCR.cur.name==='lobbyJoin')render()}
-};
-
-// /* ---------- Öffentliche Spiele: Matches auf dem eigenen Server ---------- */
-// const PM={list:null,err:false,loading:false,timer:null};
-const pmBase=()=>String((typeof CFG!=='undefined'&&CFG.SERVER_URL)||'').replace(/\/+$/,'');
-// const pmWsUrl=()=>pmBase().replace(/^http,i,'ws')+'/ws';
-// const PM_STATE={waiting:'wartet',countdown:'Start',running:'läuft',ended:'beendet'};
-// async function pmToken(){try{const{data}=await AW.sb.auth.getSession();return(data&&data.session&&data.session.access_token)||null}catch(e){return null}}
-// async function pmList(){
-  // const base=pmBase();if(!base)throw new Error('no server');
-  // const r=await fetch(base+'/matches',{cache:'no-store'});// if(!r.ok)throw new Error('bad');
-  // const l=await r.json();// if(!Array.isArray(l))throw new Error('bad');
-  // return l;
-}
-// async function pmJoin(room){
-  // if(!pmBase()){toast(t('Server nicht erreichbar'),'bad');return}
-  // const token=await pmToken();
-  // if(!token){toast(LANG==='de'?'Öffentliche Spiele brauchen ein Konto.':'Public games need an account.','bad');return}
-  // let ch;
-  // try{ch=await WSNet.open(pmWsUrl(),token)}catch(e){toast(t('Server nicht erreichbar'),'bad');return}
-  // ch.onclose=()=>NET.onclose();
-  // NET.begin({ch,host:false,players:[],server:true});
-  // NET.send({t:'join',mode:room.mode==='unlimited'?'unlimited':'ffa',room:room.id});
-  // try{sessionStorage.setItem('aw_room',room.id)}catch(e){}
-  closeScreens();homeHide();setView('map');
-  // if(room.state!=='running'&&!started)pickStart();
-  // toast(room.state==='running'?(LANG==='de'?'Zurück ins Spiel …':'Back into the match …'):(LANG==='de'?'Beitritt …':'Joining …'),'good');
-}
-// S.publicMatches=()=>{
-//   const base=pmBase();
-//   let resume=null;try{resume=sessionStorage.getItem('aw_room')}catch(e){}
-//   const rl=PM.list&&PM.list.find(r=>r.id===resume&&(r.state==='running'||r.state==='countdown'));
-//   const head=`<div class="row"><span class="lbl">${ico('globe')} ${t('Server-Matches')}</span><span class="sp"></span><button class="ibtn" id="pmRefresh" type="button" aria-label="${t('Aktualisieren')}">${ico('refresh')}</button></div>`;
-//   if(!base||PM.err||(!PM.list&&!PM.loading))return shell(t('Öffentliche Spiele'),{},`<div class="panel">${head}<div class="msg">${t('Server nicht erreichbar')}</div><button class="btn pri" id="pmRetry" type="button">${t('Erneut versuchen')}</button></div>`);
-//   if(!PM.list)return shell(t('Öffentliche Spiele'),{},`<div class="panel">${head}${spinner()}</div>`);
-//   const cards=PM.list.map(r=>{
-//     const st=r.state==='countdown'?`${t('Start in')} ${r.countdown}s`:t(PM_STATE[r.state]||r.state);
-//   return `<div class="li"><span class="sp"><b>${esc(r.mode==='unlimited'?'Unlimited':'FFA')}</b><small>${r.humans}/${r.max} ${t('Spieler')} · ${esc(st)}</small></span>${r.state==='waiting'?`<button class="btn pri sm" data-pmjoin="${esc(r.id)}" type="button">${t('Beitreten')}</button>`:`<span class="tag">${esc(t(PM_STATE[r.state]||r.state))}</span>`}</div>`;
-//   }).join('')||`<div class="mini">${t('Gerade keine öffentlichen Spiele.')}</div>`;
-//   return shell(t('Öffentliche Spiele'),{},`${rl?`<div class="panel"><div class="row"><b>${t('Laufendes Spiel')}</b><span class="sp"></span><button class="btn pri" data-pmresume="${esc(rl.id)}" type="button">${t('Weiterspielen')}</button></div><div class="mini">${t('Du warst in diesem Match. Innerhalb der Schonfrist übernimmst du deine Fraktion wieder.')}</div></div>`:''}<div class="panel">${head}<div class="grid" style="gap:8px">${cards}</div><div class="mini" style="margin-top:10px">${t('Der Server entscheidet. Beitritt ab 2 Spielern, Start nach 60 Sekunden.')}</div></div>`);
-};
-// S.publicMatches.bind=p=>{
-//   const onScreen=()=>!!SCR.cur&&SCR.cur.name==='publicMatches';
-//   const load=async()=>{
-//     clearInterval(PM.timer);PM.timer=null;
-//     if(PM.loading)return;
-// //     if(!pmBase()){PM.err=true;PM.list=null;if(onScreen())render();return}
-//     PM.loading=true;
-//     try{PM.list=await pmList();PM.err=false}catch(e){PM.err=true;PM.list=null}
-//     PM.loading=false;
-//     if(onScreen())render();
-//   const ref=p.querySelector('#pmRefresh');if(ref)ref.onclick=()=>{PM.err=false;PM.list=null;load()};
-//   const rt=p.querySelector('#pmRetry');if(rt)ref.onclick=()=>{PM.err=false;PM.list=null;load()};
-//   p.querySelectorAll('[data-pmjoin],[data-pmresume]').forEach(b=>b.onclick=()=>{
-//     const id=b.dataset.pmjoin||b.dataset.pmresume;
-//     const r=(PM.list||[]).find(x=>x.id===id)||{id,mode:'ffa',state:'waiting'};
-//     pmJoin(r);
-  });
-  //   clearInterval(PM.timer);PM.timer=setInterval(()=>{if(!onScreen()){clearInterval(PM.timer);PM.timer=null;return}load()},5000);
-//   if(PM.list===null&&!PM.err&&!PM.loading)load();
 };
 
 /* ---------- Admin: News und Spielerprofile (Rechte werden serverseitig per RLS erzwungen) ---------- */

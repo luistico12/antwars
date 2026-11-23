@@ -286,18 +286,5 @@ Object.assign(EN,{
 "Floß": "Raft",
 "Weg": "Road",
 "Floß-Angriff": "Raft attack",
-"Floß schicken": "Send raft",
-"Server nicht erreichbar": "Server not reachable",
-"Erneut versuchen": "Try again",
-"Server-Matches": "Server matches",
-"Laufendes Spiel": "Match in progress",
-"Weiterspielen": "Continue playing",
-"Du warst in diesem Match. Innerhalb der Schonfrist übernimmst du deine Fraktion wieder.": "You were in this match. Within the grace period you take your faction back.",
-"Der Server entscheidet. Beitritt ab 2 Spielern, Start nach 60 Sekunden.": "The server decides. Join from 2 players, start after 60 seconds.",
-"Start in": "Starts in",
-"wartet": "waiting",
-"läuft": "running",
-"beendet": "ended",
-"Gerade keine öffentlichen Spiele.": "No public games right now."
-
+"Floß schicken": "Send raft"
 });
