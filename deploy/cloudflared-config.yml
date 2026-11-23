@@ -1,0 +1,10 @@
+# Cloudflare Tunnel für Ant Wars.
+# Tunnel-Token liegt NICHT hier, sondern in /etc/cloudflared/token (Rechte 600).
+# Platzhalter play.example.com durch die eigene Unteradresse ersetzen.
+tunnel: antwars
+credentials-file: /etc/cloudflared/<TUNNEL-ID>.json
+
+ingress:
+  - hostname: play.example.com
+    service: http://127.0.0.1:8787
+  - service: http_status:404

@@ -30,6 +30,7 @@ function homeBuild(){
       <button class="hact pri" id="hSolo" type="button">${ico('play')}<span>${t('Spielen')}</span></button>
       <button class="hact" id="hCreate" type="button">${ico('plus')}<span>${t('Lobby erstellen')}</span></button>
       <button class="hact" id="hJoin" type="button">${ico('enter')}<span>${t('Lobby beitreten')}</span></button>
+      <button class="hact" id="hPublic" type="button">${ico('globe')}<span>${t('Öffentliche Spiele')}</span></button>
       <button class="hact" id="hTut" type="button">${ico('map')}<span>${t('Tutorial')}</span></button>
     </div></div>`;
   document.body.appendChild(el);
@@ -46,6 +47,7 @@ function homeBuild(){
   $('#hSolo').onclick=()=>{if(requireSession()){homeHide();setView('map');pickStart()}};
   $('#hCreate').onclick=()=>lobCreate();
   $('#hJoin').onclick=()=>{if(requireSession())openScreen('lobbyJoin',undefined,false)};
+  $('#hPublic').onclick=()=>{if(requireSession())openScreen('publicMatches',undefined,false)};
   $('#hTut').onclick=()=>openScreen('tutorial',undefined,false);
 }
 function renderHomeOpts(){

@@ -66,3 +66,11 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
     - VSync-Fehler behoben (`nextFrame` in game-settings.js, Cap 1024 FPS); Eingabe-Fokus nach Reglern (`typing(e)`).
     - Quests neu (`QUESTS`/`CAREER` in backend.js, SQL-Migration am Ende von schema.sql); UI in `js/ui-quests.js` (Erfolge, Profil, Spielverlauf `Hist` lokal `aw_hist`, Bild-Zuschnitt `cropAvatar`).
     - Offen: SQL "Update v19" im Supabase-SQL-Editor ausführen; Events-Tab ist leer (Rahmen); Spielverlauf nur lokal, ohne Replay; neue Texte nur teils ins Englische übersetzt.
+
+20. Update v20 – Öffentliche Spiele auf eigenem Server (getestet: `cd server && npm test`, `node tests/public-match.spec.js`, solo, multiplayer, worldupdate, radial, ui2):
+    - Neu `server/`: Welt aus denselben Dateien (`game-core`, `game-world`, `game-sea`) in einem `vm`-Kontext je Match, Fraktion 0 als toter Platzhalter, Menschen 1…n. `room.js` (Countdown ab 2, 30 s Schonfrist, Bot-Übernahme), `protocol.js` (Schema, 4 KiB), `auth.js` (Supabase-JWKS, kein Geheimnis), `limits.js`, `index.js` (nur 127.0.0.1, Origin-Liste, 1 Verbindung je Konto, Sperrliste, `/healthz`, `/matches`). Lasttest `node server/test/load.js`: 10 Räume, 77 MB RSS, 0,8 % eines Kerns.
+    - `startGame` geteilt in `initWorld({hostStart,humans})` + Kolonieteil; Host-Prinzip unverändert.
+    - Client: `js/net-ws.js`, `NET.server`/`NET.roomId`, Karte kommt mit dem Raum-Seed, Bildschirm „Öffentliche Spiele“ (Liste alle 5 s, Beitritt, „Weiterspielen“ nach Neuladen) und Menüknopf.
+    - `deploy/`: `harden.sh`, `check.sh`, `antwars-server.service` (MemoryMax 1G), `cloudflared-config.yml`, deutsche `ANLEITUNG-SERVER.md`.
+    - News v20 in `DEFAULT_NEWS` und `supabase/schema.sql`.
+    - Offen: `SERVER_URL` in `config.js`/Secrets setzen; Cloudflare-Tunnel und Domain beim Nutzer einrichten; SQL v20 im Supabase-SQL-Editor ausführen; kompletter Lauf gegen echtes Supabase steht aus.

@@ -531,3 +531,8 @@ end $$;
 insert into public.news (version, title, body)
 select 'v19', 'Erfolge, Profil und Weltkarte neu', 'Großes Update im Stil von FrontWars: Erfolge mit Täglich, Wöchentlich, Karriere und Events, dazu Tagesserie und Bonus-Belohnungen. Das Profil zeigt Statistiken, Modi und die letzten Spiele, dein Profilbild schneidest du selbst zu. Neu im Spiel: automatische Wege mit Händlern, Kriegsschiffe, feste Modi (Klassisch 2x, Schnell 3x, Chaos), keine Marionettenstaaten mehr, Skins für Gebäude, Händler und Wege sowie schärfere Grafik. Außerdem behoben: Tasten nach dem Benutzen der Regler und der VSync-Fehler.'
 where not exists (select 1 from public.news where version = 'v19');
+
+-- News v20
+insert into public.news (version, title, body)
+select 'v20', 'Öffentliche Spiele', 'Matches laufen jetzt auf einem eigenen Server: Im Hauptmenü unter „Öffentliche Spiele“ siehst du wartende Runden und trittst mit einem Klick bei. Ab zwei Spielern startet der Countdown, der Server führt die Welt. Wer die Seite neu lädt, übernimmt innerhalb von 30 Sekunden seine Fraktion zurück, danach spielt ein Bot weiter.'
+where not exists (select 1 from public.news where version = 'v20');

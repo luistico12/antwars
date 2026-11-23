@@ -36,28 +36,38 @@ function collectItem(t){
   G.items.push({type:t.item.type,pct:t.item.pct,from:t.name});
   toast(`Powerup: ${PW[t.item.type]} +${t.item.pct}% (${t.name})`,'good');t.item=null;
 }
-function startGame(){
-  setColonyDims(modeKey==='unlimited'?2:1);
-  const D=DIFFS[diffKey],st=T[setupStart],hum=(typeof NET!=='undefined'&&NET.role==='host')?NET.humans:[];
+/* Weltteil eines Spielstarts. Auf dem Server läuft dieselbe Funktion ohne Kolonie:
+   hostStart=null → Fraktion 0 ist ein toter Platzhalter, Menschen sind 1…n. */
+function initWorld({hostStart=null,humans=[]}={}){
+  const D=DIFFS[diffKey],st=hostStart!=null?T[hostStart]:null,hum=humans||[];
   for(const t of T){t.owner=-1;t.isCap=false;t.troops=6+Math.floor(Math.random()*12);t.str=newStr();t.col=null;t.item=null;t.walls=[];t.port=null}
   if(typeof seaReset==='function')seaReset();
-  F=[{id:0,isPlayer:true,name:'Du',species:setupSp,rgb:FCOL[0],alive:true,capital:setupStart}];
-  st.owner=0;st.isCap=true;st.troops=3;
-  const taken=[st],dist=(a,b)=>Math.hypot(a.lx-b.lx,a.ly-b.ly);
-  hum.forEach(h=>{const ht=T[h.start];ht.owner=h.fid;ht.isCap=true;ht.troops=3;taken.push(ht);
-    F.push({id:h.fid,isPlayer:false,human:true,pid:h.pid,name:h.name,species:h.species,rgb:FCOL[h.fid],alive:true,capital:h.start,allied:false,dipCool:0,hurt:-999})});
+  if(st){F=[{id:0,isPlayer:true,name:'Du',species:setupSp,rgb:FCOL[0],alive:true,capital:hostStart}];
+    st.owner=0;st.isCap=true;st.troops=3}
+  else F=[{id:0,isPlayer:false,human:false,name:'Server',species:setupSp,rgb:FCOL[0],alive:false,capital:-1}];
+  const taken=st?[st]:[],dist=(a,b)=>Math.hypot(a.lx-b.lx,a.ly-b.ly);
+  hum.forEach((h,i)=>{const fid=h.fid!=null?h.fid:i+1,ht=T[h.start];if(!ht)return;
+    ht.owner=fid;ht.isCap=true;ht.troops=3;taken.push(ht);
+    F.push({id:fid,isPlayer:false,human:true,pid:h.pid,name:h.name,species:h.species,rgb:FCOL[fid%FCOL.length],alive:true,capital:h.start,allied:false,dipCool:0,hurt:-999})});
   const total=Math.max(2+hum.length,1+MODES[modeKey].bots);
   for(let b=1+hum.length;b<total;b++){
     let best=null,bs=-1;
     if(MODES[modeKey].rnd){const fr=T.filter(q=>q.owner===-1&&q.adj.some(i=>T[i].owner===-1));best=fr[Math.floor(Math.random()*fr.length)]||null}
     if(!best)for(const t of T){if(t.owner!==-1)continue;const d=Math.min(...taken.map(q=>dist(q,t)));if(d>bs){bs=d;best=t}}
+    if(!best)break;
     best.owner=b;best.isCap=true;best.troops=14;taken.push(best);
-    F.push({id:b,isPlayer:false,name:FNAME[b],species:SP_BY_TERR[best.terrain],rgb:FCOL[b],alive:true,capital:best.id,timer:D.think*(1+b*0.4),allied:false,dipCool:0,hurt:-999});
+    F.push({id:b,isPlayer:false,name:FNAME[b]||('Kolonie '+b),species:SP_BY_TERR[best.terrain],rgb:FCOL[b%FCOL.length],alive:true,capital:best.id,timer:D.think*(1+b*0.4),allied:false,dipCool:0,hurt:-999});
     const free=best.adj.map(i=>T[i]).filter(x=>x.owner===-1);
     if(free.length){const x=free[Math.floor(Math.random()*free.length)];x.owner=b;x.troops=8}
   }
   placeItems();
   contWin=modeKey==='unlimited';marches=[];fxs=[];H.v=0;H.recent={};started=true;over=false;gtime=0;selT=null;SIMV=MODES[modeKey].spd;speed=SIMV;ownDirty=true;strDirty=true;
+  return st;
+}
+function startGame(){
+  setColonyDims(modeKey==='unlimited'?2:1);
+  const hum=(typeof NET!=='undefined'&&NET.role==='host')?NET.humans:[];
+  const st=initWorld({hostStart:setupStart,humans:hum});
   newG();st.col=makeColony(st,'capital',setupSp);curT=st.id;col=st.col;
   computeStats(col);syncAnts(true);
 }

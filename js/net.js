@@ -3,19 +3,19 @@
    Gäste spielen ihre Kolonie lokal, simulieren die Welt aber nicht, sondern übernehmen den Schnappschuss, und senden Befehle.
    Transport: der Lobby-Kanal (AW.channel: Supabase Realtime bzw. BroadcastChannel im Gastmodus). Ein späterer Server
    oder WebRTC muss nur `NET.ch` (send/leave) und den Aufruf von `NET.onmsg` / `NET.onPresence` ersetzen. */
-const NET={role:null,ch:null,live:false,players:[],humans:[],ready:{},fid:0,hostPid:null,sent:false,sentSp:null,sentStart:null,miss:{},timer:null,
+const NET={role:null,ch:null,live:false,players:[],humans:[],ready:{},fid:0,hostPid:null,sent:false,sentSp:null,sentStart:null,miss:{},timer:null,server:false,roomId:null,
   active(){return !!this.role},
   /* Von der Lobby beim Spielstart übergeben */
-  begin({ch,host,players}){
-    this.close(true);Object.assign(this,{role:host?'host':'guest',ch,players:players||[],humans:[],ready:{},fid:0,hostPid:host?PID:null,live:false,sent:false,miss:{}});
+  begin({ch,host,players,server}){
+    this.close(true);Object.assign(this,{role:host?'host':'guest',ch,players:players||[],humans:[],ready:{},fid:0,hostPid:host?PID:null,live:false,sent:false,miss:{},server:!!server,roomId:null});
     this.timer=setInterval(()=>this.tick(),500);this.refreshStart();
   },
   send(m){if(this.ch)this.ch.send({...m,p:PID})},
   cmd(c){if(this.role==='guest'&&this.live)this.send({t:'cmd',...c})},
   close(silent){
     clearInterval(this.timer);this.timer=null;
-    if(this.ch){try{if(this.role==='host'&&this.live&&!silent)this.send({t:'hostleft'});this.ch.leave()}catch(e){}}
-    Object.assign(this,{role:null,ch:null,live:false,players:[],humans:[],ready:{},sent:false});
+    if(this.ch){try{if(this.server&&!silent)this.ch.send({t:'leave'});if(this.role==='host'&&this.live&&!silent)this.send({t:'hostleft'});this.ch.leave()}catch(e){}}
+    Object.assign(this,{role:null,ch:null,live:false,players:[],humans:[],ready:{},sent:false,server:false,roomId:null});
     const b=$('#btnStart');if(b)b.textContent=t('Spiel starten');
   },
   /* Ansicht eines Gastes: Fraktions-ID des Gasts und die des Hosts (0) vertauschen, damit sich jeder selbst als „0“ sieht */
@@ -24,6 +24,7 @@ const NET={role:null,ch:null,live:false,players:[],humans:[],ready:{},fid:0,host
   onPresence(l){this.players=l;if(this.live){const now=Date.now();for(const p of l)delete this.miss[p.pid]}this.refreshStart()},
   /* Verbindungsprüfung: ein verschwundener Gast wird zum Bot, ein verschwundener Host beendet die Partie für Gäste */
   tick(){
+    if(this.server)return;
     if(!this.live||!started||over)return;
     const present=new Set(this.players.map(p=>p.pid)),now=Date.now();
     const watch=this.role==='host'?this.humans.map(h=>h.pid):[this.hostPid];
@@ -37,6 +38,14 @@ const NET={role:null,ch:null,live:false,players:[],humans:[],ready:{},fid:0,host
     }
   },
   hostGone(){if(!started||over)return;toast(LANG==='de'?'Der Host hat die Partie verlassen.':'The host left the match.','bad');endGame(false)},
+  /* Server-Verbindung weg: Meldung zeigen, Partie sauber beenden, Einzelspiel bleibt unberührt */
+  onclose(){
+    if(this.server){
+      if(started&&!over){toast(LANG==='de'?'Verbindung zum Server verloren.':'Lost connection to the server.','bad');endGame(false)}
+      else toast(LANG==='de'?'Verbindung zum Server verloren.':'Lost connection to the server.','bad');
+      this.close(true);
+    }
+  },
   refreshStart(){
     const b=$('#btnStart');if(!b||started)return;
     if(this.role==='host'&&!this.live){const n=this.guestPids().length,r=this.guestPids().filter(p=>this.ready[p]).length;
@@ -116,12 +125,17 @@ const NET={role:null,ch:null,live:false,players:[],humans:[],ready:{},fid:0,host
         this.ready[m.p]={name:cleanName(m.name)||'Spieler',species:m.sp,start:m.start,c:cosmClean(m.c)};this.send({t:'ack',to:m.p});this.refreshStart();
       }else if(m.t==='cmd')this.hostCmd(m);
     }else{
-      if(m.t==='nack'&&m.to===PID){this.sent=false;toast(LANG==='de'?'Startgebiet nicht möglich. Wähle ein anderes.':'Start area not possible. Pick another.','bad');this.refreshStart()}
-      else if(m.t==='init'&&!started&&this.sent){setupSp=this.sentSp;setupStart=this.sentStart;F[0].species=setupSp;$('#btnStart').disabled=false;const o=NET.origStart;this.live=false;o.call($('#btnStart'));this.applyInit(m);
+      if(m.t==='nack'&&(m.to===PID||m.to==null)){this.sent=false;toast(LANG==='de'?'Startgebiet nicht möglich. Wähle ein anderes.':'Start area not possible. Pick another.','bad');this.refreshStart()}
+      else if(m.t==='room'){const first=this.roomId!==m.id;this.roomId=m.id;try{sessionStorage.setItem('aw_room',m.id)}catch(e){}
+        if(first&&m.seed!=null&&!started){if(typeof CUR!=='undefined')CUR.seed=m.seed;newMap(m.seed);if(typeof renderSetup==='function')renderSetup()}}
+      else if(m.t==='err'){toast(LANG==='de'?'Der Beitritt war nicht möglich.':'Joining was not possible.','bad')}
+      else if(m.t==='init'&&!started&&(this.sent||(this.server&&m.self))){
+        if(m.self){setupSp=m.self.sp;setupStart=m.self.start}else{setupSp=this.sentSp;setupStart=this.sentStart}
+        F[0].species=setupSp;$('#btnStart').disabled=false;if(typeof pickStop==='function')pickStop();const o=NET.origStart;this.live=false;o.call($('#btnStart'));this.applyInit(m);
         toast(LANG==='de'?'Mehrspieler: Die Welt läuft beim Host.':'Multiplayer: the world runs on the host.','good')}
       else if(m.t==='snap')this.applySnap(m);
       else if(m.t==='hostleft'&&started&&!over){toast(LANG==='de'?'Der Host hat die Partie beendet.':'The host ended the match.','bad');endGame(false)}
-      else if(m.t==='end'&&started&&!over)endGame(false);
+      else if(m.t==='end'){try{sessionStorage.removeItem('aw_room')}catch(e){}if(started&&!over)endGame(false)}
     }
   }
 };
