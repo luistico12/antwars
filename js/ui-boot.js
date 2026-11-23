@@ -47,7 +47,7 @@ function homeBuild(){
   $('#hSolo').onclick=()=>{if(requireSession()){homeHide();setView('map');pickStart()}};
   $('#hCreate').onclick=()=>lobCreate();
   $('#hJoin').onclick=()=>{if(requireSession())openScreen('lobbyJoin',undefined,false)};
-  $('#hPublic').onclick=()=>{if(requireSession())openScreen('publicMatches',undefined,false)};
+  // $('#hPublic').onclick=()=>{if(requireSession())openScreen('publicMatches',undefined,false)};
   $('#hTut').onclick=()=>openScreen('tutorial',undefined,false);
 }
 function renderHomeOpts(){
