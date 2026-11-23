@@ -24,3 +24,12 @@ test('gleicher Seed gleiche Welt, anderer Seed andere',()=>{
     for(let i=0;i<300;i++)w.step(0.1);const r=JSON.stringify(w.snap());w.dispose();return r};
   assert.strictEqual(mk(5),mk(5));assert.notStrictEqual(mk(5),mk(6));
 });
+test('troopTick: Zeit wird eingespeist, Eimer 12, +6/s',()=>{
+  const w=createWorld({mode:'ffa',mapSeed:1,seed:1});
+  const a=find(w,'ground'),b=find(w,'leaf');
+  w.initWorld([{pid:'a',name:'A',species:'ground',start:a,c:null},{pid:'b',name:'B',species:'leaf',start:b,c:null}]);
+  let ok=0;for(let i=0;i<100;i++)if(w.troopTick(1,a,1000))ok++;
+  assert.ok(ok<=12&&ok>=1,'ok '+ok);
+  assert.strictEqual(w.troopTick(1,a,NaN),false);
+  w.dispose();
+});

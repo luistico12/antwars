@@ -33,13 +33,17 @@ function createWorld({mode,mapSeed,seed}){
         if(!f||!f.alive||!f.human||!from||!to||from.owner!==fid||!from.adj.includes(to.id)||!(n>=1)||n>Math.floor(from.troops)-1)return false;
         return launch(from,to,n,fid)!==false})()`);
     },
-    troopTick(fid,tileId){
-      ctx.__a=[fid,tileId];
-      return ev(`(function(){const[fid,id]=__a,x=T[id],f=F[fid];if(!f||!f.alive||!f.human)return false;
+    troopTick(fid,tileId,nowMs){
+      ctx.__a=[fid,tileId,+nowMs];
+      return ev(`(function(){const[fid,id,now]=__a,x=T[id],f=F[fid];if(!f||!f.alive||!f.human)return false;
         const h=__humans.find(q=>q.fid===fid);if(!h)return false;
-        const now=Date.now();h.tb=Math.min(12,(h.tb==null?12:h.tb)+((now-(h.tl||now))/1000)*6);h.tl=now;
+        if(!isFinite(now))return false;h.tb=Math.min(12,(h.tb==null?12:h.tb)+Math.max(0,(now-(h.tl||now))/1000)*6);h.tl=now;
         if(!x||x.owner!==fid||h.tb<1||x.troops>=100)return false;
         h.tb-=1;x.troops=Math.floor(x.troops)+1;return true})()`);
+    },
+    setBot(fid){
+      ctx.__a=[fid];
+      ev('(function(){const f=F[__a[0]];if(f&&f.alive&&f.human){f.human=false;f.timer=3}})()');
     },
     validStart(species,tileId){
       ctx.__a=[species,tileId];
