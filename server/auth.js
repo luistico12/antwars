@@ -77,7 +77,7 @@ function httpsJson(url) {
 }
 
 function jwksFromUrl(url, { fetchJson = httpsJson, now = Date.now } = {}) {
-  const TTL = 10 * 60_000, MIN_RELOAD = 60_000;
+  const TTL = 10 * 60_000, MIN_RELOAD = 60_000, FAIL_BACKOFF = 10_000;
   let keys = null, loadedAt = -Infinity, attemptAt = -Infinity, inflight = null;
   async function load() {
     if (inflight) return inflight;
@@ -93,8 +93,14 @@ function jwksFromUrl(url, { fetchJson = httpsJson, now = Date.now } = {}) {
   }
   return async function getKeys(kid) {
     const t = now();
-    if (!keys || t - loadedAt >= TTL) await load();
-    else if (kid !== undefined && !keys.some((k) => k && k.kid === kid) && t - attemptAt >= MIN_RELOAD) await load();
+    const since = t - attemptAt;
+    let want = false;
+    if (!keys || t - loadedAt >= TTL) want = since >= FAIL_BACKOFF;
+    else if (kid !== undefined && !keys.some((k) => k && k.kid === kid)) want = since >= MIN_RELOAD;
+    if (want) {
+      try { await load(); } catch { /* alte Schlüssel weiter nutzen */ }
+    }
+    if (!keys) throw new Error('jwks');
     return keys;
   };
 }

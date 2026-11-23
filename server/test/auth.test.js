@@ -126,11 +126,36 @@ test('jwksFromUrl: Cache, Neuladen höchstens einmal pro Minute bei unbekannter 
   assert.strictEqual((await g('zzz')).length, 2); assert.strictEqual(calls, 2); // < 1 min
   t = 61_000 + 10 * 60_000 + 1; await g(); assert.strictEqual(calls, 3); // TTL
 });
-test('jwksFromUrl: Fetch-Fehler -> Fehler ohne Cache-Vergiftung', async () => {
-  let n = 0;
-  const g = jwksFromUrl('https://x/', { fetchJson: async () => { if (n++ === 0) throw new Error('net'); return { keys: [{ kid: 'a' }] }; }, now: () => 0 });
-  await assert.rejects(g());
-  assert.strictEqual((await g()).length, 1);
+test('jwksFromUrl: fehlschlagender Kaltstart wird 10 s gedrosselt und erholt sich', async () => {
+  let calls = 0, tm = 0, up = false;
+  const g = jwksFromUrl('https://x/', { fetchJson: async () => { calls++; if (!up) throw new Error('net'); return { keys: [{ kid: 'a' }] }; }, now: () => tm });
+  await assert.rejects(g('a')); assert.strictEqual(calls, 1);
+  tm = 9_000; for (let i = 0; i < 20; i++) await assert.rejects(g('a'));
+  assert.strictEqual(calls, 1);
+  up = true; tm = 10_000;
+  assert.strictEqual((await g('a')).length, 1); assert.strictEqual(calls, 2);
+});
+test('jwksFromUrl: fehlschlagende TTL-Erneuerung nutzt alte Schlüssel, gedrosselt', async () => {
+  let calls = 0, tm = 0, up = true;
+  const g = jwksFromUrl('https://x/', { fetchJson: async () => { calls++; if (!up) throw new Error('net'); return { keys: [{ kid: 'a' }] }; }, now: () => tm });
+  await g('a'); up = false;
+  tm = 10 * 60_000; assert.strictEqual((await g('a')).length, 1); assert.strictEqual(calls, 2);
+  tm += 9_000; for (let i = 0; i < 20; i++) assert.strictEqual((await g('a')).length, 1);
+  assert.strictEqual(calls, 2);
+  tm += 1_000; await g('a'); assert.strictEqual(calls, 3);
+  // Verifier funktioniert weiter mit alten Schlüsseln
+  const v = createVerifier({ getKeys: async () => [jwkOf(A, 'k1')], supabaseUrl: URL_, now: () => NOW * 1000 });
+  assert.strictEqual((await v(sign(goodPayload()))).sub, 'u1');
+});
+test('jwksFromUrl: unbekannte kid höchstens ein Abruf pro 60 s', async () => {
+  let calls = 0, tm = 0;
+  const g = jwksFromUrl('https://x/', { fetchJson: async () => { calls++; return { keys: [{ kid: 'a' }] }; }, now: () => tm });
+  await g('a');
+  for (tm = 1_000; tm < 60_000; tm += 1_000) await g('zzz');
+  assert.strictEqual(calls, 1);
+  tm = 60_000; await g('zzz'); assert.strictEqual(calls, 2);
+  for (tm = 61_000; tm < 120_000; tm += 1_000) await g('zzz');
+  assert.strictEqual(calls, 2);
 });
 test('jwksFromUrl: ungültige Antwort wird verworfen', async () => {
   const g = jwksFromUrl('https://x/', { fetchJson: async () => ({ keys: 'x' }), now: () => 0 });
