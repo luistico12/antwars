@@ -2,7 +2,7 @@
 const {chromium}=require('playwright');const path=require('path');const {execFileSync}=require('child_process');const {seeded}=require('./helpers/prng');
 (async()=>{
   const srv=JSON.parse(execFileSync('node',[path.resolve(__dirname,'../server/test/emit-scenario.js')],{encoding:'utf8',maxBuffer:1<<28}));
-  const b=await chromium.launch();const pg=await b.newPage({viewport:{width:1280,height:800}});const errs=[];pg.on('pageerror',e=>errs.push(e.message));
+  const b=await chromium.launch();let fails=0;try{const pg=await b.newPage({viewport:{width:1280,height:800}});const errs=[];pg.on('pageerror',e=>errs.push(e.message));
   await pg.route('**/config.js',r=>r.fulfill({body:'window.AW_CONFIG={}',contentType:'text/javascript'}));
   await pg.goto('file://'+path.resolve(__dirname,'../index.html'));await pg.waitForFunction(()=>typeof AW!=='undefined'&&AW.ready);
   const br=await pg.evaluate(`(function(){
@@ -18,8 +18,10 @@ const {chromium}=require('playwright');const path=require('path');const {execFil
       if(i===100||i===600||i===1200)out['s'+i]=JSON.stringify(NET.snap());
     }
     return out})()`);
-  await b.close();
-  let fails=errs.length;errs.forEach(e=>console.log('FAIL pageerror '+e));
-  for(const k of ['l50','l950','s100','s600','s1200']){const c=br[k]===srv[k]&&br[k]!==undefined;console.log((c?'PASS ':'FAIL ')+k);if(!c){fails++;console.log(' browser '+String(br[k]).slice(0,300));console.log(' server  '+String(srv[k]).slice(0,300))}}
+  fails=errs.length;errs.forEach(e=>console.log('FAIL pageerror '+e));
+  for(const [k,want,txt] of [['l50',false,'rejected'],['l950',true,'accepted']]){
+    const ok=br[k]===want&&srv[k]===want;console.log((ok?'PASS ':'FAIL ')+k+' ('+txt+') browser='+br[k]+' server='+srv[k]);if(!ok)fails++}
+  for(const k of ['s100','s600','s1200']){const c=br[k]===srv[k]&&br[k]!==undefined;console.log((c?'PASS ':'FAIL ')+k);if(!c){fails++;console.log(' browser '+String(br[k]).slice(0,300));console.log(' server  '+String(srv[k]).slice(0,300))}}
+  }finally{await b.close()}
   process.exit(fails?1:0);
 })();
