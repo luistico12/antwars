@@ -120,10 +120,10 @@ Das Skript zeigt, was auf dem Rechner lauscht, fragt dich (Heimnetz, Ports, Mine
 und danach jeden Befehl mit `$` davor. **Nichts wird ausgeführt.** Antworte wie später im echten Lauf:
 
 - **Admin-Benutzer:** dein Anmeldename (nicht `root`).
-- **SSH-Port:** meist `22`.
+- **SSH-Port:** Die Vorgabe ist der Port deiner laufenden SSH-Sitzung (sonst der von `sshd`). Weicht deine Eingabe davon ab, warnt das Skript.
 - **Heimnetz (CIDR):** aus Schritt 1.3, z. B. `192.168.1.0/24`. Nur wenn du SSH bewusst aus dem Internet erlauben willst: `ALLE`.
 - **TCP-Ports, die von außen erreichbar bleiben:** mindestens der Minecraft-Port, z. B. `25565`.
-- **Minecraft-Port:** z. B. `25565`.
+- **Minecraft-Port:** Die Vorgabe ist immer `25565` (auch wenn Minecraft gerade gestoppt ist). Enter übernimmt sie. Nur wenn auf diesem Rechner **kein** Minecraft läuft, tippst du ausdrücklich `keiner`; der Plan warnt dann, dass Minecraft-Spieler ausgesperrt werden.
 - **UDP-Ports:** normalerweise leer. Nur eintragen, wenn Minecraft-Mods UDP brauchen (z. B. Simple Voice Chat `24454`).
 
 **Erwartete Ausgabe:** Am Ende `TROCKENLAUF beendet. Nichts wurde geändert.` Lies den Plan genau. Steht dort

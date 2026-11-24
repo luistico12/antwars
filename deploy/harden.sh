@@ -225,10 +225,25 @@ if [[ -n $ADMIN_USER ]] && ! id -u "$ADMIN_USER" >/dev/null 2>&1; then
 fi
 
 # SSH
-SSH_PORT_DEF=$(conf_get SSH_PORT); SSH_PORT_DEF=${SSH_PORT_DEF:-$(detect_ssh_port)}
+# Vorgabe: Port der echten SSH-Sitzung (4. Feld von SSH_CONNECTION), sonst die Einstellung von sshd, sonst gespeichert/geraten.
+SESSION_SSH_PORT=""
+if [[ -n ${SSH_CONNECTION:-} ]]; then read -r _ _ _ SESSION_SSH_PORT _ <<<"$SSH_CONNECTION" || true; fi
+[[ ${SESSION_SSH_PORT:-} =~ ^[0-9]+$ ]] || SESSION_SSH_PORT=""
+SSHD_PORT=""
+_sshd=$(command -v sshd || true); [[ -z $_sshd && -x /usr/sbin/sshd ]] && _sshd=/usr/sbin/sshd
+if [[ -n $_sshd ]]; then SSHD_PORT=$("$_sshd" -T 2>/dev/null | awk '$1=="port"{print $2; exit}' || true); fi
+[[ ${SSHD_PORT:-} =~ ^[0-9]+$ ]] || SSHD_PORT=""
+SSH_PORT_DEF=${SESSION_SSH_PORT:-${SSHD_PORT:-$(conf_get SSH_PORT)}}
+SSH_PORT_DEF=${SSH_PORT_DEF:-$(detect_ssh_port)}
 while :; do
   ask "SSH-Port dieses Rechners" "$SSH_PORT_DEF"
-  valid_ports "$ANSWER" && [[ -n $ANSWER && $ANSWER != *" "* ]] && { SSH_PORT=$((10#$ANSWER)); break; }
+  if valid_ports "$ANSWER" && [[ -n $ANSWER && $ANSWER != *" "* ]]; then
+    SSH_PORT=$((10#$ANSWER))
+    for _k in "$SESSION_SSH_PORT" "$SSHD_PORT"; do
+      if [[ -n $_k && $_k != "$SSH_PORT" ]]; then warn "Du gibst $SSH_PORT an, die laufende SSH-Sitzung bzw. sshd nutzt aber Port $_k. Neue Anmeldungen auf $_k wären gesperrt."; fi
+    done
+    break
+  fi
   warn "Bitte genau eine Portnummer."
   (( INTERACTIVE )) || { SSH_PORT=22; break; }
 done
@@ -249,7 +264,7 @@ while :; do
     if [[ -n $CLIENT_IP ]] && ! ip_in_cidr "$CLIENT_IP" "$SSH_SOURCE"; then
       warn "Deine aktuelle Verbindung ($CLIENT_IP) liegt NICHT in $SSH_SOURCE. Neue Anmeldungen von dort wären gesperrt."
       ask "Trotzdem dieses Netz verwenden? Tippe  ja  oder gib danach ein anderes Netz ein" "nein"
-      [[ $ANSWER == ja ]] || continue
+      [[ $ANSWER == ja ]] || { (( INTERACTIVE )) || break; continue; }
     fi
     break
   fi
@@ -283,12 +298,14 @@ MC_DEF=$(conf_get MINECRAFT_PORT)
 if [[ -z $MC_DEF ]]; then
   for p in $EXTRA_TCP; do [[ $p == 25565 ]] && MC_DEF=25565; done
 fi
+# Ohne erkannten Minecraft-Port (z. B. weil er gerade gestoppt ist) gilt trotzdem 25565 als Vorgabe: "keine Angabe" gibt es nur durch ausdrückliches Tippen von  keiner.
+MC_DEF=${MC_DEF:-25565}
 while :; do
-  ask "Minecraft-Port (leer = Minecraft läuft hier nicht)" "${MC_DEF:-}"
-  if [[ -z $ANSWER ]]; then MINECRAFT_PORT=""; break; fi
+  ask "Minecraft-Port (tippe  keiner , wenn hier KEIN Minecraft läuft)" "$MC_DEF"
+  if [[ $ANSWER == keiner ]]; then MINECRAFT_PORT=""; break; fi
   if valid_ports "$ANSWER" && [[ $ANSWER != *" "* ]]; then MINECRAFT_PORT=$((10#$ANSWER)); break; fi
   warn "Bitte genau eine Portnummer oder leer lassen."
-  (( INTERACTIVE )) || { MINECRAFT_PORT=""; break; }
+  (( INTERACTIVE )) || { MINECRAFT_PORT=$MC_DEF; break; }
 done
 if [[ -n $MINECRAFT_PORT ]]; then
   case " $EXTRA_TCP " in *" $MINECRAFT_PORT "*) ;; *) EXTRA_TCP=$(norm_ports "$EXTRA_TCP $MINECRAFT_PORT"); info "Minecraft-Port $MINECRAFT_PORT zur TCP-Liste hinzugefügt." ;; esac
@@ -358,7 +375,8 @@ say "  Admin-Benutzer:         ${ADMIN_USER:-keiner}"
 say "  SSH:                    Port $SSH_PORT, erlaubt von: $( [[ $SSH_SOURCE == any ]] && echo 'ÜBERALL (auf deinen Wunsch)' || echo "$SSH_SOURCE" )"
 say "  Weitere TCP-Ports offen: ${EXTRA_TCP:-keine}"
 say "  UDP-Ports offen:        ${UDP_PORTS:-keine}"
-say "  Minecraft-Port:         ${MINECRAFT_PORT:-keiner}"
+if [[ -n $MINECRAFT_PORT ]]; then say "  Minecraft-Port:         $MINECRAFT_PORT"
+else say "  Minecraft-Port:         KEINER  -> ACHTUNG: Minecraft-Spieler werden ausgesperrt, sofern Minecraft hier läuft!"; fi
 say "  Heimnetz auf alle Ports: $( ((LAN_ALL)) && echo "ja ($SSH_SOURCE)" || echo nein )"
 say "  Alles andere eingehend: VERBOTEN (ufw default deny incoming). Ausgehend bleibt erlaubt."
 say "  Der Spielserver (8787) lauscht nur auf 127.0.0.1 und wird NICHT freigegeben. Der Tunnel braucht nur ausgehende Verbindungen."
