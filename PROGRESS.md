@@ -42,6 +42,13 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
 
 19. Update v18 (Flaggen im Mehrspieler): `cosmPack/cosmClean` tragen `flag`, Weltkarte zeichnet die Flagge jeder Hauptstadt über `cosmOf(owner)`. Hüte bleiben nur in der eigenen Kolonie (fremde Kolonien sind nicht sichtbar). Tests `worldupdate`/`radial` nutzen jetzt feste Zufallsfolge (`SEED=n`), vorher wegen Zufallskarten gelegentlich rot.
 
+23. Update v21.2 – Karriere in 20 Quests mit je 4–5 Stufen, Quest-UI neu (getestet: alle `tests/*.spec.js` außer multiplayer):
+    - GitHub-Pages-Build repariert: `.github/workflows/pages.yml` nutzt wieder `upload-pages-artifact@v4`. Der Rollback hatte v3 zurückgebracht, damit scheitert `deploy-pages@v4` und die Seite blieb auf dem alten Stand (Push kam an, Deploy nicht).
+    - `CAREER` in `js/backend.js`: 20 Linien mit je 4–5 Stufen (82 Stufen). Neue Linien: Vielspieler, Feldherr, Belagerer, Architekt, Korsar, Unterhändler, Ausgräber, Herrscher, Legende. Tages- (12) und Wochenquests (17) unverändert.
+    - Karriere-UI (`js/ui-quests.js`, `css/ui.css`): Kopf mit Stufen-/Quest-Zähler und Prozent-Ring, Kategorien als Chips statt Seitenleiste, Karten mit nummerierten Stufen-Punkten (erledigt/aktuell/offen), Prozent-Badge, Balken und Abholen-Knopf unten rechts.
+    - CSS-Dopplung der v21-Sektion entfernt: die alten Karriere-Regeln kamen nach den neuen und machten aus den Kategorie-Chips eine gestapelte Liste.
+    - Supabase live: `quests` 113 Zeilen (82 Karriere, 13 täglich inkl. Bonus, 18 wöchentlich inkl. Bonus), News v21.2.
+
 22. Update v21.1 – Korrektur: Karriere zurück auf 44 Stufen, dafür mehr einzelne Quests (getestet: quests, cosmetics, solo, ui2, hud):
     - `CAREER` in `js/backend.js` wieder auf dem alten Stand (5/4/4/5/4/4/4/3/4/4/3 = 44 Stufen); Prozentwert und Balken bleiben korrekt.
     - Statt mehr Stufen jetzt mehr einzelne Quests: 12 Tagesquests (vorher 6) und 17 Wochenquests (vorher 10). Neue IDs: d_conq2, d_build2, d_found, d_sunk, d_allied, d_score, w_conq2, w_build2, w_sunk2, w_terr2, w_found2, w_allied2, w_score; der Bonus zählt automatisch alle Quests der Art.

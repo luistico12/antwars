@@ -66,18 +66,32 @@ function qxHead(kind){
         <span class="qx-pill">${ico('check')} <b>${d} / ${L.length}</b> ${t('erledigt')}</span>
         ${daily?`<span class="qx-pill fire">${ico('flame')} <b>${st.n}</b> ${t('Tage Serie')}</span>`:''}</div>
       <p class="qx-note">${ico('info')} ${t('Alle Partien zählen, auch Solo. Der Fortschritt aktualisiert sich nach jedem Match.')}</p></div>
-    <div class="qx-gauge" style="--p:${pct}%"><span>${pct}<em>%</em></span></div></div>`;
+    <div class="qx-gauge" style="--p:${pct}%"><span>${pct}%</span></div></div>`;
+}
+function careerHead(){
+  const all=QUESTS.filter(q=>q[1]==='career'),keys=[...new Set(all.map(q=>q[9].key))];
+  const done=all.filter(q=>qProg(q).claimed).length,pct=all.length?Math.round(100*done/all.length):0;
+  const earned=all.filter(q=>qProg(q).claimed).reduce((a,q)=>a+q[4],0);
+  return `<div class="qx-head career" style="--c1:#f7c948;--c2:#3d2408">
+    <div class="qx-hl"><h3>${t('Karriere')}</h3>
+      <div class="qx-pills"><span class="qx-pill">${ico('trophy')} <b>${done} / ${all.length}</b> ${t('Stufen')}</span>
+        <span class="qx-pill">${ico('board')} <b>${keys.length}</b> ${t('Quests')}</span>
+        <span class="qx-pill">${ico('ruby')} <b>${num(earned)}</b> ${t('gesammelt')}</span></div>
+      <p class="qx-note">${ico('info')} ${t('Jede Karriere-Quest hat vier bis fünf Stufen – hol Stufe für Stufe ab.')}</p></div>
+    <div class="qx-gauge" style="--p:${pct}%"><span>${pct}%</span></div></div>`;
 }
 const CAREER_CATS=['Matches','Sieg','Kriegsführung','Bauen','Seekrieg','Diplomatie','Sammlung','Meisterleistungen'];
 const CAT_ICO={Alle:'box',Matches:'gamepad',Sieg:'trophy',Kriegsführung:'swords',Bauen:'hammer',Seekrieg:'anchor',Diplomatie:'handshake',Sammlung:'gem',Meisterleistungen:'star'};
 function careerCard(key){
   const ts=careerTiers(key),q=careerCur(key),g=qProg(q),c=qColor(q[7]),x=q[9],ndone=ts.filter(y=>qProg(y).claimed).length;
   const full=ndone===ts.length,pct=full?100:careerPct(ts,g),bp=pctOf(g),ready=g.done&&!g.claimed;
+  const steps=ts.map((y,i)=>`<i class="${i<ndone?'on':i===ndone?'cur':''}">${i+1}</i>`).join('');
   return `<div class="qx-cc ${full?'full':''} ${ready?'rdy':''}" style="--c1:${c[0]};--c2:${c[1]}">
-    <div class="cc-h">${qTile(q[7],c)}<div class="cc-t"><b>${t(q[5])}</b><span class="tiers">${t('Stufe')} ${x.tier} / ${ts.length}</span></div><span class="cc-p">${pct}%</span></div>
-    <div class="cc-d"><b>${t(q[6])}</b><span>${t(x.sub)}</span></div>
-    <div class="qx-pg"><div class="qx-track"><i style="width:${bp}%"></i></div><em>${num(g.v)} / ${num(g.goal)}</em></div>
-    <div class="cc-r">${full?`<span class="qx-done">${ico('check')} ${t('ABGESCHLOSSEN')}</span>`:rewardPill(q,g)}</div></div>`;
+    <div class="cc-h">${qTile(q[7],c)}<div class="cc-t"><b>${t(q[5])}</b><span class="tiers">${t('Stufe')} ${x.tier} ${t('von')} ${ts.length}</span></div>${full?`<span class="cc-p ok">${ico('check')}</span>`:`<span class="cc-p">${pct}%</span>`}</div>
+    <div class="cc-d"><span>${t(q[6])}</span><em>${t(x.sub)}</em></div>
+    <div class="cc-steps">${steps}</div>
+    <div class="cc-pg"><div class="qx-track"><i style="width:${bp}%"></i></div><em>${num(g.v)} / ${num(g.goal)}</em></div>
+    <div class="cc-r">${full?`<span class="qx-done">${ico('check')} ${t('ALLE STUFEN')}</span>`:rewardPill(q,g)}</div></div>`;
 }
 UI.achTab=UI.achTab||'daily';UI.achCat=UI.achCat||'Alle';
 S.achievements=()=>{
@@ -88,7 +102,7 @@ S.achievements=()=>{
   else if(tab==='career'){
     const keys=[...new Set(QUESTS.filter(q=>q[1]==='career').map(q=>q[9].key))],cnt=c=>keys.filter(k=>c==='Alle'||careerTiers(k)[0][8]===c).length;
     const show=keys.filter(k=>UI.achCat==='Alle'||careerTiers(k)[0][8]===UI.achCat);
-    body=`<div class="qx-career"><div class="qx-cats">${['Alle',...CAREER_CATS].map(c=>`<button type="button" data-cat="${c}" class="${UI.achCat===c?'on':''}"><span class="qx-ci">${ico(CAT_ICO[c])}</span>${t(c)}<em>${cnt(c)}</em></button>`).join('')}</div><div class="qx-grid">${show.map(careerCard).join('')}</div></div>`;
+    body=careerHead()+`<div class="qx-cats">${['Alle',...CAREER_CATS].map(c=>`<button type="button" data-cat="${c}" class="${UI.achCat===c?'on':''}"><span class="qx-ci">${ico(CAT_ICO[c])}</span>${t(c)}<em>${cnt(c)}</em></button>`).join('')}</div><div class="qx-grid">${show.map(careerCard).join('')}</div>`;
   }else body=`<div class="qx-empty">${qTile('calendar')}<b>${t('Gerade läuft kein Event')}</b><span>${t('Zeitlich begrenzte Events mit Sonderquests und Belohnungen erscheinen hier.')}</span></div>`;
   return shell(t('Erfolge'),{right:`<span class="qx-ruby">${ico('ruby')} ${num(p.rubys||0)}</span>`},
     `<div class="qx-tabs">${tabs.map(([k,n,i])=>`<button type="button" data-k="${k}" class="${tab===k?'on':''}">${ico(i)} ${t(n)}</button>`).join('')}</div>${needLogin()?`<div class="msg">${t('Melde dich an, um zu spielen')}</div>`:''}<div class="qx-body">${body}</div>`);

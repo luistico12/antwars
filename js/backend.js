@@ -33,16 +33,25 @@ const SHOP_BY_ID=Object.fromEntries(SHOP.map(i=>[i.id,i]));
 const Q=(id,kind,stat,goal,reward,title,desc,ic,cat,extra)=>[id,kind,stat,goal,reward,title,desc||'',ic||'trophy',cat||'',extra||{}];
 const CAREER=[
   ['games','Matches','Veteran','Spiele Partien','Jede gestartete Partie zählt, auch Solo.','gamepad','games',[5,15,40,100,250],[10,20,40,80,160]],
+  ['games2','Matches','Vielspieler','Spiele viele Partien','Jede gestartete Partie zählt, auch Solo.','gamepad','games',[20,60,150,400],[15,35,80,180]],
   ['days','Matches','Stammgast','Spiele an verschiedenen Tagen','Jeder Tag mit mindestens einer Partie zählt.','calendar','days',[3,7,20,50],[10,25,60,130]],
   ['mins','Matches','Dienstzeit','Minuten in Partien','Zeit, die du in Partien verbringst.','clock','mins',[30,120,480,1500],[8,20,55,130]],
   ['wins','Sieg','Sieger','Gewinne Partien','Jeder Sieg zählt.','trophy','wins',[1,5,15,40,100],[12,25,50,100,200]],
+  ['wins2','Sieg','Feldherr','Gewinne viele Partien','Jeder Sieg zählt.','trophy','wins',[3,10,25,60],[20,45,100,220]],
   ['conq','Kriegsführung','Eroberer','Erobere Gebiete','Jede Eroberung zählt.','swords','conq',[10,50,150,400],[12,30,70,140]],
+  ['conq2','Kriegsführung','Belagerer','Erobere viele Gebiete','Jede Eroberung zählt.','swords','conq',[25,100,250,600],[20,50,120,260]],
   ['built','Bauen','Baumeister','Baue Gebäude','Außenposten, Häfen, Wälle und Schiffe zählen.','hammer','built',[10,50,150,400],[10,25,60,120]],
+  ['built2','Bauen','Architekt','Baue viele Gebäude','Außenposten, Häfen, Wälle und Schiffe zählen.','hammer','built',[25,100,250,600],[18,45,110,240]],
   ['sunk','Seekrieg','Seewolf','Versenke gegnerische Schiffe','Deine Kriegsschiffe zählen.','anchor','sunk',[1,5,15,40],[15,35,80,160]],
-  ['allied','Diplomatie','Diplomat','Schließe Bündnisse','Jedes neue Bündnis zählt.','handshake','allied',[1,5,15],[8,25,60]],
+  ['sunk2','Seekrieg','Korsar','Versenke viele Schiffe','Deine Kriegsschiffe zählen.','anchor','sunk',[3,8,20,50],[22,50,120,260]],
+  ['allied','Diplomatie','Diplomat','Schließe Bündnisse','Jedes neue Bündnis zählt.','handshake','allied',[1,5,15,30],[8,25,60,130]],
+  ['allied2','Diplomatie','Unterhändler','Schließe viele Bündnisse','Jedes neue Bündnis zählt.','handshake','allied',[2,8,20,40],[16,45,110,230]],
   ['found','Sammlung','Schatzsucher','Grabe Funde aus','Vergrabene Funde in der Kolonie.','gem','found',[5,25,75,200],[8,20,50,110]],
+  ['found2','Sammlung','Ausgräber','Grabe viele Funde aus','Vergrabene Funde in der Kolonie.','gem','found',[10,50,150,400],[14,40,95,210]],
   ['terr','Meisterleistungen','Reichsgründer','Besitze Gebiete gleichzeitig','Die höchste Zahl in einer Partie.','map','terr',[5,10,20,35],[8,20,50,110]],
-  ['score','Meisterleistungen','Punktejäger','Erreiche Punkte','Dein höchster Punktestand in einer Partie.','star','score',[300,1000,3000],[10,30,80]],
+  ['terr2','Meisterleistungen','Herrscher','Halte viele Gebiete','Die höchste Zahl in einer Partie.','map','terr',[12,25,45,70],[18,45,100,220]],
+  ['score','Meisterleistungen','Punktejäger','Erreiche Punkte','Dein höchster Punktestand in einer Partie.','star','score',[300,1000,3000,8000],[10,30,80,180]],
+  ['score2','Meisterleistungen','Legende','Sammle viele Punkte','Dein höchster Punktestand in einer Partie.','star','score',[1500,5000,12000,25000],[25,65,150,340]]
 ];
 const QUESTS=[
   Q('d_games','daily','games',2,3,'Spiele Partien','Jede gestartete Partie zählt, auch Solo.','gamepad','daily'),
@@ -244,6 +253,7 @@ const Local={
   }
 };
 const DEFAULT_NEWS=[
+  {id:'d15',version:'v21.2',title:'Karriere mit 20 Quests',body:'Die Karriere ist neu aufgeteilt: statt einiger langer Linien gibt es jetzt zwanzig Karriere-Quests mit je vier bis fünf Stufen – vom Vielspieler über den Belagerer bis zur Legende. Jede Karte zeigt ihre Stufen als nummerierte Punkte, den aktuellen Stand und die Belohnung. Tages- und Wochenquests bleiben unverändert. Der GitHub-Pages-Build ist repariert, die Änderungen sind wieder online.',created_at:'2026-11-24T15:10:00Z'},
   {id:'d14',version:'v21.1',title:'Mehr Tages- und Wochenquests',body:'Die Erfolge sind jetzt deutlich voller: zwölf Tagesquests und siebzehn Wochenquests warten auf dich, jede mit eigenem Symbol, eigener Farbe und eigener Belohnung. Die Karriere bleibt bei 44 Stufen in elf Linien – dafür ist die Liste aufgeräumt: Symbol, Aufgabe und Abholen-Knopf stehen in einer Reihe, der Balken zeigt direkt darunter den Stand. Abholbereite Quests leuchten in ihrer Farbe, abgeholte sind klar als erledigt markiert.',created_at:'2026-11-24T14:20:00Z'},
   {id:'d13',version:'v21',title:'Liquid Glass, neue Skins und mehr Quests',body:'Die Oberfläche und das Hauptmenü sind jetzt aus flüssigem Glas: weiche Spiegelungen, tiefe Unschärfe und Farbverläufe, die sich über die Karten legen. Alle Kosmetik ist neu gezeichnet: 18 Hüte, 12 Kronen und 10 Schiffe als detaillierte SVG-Dateien, dazu neue Muster, Gebäude-, Händler- und Wege-Skins – die Preise passen zur neuen Qualität. Die Erfolge sind überarbeitet: Fortschrittsbalken in der Farbe der Quest, große Abholen-Knöpfe, klare Abgeholt-Markierung und ein Prozentwert, der den echten Stand zeigt. Die Karriere bleibt bei 44 Stufen, dafür gibt es jetzt 12 Tages- und 17 Wochenquests.',created_at:'2026-11-24T12:00:00Z'},
   {id:'d11',version:'v19',title:'Erfolge, Profil und Weltkarte neu',body:'Großes Update im Stil von FrontWars: Erfolge mit Täglich, Wöchentlich, Karriere und Events, dazu Tagesserie und Bonus-Belohnungen. Das Profil zeigt Statistiken, Modi und die letzten Spiele, dein Profilbild schneidest du selbst zu. Neu im Spiel: automatische Wege mit Händlern, Kriegsschiffe, feste Modi (Klassisch 2x, Schnell 3x, Chaos), keine Marionettenstaaten mehr, Skins für Gebäude, Händler und Wege sowie schärfere Grafik. Außerdem behoben: Tasten nach dem Benutzen der Regler und der VSync-Fehler.',created_at:'2026-11-22T12:00:00Z'},
