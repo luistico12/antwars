@@ -42,6 +42,11 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
 
 19. Update v18 (Flaggen im Mehrspieler): `cosmPack/cosmClean` tragen `flag`, Weltkarte zeichnet die Flagge jeder Hauptstadt über `cosmOf(owner)`. Hüte bleiben nur in der eigenen Kolonie (fremde Kolonien sind nicht sichtbar). Tests `worldupdate`/`radial` nutzen jetzt feste Zufallsfolge (`SEED=n`), vorher wegen Zufallskarten gelegentlich rot.
 
+24. Update v21.3 – viel mehr Karriere-Quests: 37 Quests mit je 4–5 Stufen (getestet: alle `tests/*.spec.js` außer multiplayer):
+    - `CAREER` in `js/backend.js` von 20 auf 37 Linien erweitert (150 Stufen). Pro Statistik jetzt mehrere Quests mit steigenden Zielen: Partien (Veteran, Vielspieler, Spielmarathon), Tage (Stammgast, Gewohnheit), Zeit (Dienstzeit, Ausdauer), Siege (Sieger, Feldherr, Champion, Unbesiegbar), Gebiete (Eroberer, Belagerer, Feldzug, Imperium), Gebäude (Baumeister, Architekt, Stadtplaner, Metropole), Schiffe (Seewolf, Korsar, Admiral, Flottenherr), Bündnisse (Diplomat, Unterhändler, Botschafter, Friedensstifter), Funde (Schatzsucher, Ausgräber, Sammler, Archäologe), gleichzeitige Gebiete (Reichsgründer, Herrscher, Kontinent), Punkte (Punktejäger, Legende, Mythos).
+    - Tages- (12) und Wochenquests (17) unverändert; Karriere-UI unverändert (Kategorie-Chips zeigen die neuen Zähler: Matches 7, Meisterleistungen 6, sonst 4).
+    - `supabase/schema.sql` und Live-DB: `quests` 181 Zeilen (150 Karriere, 13 täglich inkl. Bonus, 18 wöchentlich inkl. Bonus), News v21.3; englische Namen der neuen Quests in `js/i18n-en.js`.
+
 23. Update v21.2 – Karriere in 20 Quests mit je 4–5 Stufen, Quest-UI neu (getestet: alle `tests/*.spec.js` außer multiplayer):
     - GitHub Pages: der Actions-Workflow `.github/workflows/pages.yml` ist entfernt. Die Seite wird über „Deploy from a branch“ veröffentlicht (der Lauf „pages build and deployment“ ist bei jedem Push grün, die Seiteninhalte kommen direkt aus `main`). Der Actions-Workflow scheiterte dagegen immer in `deploy-pages@v4`, weil die Pages-Quelle kein Actions-Deploy erlaubt – bei erfolgreichem Push stand nur ein rotes X.
     - `CAREER` in `js/backend.js`: 20 Linien mit je 4–5 Stufen (82 Stufen). Neue Linien: Vielspieler, Feldherr, Belagerer, Architekt, Korsar, Unterhändler, Ausgräber, Herrscher, Legende. Tages- (12) und Wochenquests (17) unverändert.
