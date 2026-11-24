@@ -48,21 +48,25 @@ const rewardPill=(q,g)=>g.claimed
     ?`<button class="qx-claim" data-claim="${q[0]}" type="button"><i></i><span>${t('ABHOLEN')}</span><b>+${q[4]} ${ico('ruby')}</b></button>`
     :`<span class="qx-rw">+${q[4]} ${ico('ruby')}</span>`;
 function qxRow(q){
-  const g=qProg(q),c=qColor(q[7]),pct=pctOf(g),ready=g.done&&!g.claimed;
-  const track=`<div class="qx-pg"><label><span>${t('FORTSCHRITT')}</span><em>${num(g.v)} / ${num(g.goal)}</em></label><div class="qx-track" style="--c1:${c[0]};--c2:${c[1]}"><i style="width:${pct}%"></i></div></div>`;
-  if(q[2]==='bonus')return `<div class="qx-bonus ${ready?'rdy':''} ${g.claimed?'cl':''}" style="--c1:${c[0]};--c2:${c[1]}">
-    ${qTile('chest',c)}<div class="qx-tx"><b>${t(q[5])}</b><span>${t(q[6])}</span></div>
-    <div class="qx-pg"><label><span>${t('QUESTS')}</span><em>${g.v} / ${g.goal}</em></label><div class="segs">${Array.from({length:g.goal},(_,i)=>`<i class="${i<g.v?'on':''}" style="--c1:${c[0]}"></i>`).join('')}</div></div>${rewardPill(q,g)}</div>`;
-  return `<div class="qx-row ${g.claimed?'cl':''} ${ready?'rdy':''}" style="--c1:${c[0]};--c2:${c[1]}">
-    ${qTile(q[7],c)}<div class="qx-tx"><b>${t(q[5])}</b><span>${t(q[6])}</span></div>${track}${rewardPill(q,g)}</div>`;
+  const g=qProg(q),c=qColor(q[7]),pct=pctOf(g),ready=g.done&&!g.claimed,bonus=q[2]==='bonus';
+  const bar=bonus
+    ?`<div class="segs">${Array.from({length:g.goal},(_,i)=>`<i class="${i<g.v?'on':''}"></i>`).join('')}</div>`
+    :`<div class="qx-track"><i style="width:${pct}%"></i></div>`;
+  return `<div class="qx-row ${bonus?'bonus':''} ${g.claimed?'cl':''} ${ready?'rdy':''}" style="--c1:${c[0]};--c2:${c[1]}">
+    ${qTile(q[7],c)}
+    <div class="qx-tx"><b>${t(q[5])}</b><span>${t(q[6])}</span><div class="qx-pg">${bar}<em>${num(g.v)} / ${num(g.goal)}</em></div></div>
+    ${rewardPill(q,g)}</div>`;
 }
 function qxHead(kind){
-  const L=QUESTS.filter(q=>q[1]===kind&&q[2]!=='bonus'),d=L.filter(q=>qProg(q).claimed).length,st=streakNow();
-  const daily=kind==='daily';
-  return `<div class="qx-head ${kind}"><div class="qx-hl"><h3>${daily?t('Tagesquests'):t('Wochenquests!')}</h3>
-    <div class="qx-pills"><span class="qx-pill">${ico('clock')} ${t('Reset in')} <b data-reset="${kind}">${resetLeft(kind)}</b></span><span class="qx-pill"><span class="segs sm">${L.map((_,i)=>`<i class="${i<d?'on':''}"></i>`).join('')}</span> <b>${d} / ${L.length}</b></span></div>
-    <p class="qx-note">${ico('info')} ${t('Alle Partien zählen, auch Solo. Der Fortschritt aktualisiert sich nach jedem Match.')}</p></div>
-    ${daily?`<div class="qx-streak"><span class="qx-fl">${ico('flame')}</span><div><b>${st.n}</b><span>${t('TAGESSERIE')}</span><em>${st.today?t('Heute gespielt'):t('Spiele heute, um die Serie zu halten')}</em></div></div>`:''}</div>`;
+  const L=QUESTS.filter(q=>q[1]===kind&&q[2]!=='bonus'),d=L.filter(q=>qProg(q).claimed).length,st=streakNow(),daily=kind==='daily';
+  const pct=L.length?Math.round(100*d/L.length):0;
+  return `<div class="qx-head ${kind}" style="--c1:${daily?'#4f8cff':'#a855f7'};--c2:${daily?'#1e3a8a':'#6b21a8'}">
+    <div class="qx-hl"><h3>${daily?t('Tagesquests'):t('Wochenquests!')}</h3>
+      <div class="qx-pills"><span class="qx-pill">${ico('clock')} ${t('Reset in')} <b data-reset="${kind}">${resetLeft(kind)}</b></span>
+        <span class="qx-pill">${ico('check')} <b>${d} / ${L.length}</b> ${t('erledigt')}</span>
+        ${daily?`<span class="qx-pill fire">${ico('flame')} <b>${st.n}</b> ${t('Tage Serie')}</span>`:''}</div>
+      <p class="qx-note">${ico('info')} ${t('Alle Partien zählen, auch Solo. Der Fortschritt aktualisiert sich nach jedem Match.')}</p></div>
+    <div class="qx-gauge" style="--p:${pct}%"><span>${pct}<em>%</em></span></div></div>`;
 }
 const CAREER_CATS=['Matches','Sieg','Kriegsführung','Bauen','Seekrieg','Diplomatie','Sammlung','Meisterleistungen'];
 const CAT_ICO={Alle:'box',Matches:'gamepad',Sieg:'trophy',Kriegsführung:'swords',Bauen:'hammer',Seekrieg:'anchor',Diplomatie:'handshake',Sammlung:'gem',Meisterleistungen:'star'};
@@ -70,10 +74,10 @@ function careerCard(key){
   const ts=careerTiers(key),q=careerCur(key),g=qProg(q),c=qColor(q[7]),x=q[9],ndone=ts.filter(y=>qProg(y).claimed).length;
   const full=ndone===ts.length,pct=full?100:careerPct(ts,g),bp=pctOf(g),ready=g.done&&!g.claimed;
   return `<div class="qx-cc ${full?'full':''} ${ready?'rdy':''}" style="--c1:${c[0]};--c2:${c[1]}">
-    <div class="cc-h">${qTile(q[7],c)}<div class="cc-t"><b>${t(q[5])}</b><span class="tiers">${t('Stufe')} ${TIER_ROM[x.tier-1]||x.tier} <span class="tiers-pips">${ts.map((_,i)=>`<i class="${i<ndone?'on':''}"></i>`).join('')}</span></span></div><span class="cc-p">${pct}%</span></div>
+    <div class="cc-h">${qTile(q[7],c)}<div class="cc-t"><b>${t(q[5])}</b><span class="tiers">${t('Stufe')} ${x.tier} / ${ts.length}</span></div><span class="cc-p">${pct}%</span></div>
     <div class="cc-d"><b>${t(q[6])}</b><span>${t(x.sub)}</span></div>
-    <div class="qx-pg"><label><span>${t('FORTSCHRITT')}</span><em>${full?`${num(g.goal)} / ${num(g.goal)}`:`${num(g.v)} / ${num(g.goal)}`}</em></label><div class="qx-track" style="--c1:${c[0]};--c2:${c[1]}"><i style="width:${full?100:bp}%"></i></div></div>
-    <div class="cc-r">${full?`<span class="qx-done">${ico('check')} ${t('ABGESCHLOSSEN')}</span>`:`<span class="cc-rl">${t('BELOHNUNG STUFE')} ${TIER_ROM[x.tier-1]||x.tier}</span>${rewardPill(q,g)}`}</div></div>`;
+    <div class="qx-pg"><div class="qx-track"><i style="width:${bp}%"></i></div><em>${num(g.v)} / ${num(g.goal)}</em></div>
+    <div class="cc-r">${full?`<span class="qx-done">${ico('check')} ${t('ABGESCHLOSSEN')}</span>`:rewardPill(q,g)}</div></div>`;
 }
 UI.achTab=UI.achTab||'daily';UI.achCat=UI.achCat||'Alle';
 S.achievements=()=>{

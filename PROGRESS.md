@@ -42,6 +42,13 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
 
 19. Update v18 (Flaggen im Mehrspieler): `cosmPack/cosmClean` tragen `flag`, Weltkarte zeichnet die Flagge jeder Hauptstadt über `cosmOf(owner)`. Hüte bleiben nur in der eigenen Kolonie (fremde Kolonien sind nicht sichtbar). Tests `worldupdate`/`radial` nutzen jetzt feste Zufallsfolge (`SEED=n`), vorher wegen Zufallskarten gelegentlich rot.
 
+22. Update v21.1 – Korrektur: Karriere zurück auf 44 Stufen, dafür mehr einzelne Quests (getestet: quests, cosmetics, solo, ui2, hud):
+    - `CAREER` in `js/backend.js` wieder auf dem alten Stand (5/4/4/5/4/4/4/3/4/4/3 = 44 Stufen); Prozentwert und Balken bleiben korrekt.
+    - Statt mehr Stufen jetzt mehr einzelne Quests: 12 Tagesquests (vorher 6) und 17 Wochenquests (vorher 10). Neue IDs: d_conq2, d_build2, d_found, d_sunk, d_allied, d_score, w_conq2, w_build2, w_sunk2, w_terr2, w_found2, w_allied2, w_score; der Bonus zählt automatisch alle Quests der Art.
+    - Quest-Liste aufgeräumt: Symbol, Aufgabe und Belohnung in einer Zeile, Balken mit „x / y“ direkt darunter statt eigener Spalte „FORTSCHRITT“; Kopf als schmale Leiste mit Zurücksetzen-, Erledigt- und Serien-Pille plus Prozent-Ring; Karriere-Karten gleich hoch, „Stufe 2 / 5“ statt Strich-Punkten, Abholen-Knopf unten rechts.
+    - `supabase/schema.sql` (Quest-Liste, News v21.1) und die Live-DB nachgezogen: 75 Zeilen (44 Karriere, 13 täglich inkl. Bonus, 18 wöchentlich inkl. Bonus). News v21 nennt jetzt 12/17 Quests und 44 Stufen.
+    - Englische Titel der neuen Quests in `js/i18n-en.js`.
+
 21. Update v21 – Liquid Glass, SVG-Skins, mehr Quests (getestet: quests, cosmetics, solo, ui2, hud, worldupdate, radial):
     - Liquid Glass in css/ui.css: Kopfzeile, Screens, Hauptmenü (rail, hhero, hact), Glas-Karten mit Lichtkante und tiefer Unschärfe; die Anzeige „Spieler des Tages“ ist jetzt eine Glas-Pille im FrontWars-Stil.
     - Alle Kosmetik als eigene SVG-Dateien: img/skins/hats (18), img/skins/crowns (13 inkl. Standardkrone), img/skins/ships (10), erzeugt von scripts/gen-skins.js. cosmetics.js lädt sie einmal je Datei und zeichnet sie per drawSkin (Hut auf Ameisen, Krone über der Hauptstadt und in der Bestenliste, Schiff auf Flößen). Muster sind neu (12, u. a. Waben, Schuppen, Pfeile).

@@ -319,3 +319,22 @@ Object.assign(EN,{
 "Schließe alle Quests oben ab, um ihn freizuschalten.":"Finish all quests above to unlock it.",
 "Belohnung Stufe":"Reward tier","Stufe ":"Tier "
 });
+
+Object.assign(EN,{"erledigt":"done",
+"Tage Serie":"day streak",
+"Stufe":"Tier",
+"Erobere 12 Gebiete":"Conquer 12 territories",
+"Baue 20 Gebäude":"Build 20 buildings",
+"Grabe 3 Funde aus":"Dig up 3 finds",
+"Versenke ein Schiff":"Sink a ship",
+"Erreiche 500 Punkte":"Reach 500 points",
+"Spiele 5 Partien":"Play 5 matches",
+"Erobere 25 Gebiete":"Conquer 25 territories",
+"Baue 40 Gebäude":"Build 40 buildings",
+"Baue 80 Gebäude":"Build 80 buildings",
+"Versenke 8 Schiffe":"Sink 8 ships",
+"Besitze 25 Gebiete":"Hold 25 territories",
+"Grabe 25 Funde aus":"Dig up 25 finds",
+"Schließe 2 Bündnisse":"Form 2 alliances",
+"Erreiche 3000 Punkte":"Reach 3000 points",
+"Gleichzeitig 25 Gebiete halten.":"Hold 25 territories at once."});

@@ -32,37 +32,50 @@ const SHOP_BY_ID=Object.fromEntries(SHOP.map(i=>[i.id,i]));
 /* Quest: [id, Art, Stat, Ziel, Belohnung, Titel, Beschreibung, Symbol, Kategorie, Extra]. Stat 'bonus' = alle anderen Quests der Art abgeholt */
 const Q=(id,kind,stat,goal,reward,title,desc,ic,cat,extra)=>[id,kind,stat,goal,reward,title,desc||'',ic||'trophy',cat||'',extra||{}];
 const CAREER=[
-  ['games','Matches','Veteran','Spiele Partien','Jede gestartete Partie zählt, auch Solo.','gamepad','games',[5,15,40,100,250,500,1000],[10,20,40,80,160,300,600]],
-  ['days','Matches','Stammgast','Spiele an verschiedenen Tagen','Jeder Tag mit mindestens einer Partie zählt.','calendar','days',[3,7,20,50,100,200],[10,25,60,130,260,500]],
-  ['mins','Matches','Dienstzeit','Minuten in Partien','Zeit, die du in Partien verbringst.','clock','mins',[30,120,480,1500,4000,8000],[8,20,55,130,260,520]],
-  ['wins','Sieg','Sieger','Gewinne Partien','Jeder Sieg zählt.','trophy','wins',[1,5,15,40,100,250],[12,25,50,100,200,400]],
-  ['conq','Kriegsführung','Eroberer','Erobere Gebiete','Jede Eroberung zählt.','swords','conq',[10,50,150,400,900,1800],[12,30,70,140,300,600]],
-  ['built','Bauen','Baumeister','Baue Gebäude','Außenposten, Häfen, Wälle und Schiffe zählen.','hammer','built',[10,50,150,400,900,2000],[10,25,60,120,260,520]],
-  ['sunk','Seekrieg','Seewolf','Versenke gegnerische Schiffe','Deine Kriegsschiffe zählen.','anchor','sunk',[1,5,15,40,100,250],[15,35,80,160,340,680]],
-  ['allied','Diplomatie','Diplomat','Schließe Bündnisse','Jedes neue Bündnis zählt.','handshake','allied',[1,5,15,40,100],[8,25,60,120,260]],
-  ['found','Sammlung','Schatzsucher','Grabe Funde aus','Vergrabene Funde in der Kolonie.','gem','found',[5,25,75,200,500,1000],[8,20,50,110,240,480]],
-  ['terr','Meisterleistungen','Reichsgründer','Besitze Gebiete gleichzeitig','Die höchste Zahl in einer Partie.','map','terr',[5,10,20,35,55,80],[8,20,50,110,220,440]],
-  ['score','Meisterleistungen','Punktejäger','Erreiche Punkte','Dein höchster Punktestand in einer Partie.','star','score',[300,1000,3000,6000,12000,25000],[10,30,80,170,340,680]]
+  ['games','Matches','Veteran','Spiele Partien','Jede gestartete Partie zählt, auch Solo.','gamepad','games',[5,15,40,100,250],[10,20,40,80,160]],
+  ['days','Matches','Stammgast','Spiele an verschiedenen Tagen','Jeder Tag mit mindestens einer Partie zählt.','calendar','days',[3,7,20,50],[10,25,60,130]],
+  ['mins','Matches','Dienstzeit','Minuten in Partien','Zeit, die du in Partien verbringst.','clock','mins',[30,120,480,1500],[8,20,55,130]],
+  ['wins','Sieg','Sieger','Gewinne Partien','Jeder Sieg zählt.','trophy','wins',[1,5,15,40,100],[12,25,50,100,200]],
+  ['conq','Kriegsführung','Eroberer','Erobere Gebiete','Jede Eroberung zählt.','swords','conq',[10,50,150,400],[12,30,70,140]],
+  ['built','Bauen','Baumeister','Baue Gebäude','Außenposten, Häfen, Wälle und Schiffe zählen.','hammer','built',[10,50,150,400],[10,25,60,120]],
+  ['sunk','Seekrieg','Seewolf','Versenke gegnerische Schiffe','Deine Kriegsschiffe zählen.','anchor','sunk',[1,5,15,40],[15,35,80,160]],
+  ['allied','Diplomatie','Diplomat','Schließe Bündnisse','Jedes neue Bündnis zählt.','handshake','allied',[1,5,15],[8,25,60]],
+  ['found','Sammlung','Schatzsucher','Grabe Funde aus','Vergrabene Funde in der Kolonie.','gem','found',[5,25,75,200],[8,20,50,110]],
+  ['terr','Meisterleistungen','Reichsgründer','Besitze Gebiete gleichzeitig','Die höchste Zahl in einer Partie.','map','terr',[5,10,20,35],[8,20,50,110]],
+  ['score','Meisterleistungen','Punktejäger','Erreiche Punkte','Dein höchster Punktestand in einer Partie.','star','score',[300,1000,3000],[10,30,80]],
 ];
 const QUESTS=[
   Q('d_games','daily','games',2,3,'Spiele Partien','Jede gestartete Partie zählt, auch Solo.','gamepad','daily'),
-  Q('d_terr','daily','terr',3,4,'Besitze Gebiete','Besitze gleichzeitig 3 Gebiete.','map','daily'),
-  Q('d_build','daily','built',8,6,'Baue Gebäude','Außenposten, Häfen, Wälle und Schiffe zählen.','hammer','daily'),
   Q('d_wins','daily','wins',1,8,'Gewinne eine Partie','Ein Sieg in beliebigem Modus.','trophy','daily'),
   Q('d_conq','daily','conq',5,5,'Erobere Gebiete','Jede Eroberung zählt.','swords','daily'),
+  Q('d_conq2','daily','conq',12,8,'Erobere 12 Gebiete','Jede Eroberung zählt.','swords','daily'),
+  Q('d_build','daily','built',8,6,'Baue Gebäude','Außenposten, Häfen, Wälle und Schiffe zählen.','hammer','daily'),
+  Q('d_build2','daily','built',20,9,'Baue 20 Gebäude','Außenposten, Häfen, Wälle und Schiffe zählen.','hammer','daily'),
+  Q('d_terr','daily','terr',3,4,'Besitze Gebiete','Besitze gleichzeitig 3 Gebiete.','map','daily'),
   Q('d_mins','daily','mins',10,4,'Spiele 10 Minuten','Zeit in Partien, auch Solo.','clock','daily'),
-  Q('b_daily','daily','bonus',6,4,'Bonus für alle erledigten Quests','Schließe alle Quests oben ab, um ihn freizuschalten.','chest','daily'),
-  Q('w_games','weekly','games',5,10,'Spiele Partien','Jede gestartete Partie zählt, auch Solo.','gamepad','weekly'),
+  Q('d_found','daily','found',3,6,'Grabe 3 Funde aus','Vergrabene Funde in der Kolonie.','gem','daily'),
+  Q('d_sunk','daily','sunk',1,7,'Versenke ein Schiff','Deine Kriegsschiffe zählen.','anchor','daily'),
+  Q('d_allied','daily','allied',1,6,'Schließe ein Bündnis','Jedes neue Bündnis zählt.','handshake','daily'),
+  Q('d_score','daily','score',500,7,'Erreiche 500 Punkte','Dein höchster Punktestand in einer Partie.','star','daily'),
+  Q('b_daily','daily','bonus',12,6,'Bonus für alle erledigten Quests','Schließe alle Quests oben ab, um ihn freizuschalten.','chest','daily'),
+  Q('w_games','weekly','games',5,10,'Spiele 5 Partien','Jede gestartete Partie zählt, auch Solo.','gamepad','weekly'),
   Q('w_wins','weekly','wins',1,14,'Gewinne eine Partie','Ein Sieg in beliebigem Modus.','trophy','weekly'),
   Q('w_days','weekly','days',3,14,'Spiele an verschiedenen Tagen','Spiele an einem Tag mindestens eine Partie.','calendar','weekly'),
   Q('w_conq','weekly','conq',10,12,'Erobere Gebiete','Jede Eroberung zählt.','swords','weekly'),
-  Q('w_build','weekly','built',40,14,'Baue Gebäude','Außenposten, Häfen, Wälle und Schiffe zählen.','hammer','weekly'),
+  Q('w_conq2','weekly','conq',25,18,'Erobere 25 Gebiete','Jede Eroberung zählt.','swords','weekly'),
+  Q('w_build','weekly','built',40,14,'Baue 40 Gebäude','Außenposten, Häfen, Wälle und Schiffe zählen.','hammer','weekly'),
+  Q('w_build2','weekly','built',80,18,'Baue 80 Gebäude','Außenposten, Häfen, Wälle und Schiffe zählen.','hammer','weekly'),
   Q('w_sunk','weekly','sunk',3,16,'Versenke gegnerische Schiffe','Deine Kriegsschiffe zählen.','anchor','weekly'),
+  Q('w_sunk2','weekly','sunk',8,18,'Versenke 8 Schiffe','Deine Kriegsschiffe zählen.','anchor','weekly'),
   Q('w_terr','weekly','terr',15,14,'Besitze viele Gebiete','Gleichzeitig 15 Gebiete halten.','map','weekly'),
+  Q('w_terr2','weekly','terr',25,16,'Besitze 25 Gebiete','Gleichzeitig 25 Gebiete halten.','map','weekly'),
   Q('w_found','weekly','found',10,14,'Grabe Funde aus','Vergrabene Funde in der Kolonie.','gem','weekly'),
+  Q('w_found2','weekly','found',25,16,'Grabe 25 Funde aus','Vergrabene Funde in der Kolonie.','gem','weekly'),
   Q('w_allied','weekly','allied',1,12,'Schließe ein Bündnis','Jedes neue Bündnis zählt.','handshake','weekly'),
+  Q('w_allied2','weekly','allied',2,16,'Schließe 2 Bündnisse','Jedes neue Bündnis zählt.','handshake','weekly'),
   Q('w_mins','weekly','mins',120,14,'Spiele 2 Stunden','Zeit in Partien, auch Solo.','clock','weekly'),
-  Q('b_weekly','weekly','bonus',10,16,'Bonus für alle erledigten Quests','Schließe alle Quests oben ab, um ihn freizuschalten.','chest','weekly')
+  Q('w_score','weekly','score',3000,18,'Erreiche 3000 Punkte','Dein höchster Punktestand in einer Partie.','star','weekly'),
+  Q('b_weekly','weekly','bonus',17,16,'Bonus für alle erledigten Quests','Schließe alle Quests oben ab, um ihn freizuschalten.','chest','weekly')
 ];
 for(const[key,cat,title,desc,sub,ic,stat,goals,rew]of CAREER)goals.forEach((g,i)=>QUESTS.push(Q(`c_${key}_${i+1}`,'career',stat,g,rew[i],title,desc,ic,cat,{key,tier:i+1,tiers:goals.length,sub})));
 /*Q-END*/
@@ -231,7 +244,8 @@ const Local={
   }
 };
 const DEFAULT_NEWS=[
-  {id:'d13',version:'v21',title:'Liquid Glass, neue Skins und mehr Quests',body:'Die Oberfläche und das Hauptmenü sind jetzt aus flüssigem Glas: weiche Spiegelungen, tiefe Unschärfe und Farbverläufe, die sich über die Karten legen. Alle Kosmetik ist neu gezeichnet: 18 Hüte, 12 Kronen und 10 Schiffe als detaillierte SVG-Dateien, dazu neue Muster, Gebäude-, Händler- und Wege-Skins – die Preise passen zur neuen Qualität. Die Erfolge sind überarbeitet: Fortschrittsbalken in der Farbe der Quest, große Abholen-Knöpfe, klare Abgeholt-Markierung und ein Prozentwert, der den echten Stand zeigt. Karriere hat jetzt 66 Stufen und es gibt 7 Tages- und 10 Wochenquests.',created_at:'2026-11-24T12:00:00Z'},
+  {id:'d14',version:'v21.1',title:'Mehr Tages- und Wochenquests',body:'Die Erfolge sind jetzt deutlich voller: zwölf Tagesquests und siebzehn Wochenquests warten auf dich, jede mit eigenem Symbol, eigener Farbe und eigener Belohnung. Die Karriere bleibt bei 44 Stufen in elf Linien – dafür ist die Liste aufgeräumt: Symbol, Aufgabe und Abholen-Knopf stehen in einer Reihe, der Balken zeigt direkt darunter den Stand. Abholbereite Quests leuchten in ihrer Farbe, abgeholte sind klar als erledigt markiert.',created_at:'2026-11-24T14:20:00Z'},
+  {id:'d13',version:'v21',title:'Liquid Glass, neue Skins und mehr Quests',body:'Die Oberfläche und das Hauptmenü sind jetzt aus flüssigem Glas: weiche Spiegelungen, tiefe Unschärfe und Farbverläufe, die sich über die Karten legen. Alle Kosmetik ist neu gezeichnet: 18 Hüte, 12 Kronen und 10 Schiffe als detaillierte SVG-Dateien, dazu neue Muster, Gebäude-, Händler- und Wege-Skins – die Preise passen zur neuen Qualität. Die Erfolge sind überarbeitet: Fortschrittsbalken in der Farbe der Quest, große Abholen-Knöpfe, klare Abgeholt-Markierung und ein Prozentwert, der den echten Stand zeigt. Die Karriere bleibt bei 44 Stufen, dafür gibt es jetzt 12 Tages- und 17 Wochenquests.',created_at:'2026-11-24T12:00:00Z'},
   {id:'d11',version:'v19',title:'Erfolge, Profil und Weltkarte neu',body:'Großes Update im Stil von FrontWars: Erfolge mit Täglich, Wöchentlich, Karriere und Events, dazu Tagesserie und Bonus-Belohnungen. Das Profil zeigt Statistiken, Modi und die letzten Spiele, dein Profilbild schneidest du selbst zu. Neu im Spiel: automatische Wege mit Händlern, Kriegsschiffe, feste Modi (Klassisch 2x, Schnell 3x, Chaos), keine Marionettenstaaten mehr, Skins für Gebäude, Händler und Wege sowie schärfere Grafik. Außerdem behoben: Tasten nach dem Benutzen der Regler und der VSync-Fehler.',created_at:'2026-11-22T12:00:00Z'},
   {id:'d10',version:'v18',title:'Flaggen im Mehrspieler',body:'Im Mehrspieler siehst du jetzt auch die Flaggen der anderen: Sie wehen auf der Hauptstadt des jeweiligen Spielers. Wer fremde Kosmetik nicht sehen mag, blendet sie in den Einstellungen unter Spiel aus.',created_at:'2026-11-21T22:30:00Z'},
   {id:'d9',version:'v17',title:'Profilbild hochladen',body:'Du kannst jetzt ein eigenes Profilbild hochladen. Öffne dein Profil, wähle ein Bild (PNG, JPG oder WebP), es wird mittig zugeschnitten und klein gespeichert. Es erscheint im Profil und oben im Header, mit dem Papierkorb-Knopf entfernst du es wieder.',created_at:'2026-11-21T21:00:00Z'},
