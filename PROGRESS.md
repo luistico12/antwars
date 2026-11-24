@@ -42,6 +42,15 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
 
 19. Update v18 (Flaggen im Mehrspieler): `cosmPack/cosmClean` tragen `flag`, Weltkarte zeichnet die Flagge jeder Hauptstadt über `cosmOf(owner)`. Hüte bleiben nur in der eigenen Kolonie (fremde Kolonien sind nicht sichtbar). Tests `worldupdate`/`radial` nutzen jetzt feste Zufallsfolge (`SEED=n`), vorher wegen Zufallskarten gelegentlich rot.
 
+21. Update v21 – Liquid Glass, SVG-Skins, mehr Quests (getestet: quests, cosmetics, solo, ui2, hud, worldupdate, radial):
+    - Liquid Glass in css/ui.css: Kopfzeile, Screens, Hauptmenü (rail, hhero, hact), Glas-Karten mit Lichtkante und tiefer Unschärfe; die Anzeige „Spieler des Tages“ ist jetzt eine Glas-Pille im FrontWars-Stil.
+    - Alle Kosmetik als eigene SVG-Dateien: img/skins/hats (18), img/skins/crowns (13 inkl. Standardkrone), img/skins/ships (10), erzeugt von scripts/gen-skins.js. cosmetics.js lädt sie einmal je Datei und zeichnet sie per drawSkin (Hut auf Ameisen, Krone über der Hauptstadt und in der Bestenliste, Schiff auf Flößen). Muster sind neu (12, u. a. Waben, Schuppen, Pfeile).
+    - Katalog und Preise angepasst (backend.js, svgart.js): neue Hüte, Kronen, Schiffe, Muster sowie Gebäude-, Händler- und Wege-Skins (Obsidian, Korallen, Neon, Schatten, Jade, Eis, Lava). Die Preise steigen mit der neuen Qualität.
+    - Quests: 66 Karrierestufen (statt 44), 6 Tages- und 10 Wochenquests (je plus Bonus). UI neu: Kachel in Questfarbe, farbiger Fortschrittsbalken, großer orangener Abholen-Knopf mit Glanz, grüne „Abgeholt“-Markierung, Stufen-Punkte und ein Prozentwert, der abgeholte Stufen plus die laufende Stufe zählt (vorher zählten nur abgeholte Stufen).
+    - Behoben: js/ui-screens.js war durch einen auskommentierten „Öffentliche Spiele“-Block syntaktisch kaputt (needLogin und mehrere Screens fehlten im Browser); der tote Block ist entfernt, der News-Screen ist wieder aktiv und der tote Knopf „Öffentliche Spiele“ im Hauptmenü ist weg.
+    - Supabase live aktualisiert: shop_items (123 Artikel, neue Preise), quests (84 Zeilen, Tabelle neu aufgebaut) und News v21. Dasselbe SQL steht am Ende von supabase/schema.sql.
+    - News v21 in DEFAULT_NEWS (js/backend.js) und am Ende von supabase/schema.sql.
+
 ## Offen (neu)
 - Mehrspieler-Kosmetik (v16): Kronen/Muster/Schiffe werden beim Start gemeldet (`ready` → Host → `init`, `cosmPack/cosmClean/cosmOf`), „Kosmetik anderer ausblenden“ wirkt jetzt. Hüte/Flaggen anderer Spieler werden noch nicht synchronisiert; Bots tragen nur die Standardkrone.
 - Bots nutzen die Bauleiste/Spenden nicht, Gebietsbeschriftung auf der Karte noch im alten Stil.
@@ -66,3 +75,13 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
     - VSync-Fehler behoben (`nextFrame` in game-settings.js, Cap 1024 FPS); Eingabe-Fokus nach Reglern (`typing(e)`).
     - Quests neu (`QUESTS`/`CAREER` in backend.js, SQL-Migration am Ende von schema.sql); UI in `js/ui-quests.js` (Erfolge, Profil, Spielverlauf `Hist` lokal `aw_hist`, Bild-Zuschnitt `cropAvatar`).
     - Offen: SQL "Update v19" im Supabase-SQL-Editor ausführen; Events-Tab ist leer (Rahmen); Spielverlauf nur lokal, ohne Replay; neue Texte nur teils ins Englische übersetzt.
+
+20. Update v20 – Öffentliche Spiele auf eigenem Server (getestet: `cd server && npm test`, `node tests/public-match.spec.js`, solo, multiplayer, worldupdate, radial, ui2):
+    - Neu `server/`: Welt aus denselben Dateien (`game-core`, `game-world`, `game-sea`) in einem `vm`-Kontext je Match, Fraktion 0 als toter Platzhalter, Menschen 1…n. `room.js` (Countdown ab 2, 30 s Schonfrist, Bot-Übernahme), `protocol.js` (Schema, 4 KiB), `auth.js` (Supabase-JWKS, kein Geheimnis), `limits.js`, `index.js` (nur 127.0.0.1, Origin-Liste, 1 Verbindung je Konto, Sperrliste, `/healthz`, `/matches`). Lasttest `node server/test/load.js`: 10 Räume, 77 MB RSS, 0,8 % eines Kerns.
+    - `startGame` geteilt in `initWorld({hostStart,humans})` + Kolonieteil; Host-Prinzip unverändert.
+    - Client: `js/net-ws.js`, `NET.server`/`NET.roomId`, Karte kommt mit dem Raum-Seed, Bildschirm „Öffentliche Spiele“ (Liste alle 5 s, Beitritt, „Weiterspielen“ nach Neuladen) und Menüknopf.
+    - `deploy/`: `harden.sh`, `check.sh`, `antwars-server.service` (MemoryMax 1G), `cloudflared-config.yml`, deutsche `ANLEITUNG-SERVER.md`.
+    - News v20 in `DEFAULT_NEWS` und `supabase/schema.sql`.
+    - Nachbesserung für die Einrichtung: `harden.sh` legt `/opt/antwars/server` nicht mehr vorab an (sonst verweigert `git clone` das Ziel); der Pages-Workflow reicht das Secret `SERVER_URL` an `gen-config.sh` durch, sonst bliebe die Serveradresse im Build leer. `harden.sh --root /mnt/storage/antwars` erlaubt einen anderen Projektpfad (`/opt/antwars` wird Symlink, `check.sh` folgt ihm).
+    - Offen: `SERVER_URL` in `config.js`/Secrets setzen; Cloudflare-Tunnel und Domain beim Nutzer einrichten; SQL v20 im Supabase-SQL-Editor ausführen; kompletter Lauf gegen echtes Supabase steht aus.
+    - Domain: öffentliche Serveradresse ist `https://antwars.123lumc.de` (gesetzt in `config.js`, `deploy/cloudflared-config.yml`, `deploy/ANLEITUNG-SERVER.md`; der Pages-Workflow fällt ohne Secret `SERVER_URL` darauf zurück). Über den Cloudflare-Connector ließ sich kein DNS-Eintrag anlegen: der Token darf keine Zonen lesen (Fehler 9109) und im Konto existiert noch kein Tunnel – Tunnel und Public Hostname `antwars.123lumc.de` → `HTTP 127.0.0.1:8787` entstehen im Dashboard und legen den CNAME selbst an.

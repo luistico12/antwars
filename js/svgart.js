@@ -14,26 +14,33 @@ function svSprite(key,w,h,build){
 /* Stile: b = Grundfarbe, h = Licht, d = Schatten/Kontur, a = Dach/Akzent, g = Detail */
 const BSKINS={
   default:{n:'Erdbau',price:0,p:{b:'#8a5a30',h:'#b9824e',d:'#3a2410',a:'#c0392b',g:'#e6c38a'}},
-  stone:{n:'Steinburg',price:70,p:{b:'#8c919c',h:'#c1c6d0',d:'#3b3f48',a:'#5b6f9a',g:'#e9ecf2'}},
-  mush:{n:'Pilzdorf',price:90,p:{b:'#e8dcc4',h:'#fff6e2',d:'#7a5a40',a:'#d9363e',g:'#ffffff'}},
-  frost:{n:'Eisfestung',price:110,p:{b:'#9fd4ec',h:'#e6f8ff',d:'#3a6f96',a:'#5db6e8',g:'#ffffff'}},
-  crystal:{n:'Kristallbau',price:140,p:{b:'#7b5cd6',h:'#c0a8ff',d:'#2e1f6b',a:'#41e0d0',g:'#e9f7ff'}},
-  golden:{n:'Goldpalast',price:200,p:{b:'#e0b030',h:'#fff0a0',d:'#7a5410',a:'#c62f3a',g:'#fff8d0'}}
+  stone:{n:'Steinburg',price:120,p:{b:'#8c919c',h:'#c1c6d0',d:'#3b3f48',a:'#5b6f9a',g:'#e9ecf2'}},
+  mush:{n:'Pilzdorf',price:150,p:{b:'#e8dcc4',h:'#fff6e2',d:'#7a5a40',a:'#d9363e',g:'#ffffff'}},
+  frost:{n:'Eisfestung',price:190,p:{b:'#9fd4ec',h:'#e6f8ff',d:'#3a6f96',a:'#5db6e8',g:'#ffffff'}},
+  crystal:{n:'Kristallbau',price:240,p:{b:'#7b5cd6',h:'#c0a8ff',d:'#2e1f6b',a:'#41e0d0',g:'#e9f7ff'}},
+  coral:{n:'Korallenburg',price:210,p:{b:'#e0708f',h:'#ffc2d2',d:'#7d2040',a:'#ffd23f',g:'#fff3f7'}},
+  obsidian:{n:'Obsidianzitadelle',price:280,p:{b:'#3b3f4c',h:'#7b8496',d:'#0d0f14',a:'#ff3b5c',g:'#c9d2e0'}},
+  neon:{n:'Neonbau',price:300,p:{b:'#14203a',h:'#2f6bff',d:'#070c16',a:'#41e0d0',g:'#8ff6ff'}},
+  golden:{n:'Goldpalast',price:320,p:{b:'#e0b030',h:'#fff0a0',d:'#7a5410',a:'#c62f3a',g:'#fff8d0'}}
 };
 const TSKINS={
   default:{n:'Karrenameise',price:0,p:{b:'#3a2418',h:'#7a5230',d:'#1c1008',a:'#b9824e',g:'#f2c14e'}},
-  moss:{n:'Mooswagen',price:60,p:{b:'#2f5a2c',h:'#6fb35a',d:'#14260f',a:'#8a6a3a',g:'#c8f08a'}},
-  mail:{n:'Postameise',price:90,p:{b:'#26324a',h:'#4f78e0',d:'#0e1424',a:'#f2c14e',g:'#ffffff'}},
-  royal:{n:'Königlicher Händler',price:130,p:{b:'#5a1f78',h:'#b86be0',d:'#220a30',a:'#f2c14e',g:'#fff3a8'}},
-  golden:{n:'Goldkutsche',price:180,p:{b:'#b8860b',h:'#ffe27a',d:'#5a3f05',a:'#fff3a8',g:'#ffffff'}}
+  moss:{n:'Mooswagen',price:100,p:{b:'#2f5a2c',h:'#6fb35a',d:'#14260f',a:'#8a6a3a',g:'#c8f08a'}},
+  mail:{n:'Postameise',price:140,p:{b:'#26324a',h:'#4f78e0',d:'#0e1424',a:'#f2c14e',g:'#ffffff'}},
+  shadow:{n:'Schattenhändler',price:170,p:{b:'#24202c',h:'#6b5a86',d:'#0b0910',a:'#8a3fd1',g:'#d9c6ff'}},
+  royal:{n:'Königlicher Händler',price:190,p:{b:'#5a1f78',h:'#b86be0',d:'#220a30',a:'#f2c14e',g:'#fff3a8'}},
+  jade:{n:'Jadehändler',price:220,p:{b:'#1d6b58',h:'#59d6a8',d:'#0a2a23',a:'#ffd23f',g:'#e9fff8'}},
+  golden:{n:'Goldkutsche',price:240,p:{b:'#b8860b',h:'#ffe27a',d:'#5a3f05',a:'#fff3a8',g:'#ffffff'}}
 };
 /* Wege: edge = Rand, body = Belag, dash = Mittelmarkierung, acc = Spielerfarbe als Akzent (nur Standard) */
 const RSKINS={
   default:{n:'Pfad',price:0,edge:'#6e4d28',body:'#cfa86a',dash:'#e8cf9a',w:3.8,acc:true},
-  cobble:{n:'Kopfsteinpflaster',price:70,edge:'#3f434c',body:'#9aa0ab',dash:'#c9ced8',w:4.4,stones:true},
-  moss:{n:'Moospfad',price:90,edge:'#23401f',body:'#5f9a4a',dash:'#9ed078',w:4},
-  gold:{n:'Goldstraße',price:160,edge:'#7a5410',body:'#e0b030',dash:'#fff0a0',w:4.2,glow:'#ffe27a'},
-  neon:{n:'Neonbahn',price:180,edge:'#0b1a2a',body:'#1f3a5a',dash:'#41e0d0',w:4,glow:'#41e0d0'}
+  cobble:{n:'Kopfsteinpflaster',price:110,edge:'#3f434c',body:'#9aa0ab',dash:'#c9ced8',w:4.4,stones:true},
+  moss:{n:'Moospfad',price:140,edge:'#23401f',body:'#5f9a4a',dash:'#9ed078',w:4},
+  ice:{n:'Eisweg',price:200,edge:'#2c6b96',body:'#bfe9ff',dash:'#ffffff',w:4,glow:'#8fd6ff'},
+  gold:{n:'Goldstraße',price:230,edge:'#7a5410',body:'#e0b030',dash:'#fff0a0',w:4.2,glow:'#ffe27a'},
+  lava:{n:'Lavapfad',price:260,edge:'#3a0d05',body:'#8e2a12',dash:'#ff8a3d',w:4.2,glow:'#ff5a1a'},
+  neon:{n:'Neonbahn',price:280,edge:'#0b1a2a',body:'#1f3a5a',dash:'#41e0d0',w:4,glow:'#41e0d0'}
 };
 const SKIN_KINDS={bskin:BSKINS,tskin:TSKINS,rskin:RSKINS};
 const skinOf=(kind,id)=>(SKIN_KINDS[kind][id])||SKIN_KINDS[kind].default;

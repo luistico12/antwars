@@ -28,17 +28,33 @@ const streakNow=()=>{const s=AW.profile&&AW.profile.stats&&AW.profile.stats.stre
   const y=new Date(Date.now()-864e5).toISOString().slice(0,10);return{n:(s.last===dayKey()||s.last===y)?s.n:0,today:s.last===dayKey()}};
 
 /* ---------- Bausteine ---------- */
-const QCOL={gamepad:['#3b82f6','#1e40af'],calendar:['#4f8cff','#2447b5'],map:['#14b8a6','#0f766e'],hammer:['#22c55e','#15803d'],swords:['#ef4444','#991b1b'],anchor:['#f97316','#9a3412'],trophy:['#eab308','#a16207'],chest:['#f59e0b','#b45309'],clock:['#a78bfa','#5b21b6'],handshake:['#14b8a6','#115e59'],gem:['#ec4899','#9d174d'],star:['#a855f7','#6b21a8']};
-const qTile=ic=>{const c=QCOL[ic]||QCOL.trophy;return `<span class="qx-i" style="--c1:${c[0]};--c2:${c[1]}">${ico(ic)}</span>`};
-const rewardPill=(q,g)=>g.claimed?`<span class="qx-rw ok">${ico('check')}</span>`:g.done?`<button class="qx-rw go" data-claim="${q[0]}" type="button">+${q[4]} ${ico('ruby')}</button>`:`<span class="qx-rw">+${q[4]} ${ico('ruby')}</span>`;
+/* Farbpaare je Quest-Art: Kachel, Balken und Leuchten nutzen --c1/--c2 */
+const QCOL={
+  gamepad:['#3b82f6','#1e3a8a'], calendar:['#38bdf8','#0369a1'], map:['#14b8a6','#0f766e'],
+  hammer:['#22c55e','#166534'], swords:['#ef4444','#7f1d1d'], anchor:['#f97316','#9a3412'],
+  trophy:['#eab308','#a16207'], chest:['#f59e0b','#b45309'], clock:['#a78bfa','#5b21b6'],
+  handshake:['#2dd4bf','#0f766e'], gem:['#ec4899','#9d174d'], star:['#a855f7','#6b21a8'],
+  heart:['#fb7185','#9f1239'], globe:['#22d3ee','#0e7490'], shield:['#6366f1','#312e81'],
+  flame:['#fb923c','#9a3412'], leaf:['#84cc16','#3f6212']
+};
+const qColor=ic=>QCOL[ic]||QCOL.trophy;
+const qTile=(ic,c)=>{const k=c||qColor(ic);return `<span class="qx-i" style="--c1:${k[0]};--c2:${k[1]}">${ico(ic)}</span>`};
+const pctOf=g=>g.goal>0?Math.max(0,Math.min(100,Math.round(100*g.v/g.goal))):100;
+/* Karriere-Prozent: abgeholte Stufen plus der Anteil der laufenden Stufe */
+const careerPct=(ts,g)=>ts.length?Math.min(100,Math.round(100*(ts.filter(y=>qProg(y).claimed).length+g.v/g.goal)/ts.length)):0;
+const rewardPill=(q,g)=>g.claimed
+  ?`<span class="qx-done">${ico('check')} ${t('ABGEHOLT')}</span>`
+  :g.done
+    ?`<button class="qx-claim" data-claim="${q[0]}" type="button"><i></i><span>${t('ABHOLEN')}</span><b>+${q[4]} ${ico('ruby')}</b></button>`
+    :`<span class="qx-rw">+${q[4]} ${ico('ruby')}</span>`;
 function qxRow(q){
-  const g=qProg(q),c=QCOL[q[7]]||QCOL.trophy,pct=Math.round(100*g.v/g.goal);
-  if(q[2]==='bonus')return `<div class="qx-bonus ${g.done&&!g.claimed?'rdy':''}" style="--c1:${c[0]}"><span class="qx-i" style="--c1:${c[0]};--c2:${c[1]}">${ico('chest')}</span>
-    <div class="qx-tx"><b>${t(q[5])}</b><span>${t(q[6])}</span></div>
-    <div class="qx-pg seg"><label>${t('QUESTS')}<em>${g.v} / ${g.goal}</em></label><div class="segs">${Array.from({length:g.goal},(_,i)=>`<i class="${i<g.v?'on':''}"></i>`).join('')}</div></div>${rewardPill(q,g)}</div>`;
-  return `<div class="qx-row ${g.claimed?'cl':''}" style="--c1:${c[0]}">${qTile(q[7])}
-    <div class="qx-tx"><b>${t(q[5])}</b><span>${t(q[6])}</span></div>
-    <div class="qx-pg"><label>${t('FORTSCHRITT')}<em>${g.v} / ${g.goal}</em></label><div class="bar"><i style="width:${pct}%;background:${c[0]}"></i></div></div>${rewardPill(q,g)}</div>`;
+  const g=qProg(q),c=qColor(q[7]),pct=pctOf(g),ready=g.done&&!g.claimed;
+  const track=`<div class="qx-pg"><label><span>${t('FORTSCHRITT')}</span><em>${num(g.v)} / ${num(g.goal)}</em></label><div class="qx-track" style="--c1:${c[0]};--c2:${c[1]}"><i style="width:${pct}%"></i></div></div>`;
+  if(q[2]==='bonus')return `<div class="qx-bonus ${ready?'rdy':''} ${g.claimed?'cl':''}" style="--c1:${c[0]};--c2:${c[1]}">
+    ${qTile('chest',c)}<div class="qx-tx"><b>${t(q[5])}</b><span>${t(q[6])}</span></div>
+    <div class="qx-pg"><label><span>${t('QUESTS')}</span><em>${g.v} / ${g.goal}</em></label><div class="segs">${Array.from({length:g.goal},(_,i)=>`<i class="${i<g.v?'on':''}" style="--c1:${c[0]}"></i>`).join('')}</div></div>${rewardPill(q,g)}</div>`;
+  return `<div class="qx-row ${g.claimed?'cl':''} ${ready?'rdy':''}" style="--c1:${c[0]};--c2:${c[1]}">
+    ${qTile(q[7],c)}<div class="qx-tx"><b>${t(q[5])}</b><span>${t(q[6])}</span></div>${track}${rewardPill(q,g)}</div>`;
 }
 function qxHead(kind){
   const L=QUESTS.filter(q=>q[1]===kind&&q[2]!=='bonus'),d=L.filter(q=>qProg(q).claimed).length,st=streakNow();
@@ -51,12 +67,13 @@ function qxHead(kind){
 const CAREER_CATS=['Matches','Sieg','Kriegsführung','Bauen','Seekrieg','Diplomatie','Sammlung','Meisterleistungen'];
 const CAT_ICO={Alle:'box',Matches:'gamepad',Sieg:'trophy',Kriegsführung:'swords',Bauen:'hammer',Seekrieg:'anchor',Diplomatie:'handshake',Sammlung:'gem',Meisterleistungen:'star'};
 function careerCard(key){
-  const ts=careerTiers(key),q=careerCur(key),g=qProg(q),c=QCOL[q[7]]||QCOL.trophy,x=q[9],ndone=ts.filter(y=>qProg(y).claimed).length;
-  const full=ndone===ts.length,pct=Math.round(100*ndone/ts.length),bp=Math.round(100*g.v/g.goal);
-  return `<div class="qx-cc ${full?'full':''}" style="--c1:${c[0]};--c2:${c[1]}"><div class="cc-h">${qTile(q[7])}<div class="cc-t"><b>${t(q[5])}</b><span class="tiers">${t('Stufe')} ${TIER_ROM[x.tier-1]} ${ts.map((_,i)=>`<i class="${i<ndone?'on':''}"></i>`).join('')}</span></div><span class="cc-p">${pct}%</span></div>
+  const ts=careerTiers(key),q=careerCur(key),g=qProg(q),c=qColor(q[7]),x=q[9],ndone=ts.filter(y=>qProg(y).claimed).length;
+  const full=ndone===ts.length,pct=full?100:careerPct(ts,g),bp=pctOf(g),ready=g.done&&!g.claimed;
+  return `<div class="qx-cc ${full?'full':''} ${ready?'rdy':''}" style="--c1:${c[0]};--c2:${c[1]}">
+    <div class="cc-h">${qTile(q[7],c)}<div class="cc-t"><b>${t(q[5])}</b><span class="tiers">${t('Stufe')} ${TIER_ROM[x.tier-1]||x.tier} <span class="tiers-pips">${ts.map((_,i)=>`<i class="${i<ndone?'on':''}"></i>`).join('')}</span></span></div><span class="cc-p">${pct}%</span></div>
     <div class="cc-d"><b>${t(q[6])}</b><span>${t(x.sub)}</span></div>
-    <div class="qx-pg"><label>${t('FORTSCHRITT')}<em>${full?`${g.goal} / ${g.goal}`:`${num(g.v)} / ${num(g.goal)}`}</em></label><div class="bar"><i style="width:${full?100:bp}%;background:${c[0]}"></i></div></div>
-    <div class="cc-r ${g.done&&!g.claimed?'rdy':''}"><span>${full?t('ABGESCHLOSSEN'):`${t('BELOHNUNG STUFE')} ${TIER_ROM[x.tier-1]}`}</span>${full?`<span class="qx-rw ok">${ico('check')}</span>`:rewardPill(q,g)}</div></div>`;
+    <div class="qx-pg"><label><span>${t('FORTSCHRITT')}</span><em>${full?`${num(g.goal)} / ${num(g.goal)}`:`${num(g.v)} / ${num(g.goal)}`}</em></label><div class="qx-track" style="--c1:${c[0]};--c2:${c[1]}"><i style="width:${full?100:bp}%"></i></div></div>
+    <div class="cc-r">${full?`<span class="qx-done">${ico('check')} ${t('ABGESCHLOSSEN')}</span>`:`<span class="cc-rl">${t('BELOHNUNG STUFE')} ${TIER_ROM[x.tier-1]||x.tier}</span>${rewardPill(q,g)}`}</div></div>`;
 }
 UI.achTab=UI.achTab||'daily';UI.achCat=UI.achCat||'Alle';
 S.achievements=()=>{

@@ -286,5 +286,36 @@ Object.assign(EN,{
 "Floß": "Raft",
 "Weg": "Road",
 "Floß-Angriff": "Raft attack",
-"Floß schicken": "Send raft"
+"Floß schicken": "Send raft",
+"Server nicht erreichbar": "Server not reachable",
+"Erneut versuchen": "Try again",
+"Server-Matches": "Server matches",
+"Laufendes Spiel": "Match in progress",
+"Weiterspielen": "Continue playing",
+"Du warst in diesem Match. Innerhalb der Schonfrist übernimmst du deine Fraktion wieder.": "You were in this match. Within the grace period you take your faction back.",
+"Der Server entscheidet. Beitritt ab 2 Spielern, Start nach 60 Sekunden.": "The server decides. Join from 2 players, start after 60 seconds.",
+"Start in": "Starts in",
+"wartet": "waiting",
+"läuft": "running",
+"beendet": "ended",
+"Gerade keine öffentlichen Spiele.": "No public games right now."
+
+});
+
+/* v21: Erfolge, Karriere und Quests */
+Object.assign(EN,{
+"ABHOLEN":"CLAIM","ABGEHOLT":"CLAIMED","ABGESCHLOSSEN":"COMPLETED","BELOHNUNG STUFE":"REWARD TIER","FORTSCHRITT":"PROGRESS","QUESTS":"QUESTS",
+"Stufe":"Tier","Reset in":"Resets in","TAGESSERIE":"DAY STREAK","Heute gespielt":"Played today","Spiele heute, um die Serie zu halten":"Play today to keep the streak",
+"Tagesquests":"Daily quests","Wochenquests!":"Weekly quests!","Gerade läuft kein Event":"No event running","Zeitlich begrenzte Events mit Sonderquests und Belohnungen erscheinen hier.":"Limited-time events with special quests and rewards appear here.",
+"Alle":"All","Matches":"Matches","Sieg":"Victory","Kriegsführung":"Warfare","Bauen":"Building","Seekrieg":"Naval war","Diplomatie":"Diplomacy","Sammlung":"Collection","Meisterleistungen":"Mastery",
+"Spiele 10 Minuten":"Play 10 minutes","Zeit in Partien, auch Solo.":"Time spent in matches, solo included.","Spiele 2 Stunden":"Play 2 hours",
+"Besitze viele Gebiete":"Hold many territories","Gleichzeitig 15 Gebiete halten.":"Hold 15 territories at once.",
+"Schließe ein Bündnis":"Form an alliance","Grabe Funde aus":"Dig up finds","Erobere Gebiete":"Conquer territories",
+"Jede gestartete Partie zählt, auch Solo.":"Every match counts, solo included.","Besitze gleichzeitig 3 Gebiete.":"Hold 3 territories at once.",
+"Außenposten, Häfen, Wälle und Schiffe zählen.":"Outposts, harbours, walls and ships count.","Ein Sieg in beliebigem Modus.":"A win in any mode.",
+"Jede Eroberung zählt.":"Every conquest counts.","Vergrabene Funde in der Kolonie.":"Buried finds in your colony.","Jedes neue Bündnis zählt.":"Every new alliance counts.",
+"Die höchste Zahl in einer Partie.":"The highest number in a match.","Dein höchster Punktestand in einer Partie.":"Your highest score in a match.",
+"Jeder Tag mit mindestens einer Partie zählt.":"Every day with at least one match counts.","Jeder Sieg zählt.":"Every win counts.",
+"Schließe alle Quests oben ab, um ihn freizuschalten.":"Finish all quests above to unlock it.",
+"Belohnung Stufe":"Reward tier","Stufe ":"Tier "
 });

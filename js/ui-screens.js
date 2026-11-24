@@ -87,7 +87,7 @@ const cosFilter=(tab,i)=>tab==='world'?i.kind==='flag'&&!i.custom:tab==='ant'?i.
 const cosEq=(i,p)=>p[i.kind]===i.key;
 const cosPv=i=>i.kind==='flag'?flagSVG(i.key):`<span data-cos="${i.kind}:${i.key}"></span>`;
 function cosBind(p){p.querySelectorAll('[data-cos]').forEach(c=>{const[k,id]=c.dataset.cos.split(':');
-  c.appendChild(k==='hat'?hatPreview(id):k==='crown'?crownPreview(id):k==='pattern'?patternPreview(id):k==='ship'?shipPreview(id):svPreview(k,id))})}
+  c.appendChild(cosPreview(k,id))})}
 UI.shopTab='hat';
 S.shop=()=>{
   const p=AW.profile||{owned:[]},tab=UI.shopTab;
