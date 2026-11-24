@@ -42,6 +42,9 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
 
 19. Update v18 (Flaggen im Mehrspieler): `cosmPack/cosmClean` tragen `flag`, Weltkarte zeichnet die Flagge jeder Hauptstadt über `cosmOf(owner)`. Hüte bleiben nur in der eigenen Kolonie (fremde Kolonien sind nicht sichtbar). Tests `worldupdate`/`radial` nutzen jetzt feste Zufallsfolge (`SEED=n`), vorher wegen Zufallskarten gelegentlich rot.
 
+25. Update v21.4 – Wege-Bug behoben: `buildLink` in `js/game-trade.js` hat die Route mit Gewichten 1-2-1 geglättet, aber durch 3 geteilt. Dadurch wurde jeder Weg pro Glättungsschritt um 4/3 gestreckt und zog sich in riesigen Bögen über die Karte (gemessen: 1292 px statt 233 px für 19 Zellen). Jetzt wird durch 4 geteilt; Wege folgen wieder dem kürzesten Weg (alle `tests/*.spec.js` außer multiplayer grün).
+    - News v21.4 in `js/backend.js` und `supabase/schema.sql`, live in Supabase eingetragen.
+
 24. Update v21.3 – viel mehr Karriere-Quests: 37 Quests mit je 4–5 Stufen (getestet: alle `tests/*.spec.js` außer multiplayer):
     - `CAREER` in `js/backend.js` von 20 auf 37 Linien erweitert (150 Stufen). Pro Statistik jetzt mehrere Quests mit steigenden Zielen: Partien (Veteran, Vielspieler, Spielmarathon), Tage (Stammgast, Gewohnheit), Zeit (Dienstzeit, Ausdauer), Siege (Sieger, Feldherr, Champion, Unbesiegbar), Gebiete (Eroberer, Belagerer, Feldzug, Imperium), Gebäude (Baumeister, Architekt, Stadtplaner, Metropole), Schiffe (Seewolf, Korsar, Admiral, Flottenherr), Bündnisse (Diplomat, Unterhändler, Botschafter, Friedensstifter), Funde (Schatzsucher, Ausgräber, Sammler, Archäologe), gleichzeitige Gebiete (Reichsgründer, Herrscher, Kontinent), Punkte (Punktejäger, Legende, Mythos).
     - Tages- (12) und Wochenquests (17) unverändert; Karriere-UI unverändert (Kategorie-Chips zeigen die neuen Zähler: Matches 7, Meisterleistungen 6, sonst 4).

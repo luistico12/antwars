@@ -50,7 +50,8 @@ function landRoute(from,to){
 function buildLink(w){
   const c=landRoute(nodeCell(w.a),nodeCell(w.b));if(!c)return null;
   let pts=c.map(cellPos);
-  for(let r=0;r<2;r++)pts=pts.map((p,i)=>i===0||i===pts.length-1?p:[(pts[i-1][0]+p[0]*2+pts[i+1][0])/3,(pts[i-1][1]+p[1]*2+pts[i+1][1])/3]);
+  /* Glätten: Gewichte 1-2-1, also durch 4 teilen (durch 3 streckte jeden Weg um 4/3 und zog riesige Bögen) */
+  for(let r=0;r<2;r++){const src=pts;pts=src.map((p,i)=>i===0||i===src.length-1?p:[(src[i-1][0]+p[0]*2+src[i+1][0])/4,(src[i-1][1]+p[1]*2+src[i+1][1])/4])}
   const keep=[pts[0]];for(let i=1;i<pts.length-1;i+=2)keep.push(pts[i]);keep.push(pts[pts.length-1]);
   const all=[nodePt(w.a),...keep,nodePt(w.b)];
   return{k:w.k,a:w.a,b:w.b,pts:all,L:pathLen(all),p:0,tr:false};
