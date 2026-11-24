@@ -1,0 +1,15 @@
+# NUR ZUR INFORMATION. Wird in der empfohlenen Einrichtung NICHT benutzt.
+#
+# Der Tunnel aus ANLEITUNG-SERVER.md ist "remotely-managed": Ziel (Ingress) und Hostname werden im
+# Cloudflare-Dashboard festgelegt (Zero Trust > Networks > Tunnels > <Tunnel> > Public Hostname),
+# der Dienst startet nur mit dem Token aus /etc/cloudflared/tunnel.env.
+#
+# Zum Vergleich: So sähe derselbe Ingress als lokale Konfiguration aus (locally-managed Tunnel,
+# braucht eine Credentials-Datei statt des Tokens). Du brauchst das nur, wenn du das Dashboard
+# nicht benutzen willst.
+tunnel: <TUNNEL-ID>
+credentials-file: /etc/cloudflared/<TUNNEL-ID>.json
+ingress:
+  - hostname: play.DEINE-DOMAIN.de
+    service: http://127.0.0.1:8787
+  - service: http_status:404
