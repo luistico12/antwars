@@ -42,6 +42,12 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
 
 19. Update v18 (Flaggen im Mehrspieler): `cosmPack/cosmClean` tragen `flag`, Weltkarte zeichnet die Flagge jeder Hauptstadt über `cosmOf(owner)`. Hüte bleiben nur in der eigenen Kolonie (fremde Kolonien sind nicht sichtbar). Tests `worldupdate`/`radial` nutzen jetzt feste Zufallsfolge (`SEED=n`), vorher wegen Zufallskarten gelegentlich rot.
 
+26. Update v21.5 – Forum für Bugs, Vorschläge und Spieler-Reports (getestet: `node .t.js` mit Playwright im Gastmodus, `node --check` aller geänderten Dateien):
+    - Menüknopf „Forum“ in der Seitenleiste (`js/ui-boot.js`), Screen `S.forum` (`js/ui-screens.js`): links Formular für neue Meldungen (Art Bug / Vorschlag / Spieler-Report, Titel, Text) und die Liste, rechts der Verlauf mit Antworten. Admins sehen alle Meldungen mit Filter-Chips und können schließen, wieder öffnen, löschen und Rückfragen stellen; Spieler sehen nur ihre eigenen Meldungen und die Antworten darauf.
+    - `js/backend.js`: `forumThreads/forumOpen/forumSend/forumReply/forumClose/forumDel` für Supabase (RPCs) und für den Gastmodus (localStorage, maximal 8 Meldungen pro Tag).
+    - `supabase/schema.sql`: Tabellen `forum_threads`/`forum_posts`, RLS (Verfasser oder Admin), RPCs `forum_list`, `forum_open`, `forum_send`, `forum_reply`, `forum_close`, `forum_remove`; News v21.5.
+    - Englische Texte in `js/i18n-en.js`.
+
 25. Update v21.4 – Wege-Bug behoben: `buildLink` in `js/game-trade.js` hat die Route mit Gewichten 1-2-1 geglättet, aber durch 3 geteilt. Dadurch wurde jeder Weg pro Glättungsschritt um 4/3 gestreckt und zog sich in riesigen Bögen über die Karte (gemessen: 1292 px statt 233 px für 19 Zellen). Jetzt wird durch 4 geteilt; Wege folgen wieder dem kürzesten Weg (alle `tests/*.spec.js` außer multiplayer grün).
     - News v21.4 in `js/backend.js` und `supabase/schema.sql`, live in Supabase eingetragen.
 

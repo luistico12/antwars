@@ -565,3 +565,118 @@ where not exists (select 1 from public.news where version = 'v21.1');
 insert into public.news (version, title, body)
 select 'v21', 'Liquid Glass, neue Skins und mehr Quests', 'Die Oberfläche und das Hauptmenü sind jetzt aus flüssigem Glas: weiche Spiegelungen, tiefe Unschärfe und Farbverläufe, die sich über die Karten legen. Alle Kosmetik ist neu gezeichnet: 18 Hüte, 12 Kronen und 10 Schiffe als detaillierte SVG-Dateien, dazu neue Muster, Gebäude-, Händler- und Wege-Skins – die Preise passen zur neuen Qualität. Die Erfolge sind überarbeitet: Fortschrittsbalken in der Farbe der Quest, große Abholen-Knöpfe, klare Abgeholt-Markierung und ein Prozentwert, der den echten Stand zeigt. Die Karriere bleibt bei 44 Stufen, dafür gibt es jetzt 12 Tages- und 17 Wochenquests.'
 where not exists (select 1 from public.news where version = 'v21');
+-- ============ Forum: Bugs, Vorschläge und Spieler-Reports (v21.5) ============
+-- Jeder Spieler schreibt Meldungen. Lesen darf sie nur das Team – und der Verfasser seine eigene.
+create table if not exists public.forum_threads(
+  id uuid primary key default gen_random_uuid(),
+  author uuid not null references auth.users(id) on delete cascade,
+  kind text not null check (kind in ('bug','idea','report')),
+  title text not null check (char_length(title) between 3 and 120),
+  body text not null check (char_length(body) between 3 and 4000),
+  status text not null default 'open' check (status in ('open','closed')),
+  created_at timestamptz not null default now()
+);
+create index if not exists forum_threads_author on public.forum_threads (author, created_at desc);
+create table if not exists public.forum_posts(
+  id uuid primary key default gen_random_uuid(),
+  thread uuid not null references public.forum_threads(id) on delete cascade,
+  author uuid not null references auth.users(id) on delete cascade,
+  body text not null check (char_length(body) between 1 and 2000),
+  created_at timestamptz not null default now()
+);
+create index if not exists forum_posts_thread on public.forum_posts (thread, created_at);
+alter table public.forum_threads enable row level security;
+alter table public.forum_posts   enable row level security;
+
+-- Meldungen: Verfasser sieht nur seine eigene, Admin alle. Schreiben nur als man selbst.
+drop policy if exists forum_t_read on public.forum_threads;
+create policy forum_t_read  on public.forum_threads for select to authenticated using (author = auth.uid() or public.is_admin());
+drop policy if exists forum_t_ins on public.forum_threads;
+create policy forum_t_ins   on public.forum_threads for insert to authenticated with check (author = auth.uid());
+drop policy if exists forum_t_admin on public.forum_threads;
+create policy forum_t_admin on public.forum_threads for all    to authenticated using (public.is_admin()) with check (public.is_admin());
+
+-- Antworten: nur Admin oder der Verfasser des Beitrags.
+drop policy if exists forum_p_read on public.forum_posts;
+create policy forum_p_read  on public.forum_posts for select to authenticated using (public.is_admin() or exists (select 1 from public.forum_threads t where t.id = forum_posts.thread and t.author = auth.uid()));
+drop policy if exists forum_p_ins on public.forum_posts;
+create policy forum_p_ins   on public.forum_posts for insert to authenticated with check (author = auth.uid() and (public.is_admin() or exists (select 1 from public.forum_threads t where t.id = forum_posts.thread and t.author = auth.uid())));
+drop policy if exists forum_p_admin on public.forum_posts;
+create policy forum_p_admin on public.forum_posts for all    to authenticated using (public.is_admin()) with check (public.is_admin());
+
+-- Liste: Admin alle Meldungen, sonst nur die eigenen
+create or replace function public.forum_list() returns table(id uuid, kind text, title text, body text, status text, created_at timestamptz, last_at timestamptz, author_name text, author_tag text, replies int, mine boolean)
+language sql security definer set search_path=public stable as $$
+  select t.id, t.kind, t.title, t.body, t.status, t.created_at,
+         greatest(t.created_at, coalesce((select max(p.created_at) from public.forum_posts p where p.thread = t.id), t.created_at)) as last_at,
+         pr.username, pr.tag,
+         (select count(*)::int from public.forum_posts p where p.thread = t.id) as replies,
+         t.author = auth.uid() as mine
+  from public.forum_threads t join public.profiles pr on pr.id = t.author
+  where auth.uid() is not null and (t.author = auth.uid() or public.is_admin())
+  order by last_at desc limit 200
+$$;
+
+-- Verlauf einer Meldung (Admin oder Verfasser)
+create or replace function public.forum_open(tid uuid) returns table(id uuid, body text, created_at timestamptz, author_name text, author_tag text, is_admin boolean, mine boolean)
+language sql security definer set search_path=public stable as $$
+  select p.id, p.body, p.created_at, pr.username, pr.tag, coalesce(pr.is_admin, false), p.author = auth.uid()
+  from public.forum_posts p join public.profiles pr on pr.id = p.author
+  where auth.uid() is not null and p.thread = tid
+    and (public.is_admin() or exists (select 1 from public.forum_threads t where t.id = tid and t.author = auth.uid()))
+  order by p.created_at
+$$;
+
+-- Meldung senden (höchstens 8 pro Tag und Spieler)
+create or replace function public.forum_send(k text, t text, b text) returns uuid
+language plpgsql security definer set search_path=public as $$
+declare tt text; bb text; n int; newid uuid;
+begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
+  if k not in ('bug','idea','report') then raise exception 'Unbekannte Art'; end if;
+  tt := left(trim(regexp_replace(coalesce(t,''), '\s+', ' ', 'g')), 120);
+  bb := left(trim(coalesce(b,'')), 4000);
+  if char_length(tt) < 3 then raise exception 'Titel zu kurz'; end if;
+  if char_length(bb) < 3 then raise exception 'Text zu kurz'; end if;
+  select count(*) into n from public.forum_threads where author = auth.uid() and created_at > now() - interval '1 day';
+  if n >= 8 then raise exception 'Zu viele Meldungen – bitte morgen wieder'; end if;
+  insert into public.forum_threads(author, kind, title, body) values (auth.uid(), k, tt, bb) returning id into newid;
+  return newid;
+end $$;
+
+-- Antwort oder Rückfrage: Admin immer, Verfasser solange offen
+create or replace function public.forum_reply(tid uuid, b text) returns void
+language plpgsql security definer set search_path=public as $$
+declare th public.forum_threads; bb text;
+begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
+  select * into th from public.forum_threads where id = tid;
+  if th.id is null then raise exception 'Beitrag nicht gefunden'; end if;
+  if not (public.is_admin() or th.author = auth.uid()) then raise exception 'Keine Berechtigung'; end if;
+  if th.status = 'closed' and not public.is_admin() then raise exception 'Beitrag ist geschlossen'; end if;
+  bb := left(trim(coalesce(b,'')), 2000);
+  if char_length(bb) < 1 then raise exception 'Text fehlt'; end if;
+  insert into public.forum_posts(thread, author, body) values (tid, auth.uid(), bb);
+end $$;
+
+-- Schließen und Löschen nur für Admins
+create or replace function public.forum_close(tid uuid, c boolean) returns void
+language plpgsql security definer set search_path=public as $$
+begin
+  if not public.is_admin() then raise exception 'Keine Berechtigung'; end if;
+  update public.forum_threads set status = case when c then 'closed' else 'open' end where id = tid;
+end $$;
+create or replace function public.forum_remove(tid uuid) returns void
+language plpgsql security definer set search_path=public as $$
+begin
+  if not public.is_admin() then raise exception 'Keine Berechtigung'; end if;
+  delete from public.forum_threads where id = tid;
+end $$;
+
+revoke all on function public.forum_list(), public.forum_open(uuid), public.forum_send(text,text,text), public.forum_reply(uuid,text), public.forum_close(uuid,boolean), public.forum_remove(uuid) from public, anon;
+grant execute on function public.forum_list(), public.forum_open(uuid), public.forum_send(text,text,text), public.forum_reply(uuid,text), public.forum_close(uuid,boolean), public.forum_remove(uuid) to authenticated;
+
+-- News v21.5
+insert into public.news (version, title, body)
+select 'v21.5', 'Forum für Bugs, Vorschläge und Spieler-Reports', 'Im Menü gibt es jetzt ein Forum. Melde dort Fehler, schreibe Vorschläge oder erstatte einen Spieler-Report – mit Name#Tag, Zeit und Beschreibung. Nur das Team kann alle Meldungen lesen und Rückfragen stellen; deine eigene Meldung und die Antworten darauf siehst du weiterhin selbst, niemand sonst.'
+where not exists (select 1 from public.news where version = 'v21.5');

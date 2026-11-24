@@ -199,6 +199,13 @@ const Remote={
   async lobbyFind(code){const{data,error}=await AW.sb.rpc('find_lobby',{c:String(code).trim().toLowerCase()});if(error){console.warn('find_lobby:',error.message);throw new Error(/function|schema cache|relation/i.test(error.message)?'Server noch nicht aktualisiert: supabase/schema.sql im SQL-Editor ausführen':'Lobby konnte nicht gesucht werden')}return data&&data[0]||null},
   async lobbyUpdate(code,p){await AW.sb.from('lobbies').update(p).eq('code',code)},
   async lobbyClose(code){await AW.sb.from('lobbies').delete().eq('code',code)},
+  /* Forum: Meldungen (Bugs, Vorschläge, Spieler-Reports). Lesen darf nur das Team und der Verfasser. */
+  async forumThreads(){const{data,error}=await AW.sb.rpc('forum_list');if(error){console.warn('forum_list:',error.message);throw new Error(/function|schema cache/i.test(error.message)?'Server noch nicht aktualisiert: supabase/schema.sql im SQL-Editor ausführen':'Forum konnte nicht geladen werden')}return data||[]},
+  async forumOpen(id){const{data,error}=await AW.sb.rpc('forum_open',{tid:id});if(error){console.warn('forum_open:',error.message);throw new Error('Beitrag konnte nicht geladen werden')}return data||[]},
+  async forumSend(k,t,b){const{data,error}=await AW.sb.rpc('forum_send',{k,t,b});if(error)throw new Error(error.message);return data},
+  async forumReply(id,b){const{error}=await AW.sb.rpc('forum_reply',{tid:id,b});if(error)throw new Error(error.message)},
+  async forumClose(id,c){const{error}=await AW.sb.rpc('forum_close',{tid:id,c:!!c});if(error)throw new Error('Keine Berechtigung')},
+  async forumDel(id){const{error}=await AW.sb.rpc('forum_remove',{tid:id});if(error)throw new Error('Keine Berechtigung')},
   channel(code,h){
     const ch=AW.sb.channel('lobby:'+code,{config:{presence:{key:AW.user.id},broadcast:{self:true}}});
     ch.on('presence',{event:'sync'},()=>h.presence(Object.values(ch.presenceState()).map(a=>a[0])))
@@ -259,6 +266,20 @@ const Local={
   async lobbyFind(code){return lsGet(LP+'lobbies',[]).find(x=>x.code===code)||null},
   async lobbyUpdate(code,p){const a=lsGet(LP+'lobbies',[]);const r=a.find(x=>x.code===code);if(r){Object.assign(r,p);lsSet(LP+'lobbies',a)}},
   async lobbyClose(code){clearInterval(Local._hb);lsSet(LP+'lobbies',lsGet(LP+'lobbies',[]).filter(x=>x.code!==code))},
+  /* Forum im Gastmodus: liegt nur lokal, damit das Formular trotzdem funktioniert. */
+  async forumThreads(){const l=lsGet(LP+'forum',[]);const a=AW.profile||{};
+    return l.map(x=>({id:x.id,kind:x.kind,title:x.title,body:x.body,status:x.status,created_at:x.created_at,last_at:(x.posts&&x.posts.length?x.posts[x.posts.length-1].created_at:x.created_at),author_name:a.username||'Gast',author_tag:a.tag||'0000',replies:(x.posts||[]).length,mine:true})).sort((x,y)=>String(y.last_at).localeCompare(String(x.last_at)))},
+  async forumOpen(id){const x=lsGet(LP+'forum',[]).find(t=>t.id===id);return x?((x.posts||[]).map(p=>({...p,is_admin:!!p.admin,mine:!p.admin}))):[]},
+  async forumSend(k,tt,bb){const l=lsGet(LP+'forum',[]);
+    if(l.filter(x=>Date.now()-new Date(x.created_at).getTime()<864e5).length>=8)throw new Error('Zu viele Meldungen – bitte morgen wieder');
+    const id='f'+Date.now().toString(36);
+    l.unshift({id,kind:k,title:String(tt).slice(0,120),body:String(bb).slice(0,4000),status:'open',created_at:new Date().toISOString(),posts:[]});
+    lsSet(LP+'forum',l);return id},
+  async forumReply(id,b){const l=lsGet(LP+'forum',[]),x=l.find(t=>t.id===id);if(!x)throw new Error('Beitrag nicht gefunden');
+    if(x.status==='closed')throw new Error('Beitrag ist geschlossen');const a=AW.profile||{};
+    x.posts=x.posts||[];x.posts.push({id:'p'+Date.now().toString(36),body:String(b).slice(0,2000),created_at:new Date().toISOString(),author_name:a.username||'Gast',author_tag:a.tag||'0000',admin:false});lsSet(LP+'forum',l)},
+  async forumClose(id,c){const l=lsGet(LP+'forum',[]),x=l.find(t=>t.id===id);if(!x)return;x.status=c?'closed':'open';lsSet(LP+'forum',l)},
+  async forumDel(id){lsSet(LP+'forum',lsGet(LP+'forum',[]).filter(t=>t.id!==id))},
   channel(code,h){
     const bc=new BroadcastChannel('aw-lobby-'+code),me={id:AW.user.id+'-'+Math.random().toString(36).slice(2,6),pid:PID,name:AW.name,clan:AW.profile.clan_tag||''};
     const peers=new Map([[me.id,{...me,t:Date.now()}]]);
@@ -270,6 +291,7 @@ const Local={
   }
 };
 const DEFAULT_NEWS=[
+  {id:'d18',version:'v21.5',title:'Forum für Bugs, Vorschläge und Spieler-Reports',body:'Im Menü gibt es jetzt ein Forum. Melde dort Fehler, schreibe Vorschläge oder erstatte einen Spieler-Report – mit Name#Tag, Zeit und Beschreibung. Nur das Team kann alle Meldungen lesen und Rückfragen stellen; deine eigene Meldung und die Antworten darauf siehst du weiterhin selbst, niemand sonst.',created_at:'2026-11-24T18:10:00Z'},
   {id:'d17',version:'v21.4',title:'Wege wieder auf dem kürzesten Weg',body:'Die automatischen Wege zwischen deinen Städten laufen wieder auf dem kürzesten Weg. Ein Fehler beim Glätten der Route hat jeden Weg pro Schritt um ein Drittel gestreckt, deshalb zogen sich die Verbindungen in riesigen Bögen über die Karte, statt Nachbargebiete direkt zu verbinden.',created_at:'2026-11-24T16:20:00Z'},
   {id:'d16',version:'v21.3',title:'37 Karriere-Quests',body:'Die Karriere ist noch einmal deutlich gewachsen: aus 20 sind 37 Quests geworden, jede mit vier bis fünf Stufen. Neue Linien wie Spielmarathon, Ausdauer, Champion, Feldzug, Imperium, Stadtplaner, Metropole, Admiral, Flottenherr, Botschafter, Friedensstifter, Sammler, Archäologe, Kontinent und Mythos geben auch langjährigen Spielern noch Ziele. Tages- und Wochenquests bleiben unverändert.',created_at:'2026-11-24T15:45:00Z'},
   {id:'d15',version:'v21.2',title:'Karriere mit 20 Quests',body:'Die Karriere ist neu aufgeteilt: statt einiger langer Linien gibt es jetzt zwanzig Karriere-Quests mit je vier bis fünf Stufen – vom Vielspieler über den Belagerer bis zur Legende. Jede Karte zeigt ihre Stufen als nummerierte Punkte, den aktuellen Stand und die Belohnung. Tages- und Wochenquests bleiben unverändert. Der GitHub-Pages-Build ist repariert, die Änderungen sind wieder online.',created_at:'2026-11-24T15:10:00Z'},
@@ -296,6 +318,7 @@ Object.assign(AW,{
   players:()=>API.players(),potd:()=>API.potd(),clans:()=>API.clans(),news:()=>API.news(),newsSave:n=>API.newsSave(n),newsDel:id=>API.newsDel(id),
   adminProfiles:q=>API.adminProfiles(q),adminUpdate:(i,p)=>API.adminUpdate(i,p),
   friends:()=>API.friends(),friendRequest:n=>API.friendRequest(n),friendRespond:(i,a)=>API.friendRespond(i,a),friendRemove:i=>API.friendRemove(i),
-  lobbies:()=>API.lobbies(),lobbyCreate:l=>API.lobbyCreate(l),lobbyFind:c=>API.lobbyFind(c),lobbyUpdate:(c,p)=>API.lobbyUpdate(c,p),lobbyClose:c=>API.lobbyClose(c),channel:(c,h)=>API.channel(c,h)
+  lobbies:()=>API.lobbies(),lobbyCreate:l=>API.lobbyCreate(l),lobbyFind:c=>API.lobbyFind(c),lobbyUpdate:(c,p)=>API.lobbyUpdate(c,p),lobbyClose:c=>API.lobbyClose(c),channel:(c,h)=>API.channel(c,h),
+  forumThreads:()=>API.forumThreads(),forumOpen:i=>API.forumOpen(i),forumSend:(k,t,b)=>API.forumSend(k,t,b),forumReply:(i,b)=>API.forumReply(i,b),forumClose:(i,c)=>API.forumClose(i,c),forumDel:i=>API.forumDel(i)
 });
 AW.init=async()=>{try{await API.init()}catch(e){console.warn('Backend nicht erreichbar, Gastmodus',e);AW.remote=false;API=Local;await Local.init();}AW.ready=true;AW.emit()};

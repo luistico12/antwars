@@ -367,3 +367,79 @@ S.admin.bind=async p=>{
       p.querySelector('#pCn').onclick=()=>{UI.admEditP=null;render()}}
   }
 };
+
+/* ---------- Forum: Bugs, Vorschläge und Spieler-Reports (nur das Team liest alles) ---------- */
+const FORUM_KINDS={bug:'Bug',idea:'Vorschlag',report:'Spieler-Report'};
+UI.forumKind='bug';UI.forumFilter='';
+const forumTag=k=>`<span class="tag ${k==='bug'?'ac':''}">${t(FORUM_KINDS[k]||'Meldung')}</span>`;
+S.forum=()=>{
+  if(needLogin())return shell(t('Forum'),{},`<div class="msg">${t('Melde dich an, um das Forum zu nutzen')}</div>`);
+  const adm=AW.isAdmin,l=UI.forum,sel=UI.forumSel,det=UI.forumOpen;
+  const items=(l||[]).filter(x=>!adm||!UI.forumFilter||x.kind===UI.forumFilter);
+  const compose=adm?'':`<div class="panel"><div class="lbl" style="margin-bottom:8px">${t('Neue Meldung')}</div>
+    <div class="grid" style="gap:8px">
+      <div class="pills" id="fmK">${Object.keys(FORUM_KINDS).map(k=>`<button type="button" data-k="${k}" class="${UI.forumKind===k?'on':''}">${t(FORUM_KINDS[k])}</button>`).join('')}</div>
+      <input class="inp" id="fmT" maxlength="120" placeholder="${t('Kurzer Titel')}">
+      <textarea class="inp" id="fmB" rows="4" maxlength="4000" placeholder="${t('Was ist passiert? Bei einem Spieler-Report bitte Name#Tag, Zeit und was vorgefallen ist.')}"></textarea>
+      <button class="btn pri" id="fmSend" type="button">${ico('send')} ${t('Absenden')}</button>
+    </div></div>`;
+  const detail=!sel?`<div class="panel"><div class="mini">${adm?t('Wähle links eine Meldung aus.'):t('Wähle eine deiner Meldungen aus oder schreibe eine neue.')}</div></div>`
+    :(det?`<div class="panel" style="display:flex;flex-direction:column;gap:10px">
+        <div class="row">${forumTag(det.thread.kind)}<span class="sp"></span>${det.thread.status==='closed'?`<span class="tag">${t('Geschlossen')}</span>`:''}${adm?`<button class="btn sm" id="fmClose" type="button">${det.thread.status==='closed'?t('Wieder öffnen'):t('Schließen')}</button><button class="btn sm danger" id="fmDel" type="button" aria-label="Delete">${ico('trash')}</button>`:''}</div>
+        <div><b style="font-size:16px">${esc(det.thread.title)}</b><div class="mini">${esc(det.thread.author_name)}#${esc(det.thread.author_tag)} · ${fmtDate(det.thread.created_at)}</div></div>
+        <div class="msg" style="white-space:pre-wrap">${esc(det.thread.body)}</div>
+        <div class="lbl">${t('Verlauf')}</div>
+        ${det.posts.length?det.posts.map(m=>`<div class="li" style="flex-direction:column;align-items:flex-start;gap:2px">
+           <div class="row" style="gap:6px">${m.is_admin?`<span class="tag ac">Admin</span>`:''}<b>${esc(m.author_name)}#${esc(m.author_tag)}</b><span class="mini">${fmtDate(m.created_at)}</span></div>
+           <div style="white-space:pre-wrap;font-size:13.5px">${esc(m.body)}</div></div>`).join(''):`<div class="mini">${t('Noch keine Antworten.')}</div>`}
+        <textarea class="inp" id="fmR" rows="3" maxlength="2000" placeholder="${adm?t('Frage an den Spieler …'):t('Antwort an das Team …')}"></textarea>
+        <button class="btn pri" id="fmRSend" type="button">${ico('send')} ${t('Senden')}</button>
+      </div>`:spinner());
+  return shell(t('Forum'),{right:adm?`<div class="pills" id="fmF"><button data-k="" class="${UI.forumFilter===''?'on':''}" type="button">${t('Alle')}</button>${Object.keys(FORUM_KINDS).map(k=>`<button data-k="${k}" class="${UI.forumFilter===k?'on':''}" type="button">${t(FORUM_KINDS[k])}</button>`).join('')}</div>`:''},
+    `<div class="grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);align-items:start" id="fmGrid">
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+        ${compose}
+        <div class="panel" style="display:flex;flex-direction:column;gap:8px">
+          <div class="row"><span class="lbl">${adm?t('Alle Meldungen'):t('Meine Meldungen')}</span><span class="sp"></span><span class="mini">${items.length}</span></div>
+          ${l?items.map(x=>`<button class="li ${sel===x.id?'sel':''}" data-th="${esc(x.id)}" type="button" style="width:100%;text-align:left;font:inherit">
+            ${forumTag(x.kind)}<span class="sp" style="min-width:0;overflow:hidden"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.title)}</b>
+            <small>${adm?esc(x.author_name)+'#'+esc(x.author_tag)+' · ':''}${x.replies||0} ${t('Antworten')} · ${fmtDate(x.last_at)}</small></span>
+            ${x.status==='closed'?`<span class="tag">${t('Geschlossen')}</span>`:''}</button>`).join('')||`<div class="mini">${t('Noch keine Meldungen.')}</div>`:spinner()}
+        </div>
+      </div>
+      <div style="min-width:0">${detail}</div></div>`);
+};
+S.forum.bind=async p=>{
+  if(needLogin())return;
+  if(innerWidth<820)p.querySelector('#fmGrid').style.gridTemplateColumns='1fr';
+  const openSel=async()=>{
+    if(!UI.forumSel){UI.forumOpen=null;return}
+    try{const posts=await AW.forumOpen(UI.forumSel);UI.forumOpen={thread:(UI.forum||[]).find(x=>x.id===UI.forumSel),posts};
+      if(SCR.cur&&SCR.cur.name==='forum')render()}catch(e){toastErr(e)}
+  };
+  p.querySelectorAll('#fmF [data-k]').forEach(b=>b.onclick=()=>{UI.forumFilter=b.dataset.k;render()});
+  p.querySelectorAll('[data-th]').forEach(b=>b.onclick=()=>{UI.forumSel=b.dataset.th;UI.forumOpen=null;openSel()});
+  const ks=p.querySelectorAll('#fmK [data-k]');
+  ks.forEach(b=>b.onclick=()=>{UI.forumKind=b.dataset.k;ks.forEach(x=>x.classList.toggle('on',x.dataset.k===b.dataset.k))});
+  const send=p.querySelector('#fmSend');
+  if(send)send.onclick=async()=>{
+    const tt=p.querySelector('#fmT').value.trim(),bb=p.querySelector('#fmB').value.trim();
+    if(tt.length<3||bb.length<3){toast(LANG==='de'?'Bitte Titel und Text ausfüllen':'Please fill in title and text','bad');return}
+    try{UI.noRerender=true;UI.forumSel=await AW.forumSend(UI.forumKind,tt,bb);UI.noRerender=false;
+      p.querySelector('#fmT').value='';p.querySelector('#fmB').value='';
+      toast(LANG==='de'?'Meldung gesendet – nur das Team kann sie lesen':'Report sent – only the team can read it','good');
+      UI.forum=await AW.forumThreads();await openSel()}catch(e){UI.noRerender=false;toastErr(e)}};
+  const rs=p.querySelector('#fmRSend');
+  if(rs)rs.onclick=async()=>{
+    const b=p.querySelector('#fmR').value.trim();if(!b)return;
+    try{UI.noRerender=true;await AW.forumReply(UI.forumSel,b);UI.noRerender=false;
+      UI.forum=await AW.forumThreads();await openSel()}catch(e){UI.noRerender=false;toastErr(e)}};
+  const cl=p.querySelector('#fmClose');
+  if(cl)cl.onclick=async()=>{try{await AW.forumClose(UI.forumSel,UI.forumOpen.thread.status!=='closed');UI.forum=await AW.forumThreads();await openSel()}catch(e){toastErr(e)}};
+  const dl=p.querySelector('#fmDel');
+  if(dl)dl.onclick=async()=>{if(!confirm(LANG==='de'?'Meldung wirklich löschen?':'Delete this report?'))return;
+    try{await AW.forumDel(UI.forumSel);UI.forumSel=null;UI.forumOpen=null;UI.forum=await AW.forumThreads();render();toast('✓','good')}catch(e){toastErr(e)}};
+  if(!UI.forum){try{UI.forum=await AW.forumThreads()}catch(e){toastErr(e);UI.forum=[]}
+    if(SCR.cur&&SCR.cur.name==='forum'&&!UI.forumOpen)render();return}
+  if(UI.forumSel&&!UI.forumOpen)await openSel();
+};
