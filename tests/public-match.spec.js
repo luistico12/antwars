@@ -1,7 +1,7 @@
 /* Teil A: WebSocket-Transport gegen den echten Server (im selben Prozess, Fake-Verifier). */
 const {chromium}=require('playwright');const path=require('path');const {spawn}=require('child_process');
 const {start}=require('../server/index.js');
-const root=path.resolve(__dirname,'..'),let PORT,url;
+const root=path.resolve(__dirname,'..');let PORT,url;
 const freePort=()=>new Promise(r=>{const n=require('net').createServer().listen(0,'127.0.0.1',()=>{const p=n.address().port;n.close(()=>r(p))})});
 let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
