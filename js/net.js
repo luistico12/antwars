@@ -121,7 +121,7 @@ const NET={server:false,role:null,ch:null,live:false,players:[],humans:[],ready:
         toast(LANG==='de'?'Mehrspieler: Die Welt läuft beim Host.':'Multiplayer: the world runs on the host.','good')}
       else if(m.t==='snap')this.applySnap(m);
       else if(m.t==='hostleft'&&started&&!over){toast(LANG==='de'?'Der Host hat die Partie beendet.':'The host ended the match.','bad');endGame(false)}
-      else if(m.t==='err'&&this.server)toast(LANG==='de'?'Server: Beitritt nicht möglich ('+m.why+').':'Server: cannot join ('+m.why+').','bad');
+      else if(m.t==='err'&&this.server)toast(LANG==='de'?'Server: Beitritt nicht möglich ('+String(m.why).slice(0,40)+').':'Server: cannot join ('+String(m.why).slice(0,40)+').','bad');
       else if(m.t==='end'&&started&&!over)endGame(false);
     }
   }
