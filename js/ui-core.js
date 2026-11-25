@@ -58,15 +58,15 @@ document.addEventListener('keydown',e=>{
 function newsUnseen(){return lsGet('aw_news_seen','')!==(UI.newsTop||'')&&!!UI.newsTop}
 const UI={newsTop:''};
 function renderHeader(){
-  const lg=LANGS.find(l=>l[0]===LANG)||LANGS[1],p=AW.profile;
+  const p=AW.profile;
   $('#hdrR').innerHTML=`
     <button class="ibtn" id="hdrMenu" type="button" aria-label="${t('Menü')}" ${started?'':'hidden'}>${ico('menu')}</button>
     <button class="ibtn" id="hdrNews" type="button" aria-label="${t('Neuigkeiten')}">${ico('news')}${newsUnseen()?'<i class="dot"></i>':''}</button>
-    <button class="ibtn" id="hdrLang" type="button" aria-label="${t('Sprache wählen')}">${flagSVG(lg[3])}</button>
+    <button class="ibtn" id="hdrForum" type="button" aria-label="${t('Forum')}">${ico('chat')}</button>
     <button id="hdrProf" type="button" aria-label="${t('Profil')}"><span class="av">${p&&safeAvatar(p.avatar)?`<img alt="" src="${safeAvatar(p.avatar)}">`:ico('user')}</span><span class="nm">${AW.loggedIn?esc(p&&p.username||''):t('Anmelden')}</span>${AW.loggedIn&&p?`<span class="ruby">${ico('ruby')}${p.rubys}</span>`:''}</button>`;
   $('#hdrMenu').onclick=()=>{if(started&&!over){const k=$('#speed [data-sp="0"]');k&&k.click()}};
   $('#hdrNews').onclick=()=>openScreen('news',undefined,false);
-  $('#hdrLang').onclick=()=>openScreen('lang',undefined,false);
+  $('#hdrForum').onclick=()=>openScreen('forum',undefined,false);
   $('#hdrProf').onclick=()=>{if(REMOTE&&!AW.loggedIn)loginShow();else openScreen('profile',undefined,false)};
   const ch=$('#ctlHint');if(ch)ch.textContent=t(matchMedia('(pointer:coarse)').matches?'Zwei Finger: zoomen · Ein Finger ziehen: verschieben · Lange drücken: Menü':'Mausrad: Zoom · WASD oder Pfeiltasten: bewegen · Rechte Maustaste halten und ziehen: verschieben');
 }

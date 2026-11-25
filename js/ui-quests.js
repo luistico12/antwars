@@ -90,9 +90,12 @@ function careerCard(key){
     <div class="cc-h">${qTile(q[7],c)}<div class="cc-t"><b>${t(q[5])}</b><span class="tiers">${t('Stufe')} ${x.tier} ${t('von')} ${ts.length}</span></div>${full?`<span class="cc-p ok">${ico('check')}</span>`:`<span class="cc-p">${pct}%</span>`}</div>
     <div class="cc-d"><span>${t(q[6])}</span><em>${t(x.sub)}</em></div>
     <div class="cc-steps">${steps}</div>
-    <div class="cc-pg"><div class="qx-track"><i style="width:${bp}%"></i></div><em>${num(g.v)} / ${num(g.goal)}</em></div>
-    <div class="cc-r">${full?`<span class="qx-done">${ico('check')} ${t('ALLE STUFEN')}</span>`:rewardPill(q,g)}</div></div>`;
+    <div class="cc-pg"><label>${t('FORTSCHRITT')}</label><em>${num(g.v)} / ${num(g.goal)}</em></div>
+    <div class="cc-bar"><i style="width:${bp}%"></i></div>
+    <div class="cc-rw ${ready?'go':''}">${full?`<span class="cc-rl">${t('ALLE STUFEN')}</span><b class="cc-rd">${ico('check')}</b>`:`<span class="cc-rl">${t('BELOHNUNG')} ${t('Stufe')} ${x.tier}</span>${rewardPill(q,g)}`}</div>
+  </div>`;
 }
+
 UI.achTab=UI.achTab||'daily';UI.achCat=UI.achCat||'Alle';
 S.achievements=()=>{
   const tab=UI.achTab,p=AW.profile||{};
@@ -102,7 +105,7 @@ S.achievements=()=>{
   else if(tab==='career'){
     const keys=[...new Set(QUESTS.filter(q=>q[1]==='career').map(q=>q[9].key))],cnt=c=>keys.filter(k=>c==='Alle'||careerTiers(k)[0][8]===c).length;
     const show=keys.filter(k=>UI.achCat==='Alle'||careerTiers(k)[0][8]===UI.achCat);
-    body=careerHead()+`<div class="qx-cats">${['Alle',...CAREER_CATS].map(c=>`<button type="button" data-cat="${c}" class="${UI.achCat===c?'on':''}"><span class="qx-ci">${ico(CAT_ICO[c])}</span>${t(c)}<em>${cnt(c)}</em></button>`).join('')}</div><div class="qx-grid">${show.map(careerCard).join('')}</div>`;
+    body=careerHead()+`<div class="qx-career"><div class="qx-cats">${['Alle',...CAREER_CATS].map(c=>`<button type="button" data-cat="${c}" class="${UI.achCat===c?'on':''}"><span class="qx-ci">${ico(CAT_ICO[c])}</span>${t(c)}<em>${cnt(c)}</em></button>`).join('')}</div><div class="qx-grid">${show.map(careerCard).join('')}</div></div>`;
   }else body=`<div class="qx-empty">${qTile('calendar')}<b>${t('Gerade läuft kein Event')}</b><span>${t('Zeitlich begrenzte Events mit Sonderquests und Belohnungen erscheinen hier.')}</span></div>`;
   return shell(t('Erfolge'),{right:`<span class="qx-ruby">${ico('ruby')} ${num(p.rubys||0)}</span>`},
     `<div class="qx-tabs">${tabs.map(([k,n,i])=>`<button type="button" data-k="${k}" class="${tab===k?'on':''}">${ico(i)} ${t(n)}</button>`).join('')}</div>${needLogin()?`<div class="msg">${t('Melde dich an, um zu spielen')}</div>`:''}<div class="qx-body">${body}</div>`);
@@ -163,7 +166,7 @@ function profHist(p){
 }
 function profAccount(p,li){
   return `<div class="pf-box"><h4>${t('Name')} / ${t('Clan-Tag')}</h4>
-    <div class="row"><input class="inp" id="pName" maxlength="20" value="${esc(p.username||'')}" style="flex:2;min-width:140px"><input class="inp" id="pClan" maxlength="5" placeholder="TAG" value="${esc(p.clan_tag||'')}" style="flex:1;min-width:90px;text-transform:uppercase"><button class="btn pri" id="pSave" type="button">${t('Speichern')}</button></div><div id="pMsg" style="margin-top:8px"></div></div>
+    <div class="row"><input class="inp" id="pName" maxlength="20" value="${esc(p.username||'')}" style="flex:1;min-width:140px"><button class="btn pri" id="pSave" type="button">${t('Speichern')}</button></div><div class="mini" style="margin-top:6px">Clan-Tag: <b>${esc(p.clan_tag||'—')}</b> · der Tag wird beim Gründen oder Beitreten vergeben.</div><div id="pMsg" style="margin-top:8px"></div></div>
     ${li?`<div class="pf-box"><h4>${t('Sicherheit')} · ${t('Telefonnummer (Backup)')}</h4>
       <div class="row"><input class="inp" id="phN" type="tel" placeholder="+49 …" value="${esc((AW.user&&AW.user.phone)?'+'+AW.user.phone.replace(/^\+/,''):'')}" style="flex:1;min-width:160px" autocomplete="tel"><button class="btn" id="phSend" type="button">${t('Code senden')}</button></div>
       <div class="row" id="phRow" style="margin-top:8px" hidden><input class="inp" id="phC" inputmode="numeric" maxlength="8" placeholder="123456" style="flex:1"><button class="btn pri" id="phOk" type="button">${t('Bestätigen')}</button></div><div id="phMsg" style="margin-top:8px"></div></div>`:''}`;
@@ -201,9 +204,9 @@ S.profile.bind=p=>{
   const i=p.querySelector('#pIn');if(i)i.onclick=()=>loginShow();
   const sc=p.querySelector('#pSecure');if(sc)sc.onclick=()=>loginShow('up');
   const sv=p.querySelector('#pSave');if(sv)sv.onclick=async()=>{
-    const n=p.querySelector('#pName').value.trim(),c=p.querySelector('#pClan').value.toUpperCase().replace(/[^A-Z0-9]/g,'');
+    const n=p.querySelector('#pName').value.trim();
     if(n.length<2){msg('#pMsg','err','Name zu kurz');return}
-    try{UI.noRerender=true;await AW.update({username:n,clan_tag:c});UI.noRerender=false;msg('#pMsg','ok','✓')}catch(e){UI.noRerender=false;msg('#pMsg','err',e.message)}
+    try{UI.noRerender=true;await AW.update({username:n});UI.noRerender=false;msg('#pMsg','ok','✓')}catch(e){UI.noRerender=false;msg('#pMsg','err',e.message)}
   };
   const ph=p.querySelector('#phSend');if(ph){
     ph.onclick=async()=>{const n=p.querySelector('#phN').value.trim();if(!/^\+\d{7,15}$/.test(n)){msg('#phMsg','err','+49…');return}

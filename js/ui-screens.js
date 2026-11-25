@@ -73,7 +73,12 @@ function questRow(q,compact){
   ${compact?'':(g.claimed?`<span class="tag">${ico('check')} ${t('Abgeholt')}</span>`:`<button class="btn sm ${g.done?'pri':''}" data-claim="${q[0]}" ${g.done?'':'disabled'} type="button">${t('Abholen')}</button>`)}</div>
   <div class="bar"><i style="width:${Math.round(100*g.v/q[3])}%"></i></div><div class="mini">${t('Fortschritt')}: ${g.v} / ${q[3]}</div></div>`;
 }
-function bindClaims(p){p.querySelectorAll('[data-claim]').forEach(b=>b.onclick=async()=>{try{await AW.claim(b.dataset.claim);toast('+ Rubys','good')}catch(e){toastErr(e)}})}
+/* Abholen mit Aufleuchten: der Knopf pulsiert kurz, dann wird abgeholt */
+function bindClaims(p){p.querySelectorAll('[data-claim]').forEach(b=>b.onclick=async()=>{
+  if(b.classList.contains('pop'))return;
+  p.querySelectorAll(`[data-claim="${b.dataset.claim}"]`).forEach(x=>x.classList.add('pop'));
+  try{await new Promise(r=>setTimeout(r,430));await AW.claim(b.dataset.claim);toast('+ Rubys','good')}
+  catch(e){p.querySelectorAll('.pop').forEach(x=>x.classList.remove('pop'));toastErr(e)}})}
 UI.achTab='daily';
 S.achievements=()=>shell(t('Erfolge'),{right:`<div class="pills" id="achT">${[['daily','Täglich'],['weekly','Wöchentlich'],['career','Karriere']].map(([k,n])=>`<button data-k="${k}" class="${UI.achTab===k?'on':''}" type="button">${t(n)}</button>`).join('')}</div>`},
   `<div class="grid">${QUESTS.filter(q=>q[1]===UI.achTab).map(q=>questRow(q)).join('')}</div>${needLogin()?`<div class="msg">${t('Melde dich an, um zu spielen')}</div>`:''}`);
@@ -135,22 +140,6 @@ S.inventory.bind=p=>{
     try{await AW.update({[it.kind]:cur===it.key?null:it.key})}catch(e){toastErr(e)}});
 };
 
-/* ---------- Clan (freie Tags sammeln Siege) ---------- */
-S.clan=()=>{
-  const p=AW.profile||{},cl=UI.clans;
-  const mine=cl&&p.clan_tag&&cl.find(c=>c.clan_tag===p.clan_tag);
-  return shell(t('Clan'),{sub:LANG==='de'?'Gib einen Tag frei ein. Alle Siege mit demselben Tag zählen für das Team.':'Type any tag. All wins under the same tag count for the team.'},`
-   <div class="panel"><div class="row"><input class="inp" id="clTag" maxlength="5" placeholder="TAG (A–Z, 0–9)" value="${esc(p.clan_tag||'')}" style="flex:1;min-width:140px;text-transform:uppercase;font-weight:800;letter-spacing:.1em">
-     <button class="btn pri" id="clJoin" type="button">${p.clan_tag?t('Speichern'):t('Beitreten')}</button>${p.clan_tag?`<button class="btn danger" id="clLeave" type="button">${t('Verlassen')}</button>`:''}</div><div id="clMsg" style="margin-top:8px"></div></div>
-   ${mine?`<div class="grid g3 keep"><div class="stat"><b>${num(mine.wins)}</b><span>${t('Siege')}</span></div><div class="stat"><b>${num(mine.games)}</b><span>${t('Spiele')}</span></div><div class="stat"><b>${num(mine.members)}</b><span>${t('Mitglieder')}</span></div></div>`:''}
-   <div class="lbl">Top ${t('Clans')}</div>${cl?`<div class="grid">${cl.slice(0,10).map((c,i)=>`<div class="li"><span class="rk">${i+1}</span><span class="ctag">${esc(c.clan_tag)}</span><b class="sp">${num(c.wins)} ${t('Siege')}</b><span class="mini">${num(c.members)} ${t('Mitglieder')}</span></div>`).join('')||'<div class="mini">–</div>'}</div>`:spinner()}`);
-};
-S.clan.bind=async p=>{
-  const go=async tag=>{try{UI.noRerender=true;await AW.update({clan_tag:tag});UI.noRerender=false;UI.clans=null;render()}catch(e){UI.noRerender=false;toastErr(e)}};
-  p.querySelector('#clJoin').onclick=()=>go(p.querySelector('#clTag').value.toUpperCase().replace(/[^A-Z0-9]/g,''));
-  const l=p.querySelector('#clLeave');if(l)l.onclick=()=>go('');
-  if(!UI.clans){UI.clans=await AW.clans();if(SCR.cur&&SCR.cur.name==='clan')render()}
-};
 
 /* ---------- Leaderboard (Bild 4) ---------- */
 UI.lbTab='players';
@@ -376,7 +365,7 @@ S.forum=()=>{
   if(needLogin())return shell(t('Forum'),{},`<div class="msg">${t('Melde dich an, um das Forum zu nutzen')}</div>`);
   const adm=AW.isAdmin,l=UI.forum,sel=UI.forumSel,det=UI.forumOpen;
   const items=(l||[]).filter(x=>!adm||!UI.forumFilter||x.kind===UI.forumFilter);
-  const compose=adm?'':`<div class="panel"><div class="lbl" style="margin-bottom:8px">${t('Neue Meldung')}</div>
+  const compose=`<div class="panel"><div class="lbl" style="margin-bottom:8px">${t('Neue Meldung')}</div>
     <div class="grid" style="gap:8px">
       <div class="pills" id="fmK">${Object.keys(FORUM_KINDS).map(k=>`<button type="button" data-k="${k}" class="${UI.forumKind===k?'on':''}">${t(FORUM_KINDS[k])}</button>`).join('')}</div>
       <input class="inp" id="fmT" maxlength="120" placeholder="${t('Kurzer Titel')}">
@@ -392,7 +381,7 @@ S.forum=()=>{
         ${det.posts.length?det.posts.map(m=>`<div class="li" style="flex-direction:column;align-items:flex-start;gap:2px">
            <div class="row" style="gap:6px">${m.is_admin?`<span class="tag ac">Admin</span>`:''}<b>${esc(m.author_name)}#${esc(m.author_tag)}</b><span class="mini">${fmtDate(m.created_at)}</span></div>
            <div style="white-space:pre-wrap;font-size:13.5px">${esc(m.body)}</div></div>`).join(''):`<div class="mini">${t('Noch keine Antworten.')}</div>`}
-        <textarea class="inp" id="fmR" rows="3" maxlength="2000" placeholder="${adm?t('Frage an den Spieler …'):t('Antwort an das Team …')}"></textarea>
+        <textarea class="inp" id="fmR" rows="3" maxlength="2000" placeholder="${t('Antwort schreiben …')}"></textarea>
         <button class="btn pri" id="fmRSend" type="button">${ico('send')} ${t('Senden')}</button>
       </div>`:spinner());
   return shell(t('Forum'),{right:adm?`<div class="pills" id="fmF"><button data-k="" class="${UI.forumFilter===''?'on':''}" type="button">${t('Alle')}</button>${Object.keys(FORUM_KINDS).map(k=>`<button data-k="${k}" class="${UI.forumFilter===k?'on':''}" type="button">${t(FORUM_KINDS[k])}</button>`).join('')}</div>`:''},
