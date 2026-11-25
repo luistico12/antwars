@@ -923,6 +923,10 @@ body.wmv #chips{display:none}
 .qx-cc .cc-lock b{display:inline-flex;align-items:center;gap:6px;font-size:16px;letter-spacing:.02em;color:#bcc7d8}
 .qx-cc .cc-lock .svg{width:19px;height:19px}
 
+/* v21.9: Screen-Inhalt behält seine echte Höhe, der Bereich scrollt (News wurden gestaucht und abgeschnitten) */
+.sb>*{flex:0 0 auto}
+.nitem.latest{overflow:visible}
+
 /* News: neuester Release groß und aufgeklappt, eigene Schrift */
 .nitem.latest{background:linear-gradient(158deg,rgba(255,87,87,.16),rgba(255,255,255,.045) 58%,rgba(255,255,255,.02));border-color:rgba(255,87,87,.5)}
 .nitem.latest>button.nhero{display:block;width:100%;padding:18px 20px 14px;text-align:left;background:transparent;border:0;color:var(--tx)}

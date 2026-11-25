@@ -42,6 +42,11 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
 
 19. Update v18 (Flaggen im Mehrspieler): `cosmPack/cosmClean` tragen `flag`, Weltkarte zeichnet die Flagge jeder Hauptstadt über `cosmOf(owner)`. Hüte bleiben nur in der eigenen Kolonie (fremde Kolonien sind nicht sichtbar). Tests `worldupdate`/`radial` nutzen jetzt feste Zufallsfolge (`SEED=n`), vorher wegen Zufallskarten gelegentlich rot.
 
+30. Update v21.9 – News vollständig aufgeklappt (getestet: `node --check`, Playwright im Gastmodus):
+    - Ursache: `.sb` (Inhaltsbereich der Screens) ist ein Flex-Container mit `overflow:auto`; die Kinder schrumpften per Default (`flex-shrink:1`) auf die Bildschirmhöhe, `.nitem{overflow:hidden}` schnitt den Rest ab – ohne Scrollen.
+    - Fix in `css/ui.css`: `.sb>*{flex:0 0 auto}` (volle Höhe, Container scrollt) und `.nitem.latest{overflow:visible}`.
+    - News v21.9 in `DEFAULT_NEWS` und `schema.sql`.
+
 29. Update v21.8 – Schwierigkeits-Regler, weniger Quests, große News (getestet: `node --check`, Playwright im Gastmodus, SQL live eingespielt):
     - Hauptmenü: der Schieberegler regelt jetzt die Schwierigkeit (Leicht/Normal/Schwer, `#hDiff` mit Skalenbeschriftung `#hDiffV`); die Gegnerzahl ist nicht mehr einstellbar, `MODES[modeKey].bots` gilt fest (`botCount` und `#hBots` entfernt, `js/game-world.js` nutzt wieder den Modus).
     - Modi-Auswahl: Karten zeigen nur noch Name und Tempo, die Beschreibungszeile und die Feldüberschrift „Modus“ sind weg (`js/ui-boot.js`, `css/ui.css`).

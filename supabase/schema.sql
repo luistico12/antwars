@@ -1070,3 +1070,8 @@ where not exists (select 1 from public.news where version = 'v21.7');
 insert into public.news (version, title, body)
 select 'v21.8', 'Weniger Quests, Schwierigkeits-Regler und große News', 'Die täglichen und wöchentlichen Quests sind aufgeräumt: fünf Aufgaben pro Tag und vier pro Woche, der Bonus zählt genau diese. Auf der Karriere-Karte ist der Abholen-Bereich jetzt immer groß, auch wenn die Stufe noch läuft. Im Hauptmenü regelt ein Schieberegler die Schwierigkeit von Leicht bis Schwer – wie viele Gegner mitspielen, gibt der Modus vor. Die Modus-Karten tragen nur noch Name und Tempo, und der neueste News-Eintrag öffnet sich groß mit eigener Schrift. Im Shop ist der lange Erklärungstext weg.'
 where not exists (select 1 from public.news where version = 'v21.8');
+
+-- News v21.9
+insert into public.news (version, title, body)
+select 'v21.9', 'News wieder ganz aufgeklappt', 'Der neueste News-Eintrag wird jetzt vollständig angezeigt. Bisher stauchte der Menü-Bereich seinen Inhalt auf die Bildschirmhöhe zusammen, deshalb brach der Text am unteren Rand ab, ohne dass man weiterscrollen konnte. Jetzt behalten News, Panels und Listen ihre volle Höhe und der Bereich scrollt – es gibt kein Größenlimit mehr.'
+where not exists (select 1 from public.news where version = 'v21.9');
