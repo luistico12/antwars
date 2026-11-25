@@ -3,7 +3,7 @@
 const vm=require('vm'),fs=require('fs'),path=require('path');
 const {seeded}=require('../../tests/helpers/prng');
 const ROOT=path.resolve(__dirname,'../..');
-const SRC=['js/game-core.js','js/game-world.js','js/game-sea.js'].map(f=>({f,code:fs.readFileSync(path.join(ROOT,f),'utf8')}));
+const SRC=['js/game-core.js','js/game-world.js','js/game-sea.js','js/game-trade.js'].map(f=>({f,code:fs.readFileSync(path.join(ROOT,f),'utf8')}));
 const STUBS=fs.readFileSync(path.join(__dirname,'stubs.js'),'utf8');
 
 function createWorld({mode,mapSeed,seed}){
@@ -21,9 +21,10 @@ function createWorld({mode,mapSeed,seed}){
       ctx.__humans=humans;
       ev('initWorld({hostStart:null,humans:__humans})');
     },
+    simv(){return ev('SIMV')},
     adj(id){return JSON.parse(ev(`JSON.stringify(T[${+id}].adj)`))},
     step(dt){ctx.__dt=dt;ev('updateWorld(__dt)')},
-    snap(){return JSON.parse(ev(`JSON.stringify({gt:+gtime.toFixed(1),sp:speed,T:T.map(x=>[x.owner,Math.round(x.troops*10)/10,x.isCap?1:0]),F:F.map(f=>f.alive?1:0),C:F.map(f=>f.capital),
+    snap(){return JSON.parse(ev(`JSON.stringify({gt:+gtime.toFixed(1),sp:speed,sm:SIMV,T:T.map(x=>[x.owner,Math.round(x.troops*10)/10,x.isCap?1:0]),F:F.map(f=>f.alive?1:0),C:F.map(f=>f.capital),
       M:marches.map(m=>({f:m.f,a:m.from.id,b:m.to.id,n:m.n,t:+(m.t||0).toFixed(2),dur:+m.dur.toFixed(2),ph:m.phase,ft:+(m.ft||0).toFixed(2),fd:m.fdur,sd:m.seed,A:m.A,Dp:m.Dp,D0:m.D0,w:m.win?1:0,ar:m.attRem,dr:m.defRem,dO:m.dOwner}))})`))},
     initInfo(){return JSON.parse(ev(`JSON.stringify({Fi:F.map((f,h)=>({n:h===0?'Server':f.name,sp:f.species||'ground',rgb:f.rgb||FCOL[0],hum:f.human?1:0})),d:diffKey,gt:+gtime.toFixed(1)})`))},
     launch(fid,fromId,toId,n){

@@ -5,12 +5,12 @@ const C=require('../config');
 
 function mk(opts={}){
   const out=[];let empty=0;
-  const room=new Room({id:'r1',mode:opts.mode||'ffa',seed:1,send:(sub,msg)=>out.push({sub,msg}),onEmpty:()=>empty++,createWorld:opts.createWorld});
+  const room=new Room({id:'r1',mode:opts.mode||'classic',seed:1,send:(sub,msg)=>out.push({sub,msg}),onEmpty:()=>empty++,createWorld:opts.createWorld});
   return {room,out,empty:()=>empty,of:(sub,t)=>out.filter(o=>o.sub===sub&&o.msg.t===t).map(o=>o.msg)};
 }
 /* gueltige Starts fuer ground/leaf aus der echten Welt */
 function starts(){
-  const w=createWorld({mode:'ffa',mapSeed:1,seed:1});const r={};
+  const w=createWorld({mode:'classic',mapSeed:1,seed:1});const r={};
   for(const sp of['ground','leaf']){for(let i=0;i<5000;i++)if(w.validStart(sp,i)){r[sp]=i;break}}
   w.dispose();return r;
 }

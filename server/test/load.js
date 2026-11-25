@@ -1,6 +1,6 @@
 'use strict';
-/* Lasttest (nicht Teil von npm test): 10 Raeume x 8 Menschen, 300 simulierte Sekunden, je Modus ffa und unlimited.
-   Aufruf: cd server && node --expose-gc test/load.js [ffa|unlimited] */
+/* Lasttest (nicht Teil von npm test): 10 Raeume x 8 Menschen, 300 simulierte Sekunden, je Modus classic und unlimited.
+   Aufruf: cd server && node --expose-gc test/load.js [classic|fast|chaos|unlimited] */
 const C=require('../config');
 const {Rooms}=require('../rooms');
 const {createWorld}=require('../sim/world-vm');
@@ -49,7 +49,7 @@ function run(mode){
   rooms.dispose();
   return res;
 }
-const modes=process.argv[2]?[process.argv[2]]:['ffa','unlimited'];
+const modes=process.argv[2]?[process.argv[2]]:['classic','unlimited'];
 if(!global.gc)console.log('Hinweis: ohne --expose-gc sind die RSS-Werte ungenauer.');
 console.log(`Node ${process.version}, ${ROOMS} Raeume x ${HUMANS} Menschen, STEP_DT ${C.STEP_DT}, SNAP_MS ${C.SNAP_MS}`);
 /* jeder Modus in eigenem Prozess waere sauberer; hier per Argument moeglich */

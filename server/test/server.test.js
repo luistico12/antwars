@@ -31,7 +31,7 @@ test('falscher Origin wird beim Upgrade abgelehnt',()=>withSrv(async h=>{
 test('erste Nachricht kein auth → geschlossen nach Frist',()=>withSrv(async h=>{
   const ws=await wsOpen(h);const t=Date.now();
   assert.strictEqual(await ws.closed,1008);assert.ok(Date.now()-t<2000);
-  const ws2=await wsOpen(h);ws2.send(JSON.stringify({t:'join',mode:'ffa'}));assert.strictEqual(await ws2.closed,1008);
+  const ws2=await wsOpen(h);ws2.send(JSON.stringify({t:'join',mode:'classic'}));assert.strictEqual(await ws2.closed,1008);
 }));
 test('ungültiges Token → geschlossen, Server nimmt danach neue Verbindung an',()=>withSrv(async h=>{
   const ws=await wsOpen(h);ws.send(JSON.stringify({t:'auth',token:'bad',pid:'aaaa'}));
@@ -90,7 +90,7 @@ test('Sperrliste: gesperrte sub und IP werden abgelehnt; fehlende Datei ist leer
 });
 test('GET /matches enthält keine sub, keine pid, keine Namen; CORS nur für erlaubten Origin',()=>withSrv(async h=>{
   const a=await login(h,'secretsub1','pidaaaa');const b=await login(h,'secretsub2','pidbbbb');
-  a.send(JSON.stringify({t:'join',mode:'ffa'}));b.send(JSON.stringify({t:'join',mode:'ffa'}));
+  a.send(JSON.stringify({t:'join',mode:'classic'}));b.send(JSON.stringify({t:'join',mode:'classic'}));
   await until(()=>a.msgs.some(m=>m.t==='room'));
   const r=await get(h,'/matches',{Origin:O});
   assert.strictEqual(r.status,200);assert.strictEqual(r.headers['cache-control'],'no-store');
@@ -105,17 +105,17 @@ test('GET /matches enthält keine sub, keine pid, keine Namen; CORS nur für erl
 }));
 test('11. Raum wird nicht angelegt: Beitritt liefert err{why:full}',()=>withSrv(async h=>{
   const a=await login(h,'p1','aaaa'),b=await login(h,'p2','bbbb');
-  a.send(JSON.stringify({t:'join',mode:'ffa'}));await until(()=>a.msgs.some(m=>m.t==='room'));
-  b.send(JSON.stringify({t:'join',mode:'ffa'}));
+  a.send(JSON.stringify({t:'join',mode:'classic'}));await until(()=>a.msgs.some(m=>m.t==='room'));
+  b.send(JSON.stringify({t:'join',mode:'classic'}));
   await until(()=>b.msgs.some(m=>m.t==='err'&&m.why==='full'));
   assert.strictEqual((JSON.parse((await get(h,'/matches')).body)).length,1);
   a.close();b.close();
 },{MAX_ROOMS:1,MAX_HUMANS:1}));
 test('Wiederverbinden im Wartesaal: Spieler kann nach Abbruch erneut beitreten',()=>withSrv(async h=>{
-  const a=await login(h,'r1','aaaa');a.send(JSON.stringify({t:'join',mode:'ffa'}));await until(()=>a.msgs.some(m=>m.t==='room'));
+  const a=await login(h,'r1','aaaa');a.send(JSON.stringify({t:'join',mode:'classic'}));await until(()=>a.msgs.some(m=>m.t==='room'));
   a.close();await a.closed;await until(async()=>true);await wait(50);
   assert.strictEqual(JSON.parse((await get(h,'/matches')).body).length,0);
-  const b=await login(h,'r1','aaaa');b.send(JSON.stringify({t:'join',mode:'ffa'}));await until(()=>b.msgs.some(m=>m.t==='room'));b.close();
+  const b=await login(h,'r1','aaaa');b.send(JSON.stringify({t:'join',mode:'classic'}));await until(()=>b.msgs.some(m=>m.t==='room'));b.close();
 }));
 test('Token eines fremden Schlüssels wird über den echten Serverpfad abgelehnt',async()=>{
   const mine=crypto.generateKeyPairSync('ec',{namedCurve:'P-256'}),other=crypto.generateKeyPairSync('ec',{namedCurve:'P-256'});

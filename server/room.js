@@ -9,7 +9,7 @@ const isInt=n=>Number.isInteger(n);
 
 class Room{
   constructor({id,mode,send,onEmpty,seed,createWorld}){
-    this.id=id;this.mode=mode==='unlimited'?'unlimited':'ffa';this.state='waiting';
+    this.id=id;this.mode=['classic','fast','chaos','unlimited'].includes(mode)?mode:'classic';this.state='waiting';
     this._send=send;this._onEmpty=onEmpty;
     this.humans=new Map(); /* sub -> {sub,pid,name,ready,info,fid,absentAt} */
     this.nowMs=0;this.countdown=0;this._acc=0;this._snapMs=0;this._closed=false;this._lastCd=-1;
@@ -82,7 +82,7 @@ class Room{
     for(const o of this.humans.values())if(o.fid!=null)fids[o.pid]=o.fid;
     for(const o of this.humans.values())if(o.fid!=null&&info.Fi&&info.Fi[o.fid])info.Fi[o.fid].c=o.info.c;
     const w=this.world.snap();/* aktueller Weltzustand (auch beim Wiedereintritt) */
-    this._send2(h.sub,{t:'init',...info,T:w.T,F:w.F,C:w.C,M:w.M,sp:w.sp,gt:w.gt,fids,hp:null,d:info.d});
+    this._send2(h.sub,{t:'init',...info,T:w.T,F:w.F,C:w.C,M:w.M,sp:w.sp,sm:w.sm,gt:w.gt,fids,hp:null,d:info.d});
   }
 
   cmd(sub,c){
@@ -116,7 +116,7 @@ class Room{
     }
     try{
       this._acc+=dt;let n=0;
-      while(this._acc>=C.STEP_DT-1e-9&&n<MAXSTEP){this.world.step(C.STEP_DT);this._acc-=C.STEP_DT;n++}
+      while(this._acc>=C.STEP_DT-1e-9&&n<MAXSTEP){const k=this.world.simv?this.world.simv():1;for(let i=0;i<k;i++)this.world.step(C.STEP_DT);this._acc-=C.STEP_DT;n++}
       if(this._acc>=C.STEP_DT)this._acc=0;
       this._snapMs+=dt*1000;
       let snap=null;

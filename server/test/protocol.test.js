@@ -9,7 +9,7 @@ test('parseClientMsg lehnt Nicht-Objekte, Arrays, unbekannte t, zu lange Strings
     Buffer.from([0xff,0xfe,0x00,0x7b]),Buffer.from('{"t":"leave"}�'),123,undefined,null,{t:'leave'}])
     assert.strictEqual(p(raw).ok,false,String(raw).slice(0,40));
   assert.deepStrictEqual(p('{"t":"leave"}'),{ok:true,msg:{t:'leave'}});
-  assert.strictEqual(p(Buffer.from('{"t":"join","mode":"ffa"}')).ok,true);
+  assert.strictEqual(p(Buffer.from('{"t":"join","mode":"classic"}')).ok,true);
   assert.strictEqual(p(JSON.stringify({t:'auth',token:'t'.repeat(900),pid:'ab12'})).ok,true);
   const r=p(JSON.stringify({t:'ready',name:'A',sp:'ground',start:3,c:{crown:'gold',__proto__:{x:1},evil:'a',flag:'<b>'}}));
   assert.deepStrictEqual(r.msg.c,{crown:'gold'});

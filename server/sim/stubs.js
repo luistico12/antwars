@@ -13,7 +13,7 @@ var toast=__noop,flashHit=__noop,renderColSwitch=__noop,openColony=__noop,showCo
 var askConquest=__noop;
 var makeColony=function(){return null};
 var newG=__noop;
-var G={upg:{},items:[],mat:0,food:0,matCap:0,foodCap:0,time:0};
+var G=null;/* Server hat keinen Spieler 0 und keine Kolonie: updateBotRaids und Haendlerertrag (nur fuer Spieler 0) bleiben aus */
 var pwMul=function(){return 1};
 var col=null,curT=null;
 /* endGame(win): Spielende merken statt Oberflaeche oeffnen. Auf dem Server gibt es keinen Spieler 0, daher meldet world-vm den Sieger selbst. */

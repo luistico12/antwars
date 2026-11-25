@@ -597,7 +597,7 @@ sudo systemctl restart fail2ban systemd-journald
 
 Gemessen am 2026-11-23 auf einer Entwicklungsmaschine (2 Kerne, 2,1 GHz, Node 22) mit **10 Räumen zu je 8 Spielern**, Schritt 0,1 s, `snap` alle 500 ms:
 
-| Messwert | ffa | unlimited |
+| Messwert | classic | unlimited |
 |---|---|---|
 | RAM leerer Prozess | 40 MB | 40 MB |
 | RAM Spitze (10 Räume) | 95 MB | **123 MB** |

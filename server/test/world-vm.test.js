@@ -2,7 +2,7 @@ const test=require('node:test'),assert=require('node:assert');
 const {createWorld}=require('../sim/world-vm');
 const find=(w,sp,skip)=>{for(let i=0;i<5000;i++){if(i===skip)continue;if(w.validStart(sp,i))return i}throw new Error('kein Start fuer '+sp)};
 test('Welt mit zwei Menschen: Platzhalter 0, Starts, lebende Fraktionen, Zeitlauf',()=>{
-  const w=createWorld({mode:'ffa',mapSeed:1,seed:1});
+  const w=createWorld({mode:'classic',mapSeed:1,seed:1});
   const a=find(w,'ground'),b=find(w,'leaf');
   w.initWorld([{pid:'a',name:'A',species:'ground',start:a,c:null},{pid:'b',name:'B',species:'leaf',start:b,c:null}]);
   let s=w.snap();
@@ -19,13 +19,13 @@ test('Welt mit zwei Menschen: Platzhalter 0, Starts, lebende Fraktionen, Zeitlau
   w.dispose();
 });
 test('gleicher Seed gleiche Welt, anderer Seed andere',()=>{
-  const mk=seed=>{const w=createWorld({mode:'ffa',mapSeed:1,seed});
+  const mk=seed=>{const w=createWorld({mode:'classic',mapSeed:1,seed});
     w.initWorld([{pid:'a',name:'A',species:'ground',start:find(w,'ground'),c:null}]);
     for(let i=0;i<300;i++)w.step(0.1);const r=JSON.stringify(w.snap());w.dispose();return r};
   assert.strictEqual(mk(5),mk(5));assert.notStrictEqual(mk(5),mk(6));
 });
 test('troopTick: Zeit wird eingespeist, Eimer 12, +6/s',()=>{
-  const w=createWorld({mode:'ffa',mapSeed:1,seed:1});
+  const w=createWorld({mode:'classic',mapSeed:1,seed:1});
   const a=find(w,'ground'),b=find(w,'leaf');
   w.initWorld([{pid:'a',name:'A',species:'ground',start:a,c:null},{pid:'b',name:'B',species:'leaf',start:b,c:null}]);
   let ok=0;for(let i=0;i<100;i++)if(w.troopTick(1,a,1000))ok++;

@@ -23,7 +23,7 @@ function parseClientMsg(raw){
     if(!isObj(m)||typeof m.t!=='string')return NOK;
     switch(m.t){
       case'auth':if(typeof m.token!=='string'||m.token.length>2048||typeof m.pid!=='string'||!PID.test(m.pid))return NOK;return{ok:true,msg:{t:'auth',token:m.token,pid:m.pid}};
-      case'join':if(m.mode!=='ffa'&&m.mode!=='unlimited')return NOK;return{ok:true,msg:{t:'join',mode:m.mode}};
+      case'join':if(!['classic','fast','chaos','unlimited'].includes(m.mode))return NOK;return{ok:true,msg:{t:'join',mode:m.mode}};
       case'leave':return{ok:true,msg:{t:'leave'}};
       case'ready':
         if(!isStr(m.name)||!isStr(m.sp)||!isInt(m.start)||!(m.c===null||isObj(m.c)))return NOK;
