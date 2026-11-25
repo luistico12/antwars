@@ -90,8 +90,7 @@ function diggable(C,c,r){if(r<0||c<0||c>=COLS||r>=ROWS)return false;if(r>=MR)ret
 function territoryIncome(){
   let food=0,mat=0,fungus=0;
   for(const t of T){if(t.owner!==0)continue;const q=TERR[t.terrain];
-    if(t.puppet){food+=0.12+q.food*0.3;mat+=0.05+q.mat*0.3;fungus+=0.04}
-    else if(!t.isCap){food+=q.food;mat+=q.mat}}
+    if(!t.isCap){food+=q.food;mat+=q.mat}}
   return{food,mat,fungus};
 }
 function waterEff(C,S){const p=S.pit,z=C.water.size;return Math.min(p,z)+Math.max(0,p-z)*0.25}
@@ -103,7 +102,7 @@ function econC(C){
   const upkeep=(C.w+sold)*0.012,pitEff=waterEff(C,S),mat=C.diggers*0.12*pwMul('dig')+pitEff*0.35;
   const lay=0.14*(1+0.25*S.egg)*(1+0.3*G.upg.egg)*sp.egg*pwMul('egg');
   const eggs=C.eggAges.length;
-  return{foragers,forage,farmP,farmUse,upkeep,mat,pitEff,lay,sold,S,eggs,eggFood:eggs<S.eggCap?lay*2:0,hatch:eggs/EGG_T};
+  return{foragers,forage,farmP,farmUse,upkeep,mat,pitEff,lay,sold,S,eggs,eggFood:eggs<S.eggCap?lay*2:0,hatch:eggs/(EGG_T*SIMV)};
 }
 function updateColonies(dt){
   G.time+=dt;

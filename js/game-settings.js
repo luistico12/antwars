@@ -1,14 +1,22 @@
 /* ===== Einstellungen: Steuerung und Grafik ===== */
-const KB_DEF={up:'w',down:'s',left:'a',right:'d',zoomIn:'+',zoomOut:'-',pause:'p',view:'Tab',tabAnts:'1',tabRooms:'2',tabUpg:'3',dockLeft:'q',dockRight:'r',tunnel:'t',speed1:'',speed2:'',speed4:'',speed8:''};
+const KB_DEF={up:'w',down:'s',left:'a',right:'d',zoomIn:'+',zoomOut:'-',pause:'p',view:'Tab',tabAnts:'1',tabRooms:'2',tabUpg:'3',dockLeft:'q',dockRight:'r',tunnel:'t'};
 const KB_NAME={up:'Nach oben',down:'Nach unten',left:'Nach links',right:'Nach rechts',zoomIn:'Hineinzoomen',zoomOut:'Herauszoomen',pause:'Pause',view:'Kolonie / Weltkarte wechseln',tabAnts:'Reiter Ameisen',tabRooms:'Reiter Räume',tabUpg:'Reiter Upgrades',dockLeft:'Leiste nach links scrollen',dockRight:'Leiste nach rechts scrollen',tunnel:'Tunnelansicht (Kolonie)',speed1:'Geschwindigkeit x1',speed2:'Geschwindigkeit x2',speed4:'Geschwindigkeit x4',speed8:'Geschwindigkeit x8'};
-const QUAL={low:{n:'Niedrig',d:0.6},mid:{n:'Mittel',d:1},high:{n:'Hoch',d:1.5},ultra:{n:'Ultra',d:2}};
+const QUAL={low:{n:'Niedrig',d:0.9},mid:{n:'Mittel',d:1.5},high:{n:'Hoch',d:2},ultra:{n:'Ultra',d:2.5}};
 const FPS_OPT=[0,30,60,120,144,240];
 const ST=Object.assign({fps:false,q:'',vsync:true,fpsMax:0,hideCosm:false,ui:100,pct:50,kb:{...KB_DEF}},lsGet('ak_settings',{}));ST.kb=Object.assign({...KB_DEF},ST.kb||{});
-if(!QUAL[ST.q]){const d=ST.density||1;ST.q=d<0.8?'low':d<1.25?'mid':d<1.75?'high':'ultra'}
+if(!QUAL[ST.q]){const d=ST.density||1.5;ST.q=d<1.2?'low':d<1.75?'mid':d<2.25?'high':'ultra'}
 ST.density=QUAL[ST.q].d;
 const cosmVisible=own=>own||!ST.hideCosm;
 /* Bildwechsel: mit VSync per requestAnimationFrame, sonst per Nachrichtenkanal (ohne Monitor-Takt) */
-const nextFrame=(()=>{const ch=new MessageChannel();let cb=null;ch.port1.onmessage=()=>{const f=cb;cb=null;f&&f(performance.now())};return f=>{if(ST.vsync)requestAnimationFrame(f);else{cb=f;ch.port2.postMessage(0)}}})();
+const nextFrame=(()=>{
+  const ch=new MessageChannel(),q=[],MINF=1000/1024;let lastT=0,pend=false;
+  const run=()=>{const n=performance.now();if(n-lastT<MINF){ch.port2.postMessage(0);return}lastT=n;pend=false;const l=q.splice(0);for(const f of l)f(n)};
+  ch.port1.onmessage=run;
+  return f=>{if(ST.vsync)requestAnimationFrame(f);else{q.push(f);if(!pend){pend=true;ch.port2.postMessage(0)}}};
+})();
+/* Regler und Häkchen geben den Fokus nach dem Loslassen zurück, damit WASD und alle Tasten weiter die Karte steuern */
+document.addEventListener('pointerup',e=>{const el=e.target;if(el&&el.tagName==='INPUT'&&(el.type==='range'||el.type==='checkbox'))setTimeout(()=>el.blur(),0)},true);
+const typing=e=>{const el=e.target||{};return el.tagName==='TEXTAREA'||el.isContentEditable||(el.tagName==='INPUT'&&!/^(range|checkbox|radio|button)$/.test(el.type))};
 function applyUI(){const z=ST.ui/100;for(const s of['#dock','#side','#qLive','#chips'])document.querySelectorAll(s).forEach(e=>e.style.zoom=z===1?'':z)}
 document.body.insertAdjacentHTML('beforeend','<div id="hitFrame"></div>');
 function flashHit(){const h=$('#hitFrame');h.classList.remove('on');void h.offsetWidth;h.classList.add('on')}
@@ -41,7 +49,8 @@ function renderSet(){
     <div><b>Interface-Größe</b><p class="note">Skaliert Leiste, Seitenmenü und Anzeigen. Aktuell: ${ST.ui}%</p><div class="opt">${[80,90,100,115,130].map(d=>`<button class="btn sm${ST.ui===d?' on':''}" data-ui="${d}" type="button">${d}%</button>`).join('')}</div></div>`;
   }else{
     h+=`<label class="ck"><input type="checkbox" id="fpsCk" ${ST.fps?'checked':''}> FPS anzeigen</label>
-    <label class="ck"><input type="checkbox" id="vsCk" ${ST.vsync?'checked':''}> VSync (an den Monitor-Takt koppeln)</label>
+    <label class="ck"><input type="checkbox" id="lbCk" ${ST.hideLb?'':'checked'}> Bestenliste anzeigen</label>
+    <label class="ck"><input type="checkbox" id="vsCk" ${ST.vsync?'checked':''}> VSync (an den Monitor-Takt koppeln, ohne VSync max. 1024 FPS)</label>
     <div><b>FPS-Limit</b><div class="opt">${FPS_OPT.map(d=>`<button class="btn sm${ST.fpsMax===d?' on':''}" data-fm="${d}" type="button">${d?d:'Unbegrenzt'}</button>`).join('')}</div></div>
     <div><b>Grafikqualität</b><p class="note">Niedrig ist gröber und schneller, Ultra ist am schärfsten und braucht am meisten Leistung.</p>
     <div class="opt">${Object.keys(QUAL).map(k=>`<button class="btn sm${ST.q===k?' on':''}" data-q="${k}" type="button">${QUAL[k].n}</button>`).join('')}</div></div>`;
@@ -60,6 +69,7 @@ $('#set').addEventListener('click',e=>{
     else if(b.dataset.fm!==undefined){ST.fpsMax=+b.dataset.fm;saveST();renderSet()}
     else if(b.dataset.ui){ST.ui=+b.dataset.ui;applyUI();saveST();renderSet()}
   }
+  if(e.target.id==='lbCk'){ST.hideLb=!e.target.checked;saveST();if(typeof updateHud==='function')updateHud()}
   if(e.target.id==='vsCk'){ST.vsync=e.target.checked;saveST()}
   if(e.target.id==='hideCk'){ST.hideCosm=e.target.checked;saveST();if(typeof ownDirty!=='undefined')ownDirty=true}
   if(e.target.id==='fpsCk'){ST.fps=e.target.checked;saveST();$('#fpsBox').hidden=!ST.fps}
@@ -79,20 +89,19 @@ document.addEventListener('keydown',e=>{
 },true);
 /* eigene Tasten: Zoom, Pause, Ansicht */
 document.addEventListener('keydown',e=>{
-  if(!started||/INPUT|TEXTAREA/.test((e.target||{}).tagName||'')||!$('#set').hidden||MP.open)return;
+  if(!started||typing(e)||!$('#set').hidden||MP.open)return;
   const k=e.key.length===1?e.key.toLowerCase():e.key,kb=ST.kb;
   if(k===kb.zoomIn||k===kb.zoomOut||(kb.zoomIn==='+'&&k==='=')){
     const f=(k===kb.zoomOut)?1/1.15:1.15;
     if(view==='colony'&&col){ccam.x+=VW/ccam.z/2;ccam.y+=VH/ccam.z/2;ccam.z*=f;clampCam();ccam.x-=VW/ccam.z/2;ccam.y-=VH/ccam.z/2;clampCam()}
     else if(view==='map'){mcam.x+=MW/mcam.z/2;mcam.y+=MH/mcam.z/2;mcam.z=clamp(mcam.z*f,1,4);mcam.x-=MW/mcam.z/2;mcam.y-=MH/mcam.z/2;clampMapCam()}
-  }else if(k===kb.pause&&!over&&$('#pause').hidden){if(speed>0)prevSpeed=speed;setSpeedUI(0);showPause()}
+  }else if(k===kb.pause&&!over&&$('#pause').hidden){setSpeedUI(0);showPause()}
   else if(k===kb.pause&&!$('#pause').hidden){resumeGame()}
   else if(k===kb.view&&!warping){e.preventDefault();if(view==='colony')setView('map');else if(col)setView('colony')}
   else if(view==='map'&&/^[0-9]$/.test(k)&&typeof hudKey==='function'){e.preventDefault();hudKey(k)}
   else if(k===kb.tabAnts||k===kb.tabRooms||k===kb.tabUpg){if(!col)return;dockTab=k===kb.tabAnts?'ants':k===kb.tabRooms?'rooms':'upg';if(view!=='colony')setView('colony');renderDock()}
   else if(k===kb.dockLeft||k===kb.dockRight){const b=$('#dockBody');b.scrollBy({left:(k===kb.dockLeft?-1:1)*Math.max(240,b.clientWidth*0.7),behavior:'smooth'})}
   else if(k===kb.tunnel&&view==='colony'&&col&&!e.ctrlKey&&!e.metaKey){col.buildSel=col.buildSel==='tunnel'?null:'tunnel';col.pin=null;refreshLive()}
-  else{const sp=[kb.speed1,kb.speed2,kb.speed4,kb.speed8].indexOf(k);if(sp>=0){const v=[1,2,4,8][sp];prevSpeed=v;setSpeedUI(v)}}
 });
 $('#pause .box').insertAdjacentHTML('beforeend','');
 $('#pEnd').insertAdjacentHTML('beforebegin','<button class="btn" id="pSet" type="button">Einstellungen</button>');

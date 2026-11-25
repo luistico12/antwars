@@ -42,6 +42,43 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
 
 19. Update v18 (Flaggen im Mehrspieler): `cosmPack/cosmClean` tragen `flag`, Weltkarte zeichnet die Flagge jeder Hauptstadt über `cosmOf(owner)`. Hüte bleiben nur in der eigenen Kolonie (fremde Kolonien sind nicht sichtbar). Tests `worldupdate`/`radial` nutzen jetzt feste Zufallsfolge (`SEED=n`), vorher wegen Zufallskarten gelegentlich rot.
 
+26. Update v21.5 – Forum für Bugs, Vorschläge und Spieler-Reports (getestet: `node .t.js` mit Playwright im Gastmodus, `node --check` aller geänderten Dateien):
+    - Menüknopf „Forum“ in der Seitenleiste (`js/ui-boot.js`), Screen `S.forum` (`js/ui-screens.js`): links Formular für neue Meldungen (Art Bug / Vorschlag / Spieler-Report, Titel, Text) und die Liste, rechts der Verlauf mit Antworten. Admins sehen alle Meldungen mit Filter-Chips und können schließen, wieder öffnen, löschen und Rückfragen stellen; Spieler sehen nur ihre eigenen Meldungen und die Antworten darauf.
+    - `js/backend.js`: `forumThreads/forumOpen/forumSend/forumReply/forumClose/forumDel` für Supabase (RPCs) und für den Gastmodus (localStorage, maximal 8 Meldungen pro Tag).
+    - `supabase/schema.sql`: Tabellen `forum_threads`/`forum_posts`, RLS (Verfasser oder Admin), RPCs `forum_list`, `forum_open`, `forum_send`, `forum_reply`, `forum_close`, `forum_remove`; News v21.5.
+    - Englische Texte in `js/i18n-en.js`.
+
+25. Update v21.4 – Wege-Bug behoben: `buildLink` in `js/game-trade.js` hat die Route mit Gewichten 1-2-1 geglättet, aber durch 3 geteilt. Dadurch wurde jeder Weg pro Glättungsschritt um 4/3 gestreckt und zog sich in riesigen Bögen über die Karte (gemessen: 1292 px statt 233 px für 19 Zellen). Jetzt wird durch 4 geteilt; Wege folgen wieder dem kürzesten Weg (alle `tests/*.spec.js` außer multiplayer grün).
+    - News v21.4 in `js/backend.js` und `supabase/schema.sql`, live in Supabase eingetragen.
+
+24. Update v21.3 – viel mehr Karriere-Quests: 37 Quests mit je 4–5 Stufen (getestet: alle `tests/*.spec.js` außer multiplayer):
+    - `CAREER` in `js/backend.js` von 20 auf 37 Linien erweitert (150 Stufen). Pro Statistik jetzt mehrere Quests mit steigenden Zielen: Partien (Veteran, Vielspieler, Spielmarathon), Tage (Stammgast, Gewohnheit), Zeit (Dienstzeit, Ausdauer), Siege (Sieger, Feldherr, Champion, Unbesiegbar), Gebiete (Eroberer, Belagerer, Feldzug, Imperium), Gebäude (Baumeister, Architekt, Stadtplaner, Metropole), Schiffe (Seewolf, Korsar, Admiral, Flottenherr), Bündnisse (Diplomat, Unterhändler, Botschafter, Friedensstifter), Funde (Schatzsucher, Ausgräber, Sammler, Archäologe), gleichzeitige Gebiete (Reichsgründer, Herrscher, Kontinent), Punkte (Punktejäger, Legende, Mythos).
+    - Tages- (12) und Wochenquests (17) unverändert; Karriere-UI unverändert (Kategorie-Chips zeigen die neuen Zähler: Matches 7, Meisterleistungen 6, sonst 4).
+    - `supabase/schema.sql` und Live-DB: `quests` 181 Zeilen (150 Karriere, 13 täglich inkl. Bonus, 18 wöchentlich inkl. Bonus), News v21.3; englische Namen der neuen Quests in `js/i18n-en.js`.
+
+23. Update v21.2 – Karriere in 20 Quests mit je 4–5 Stufen, Quest-UI neu (getestet: alle `tests/*.spec.js` außer multiplayer):
+    - GitHub Pages: der Actions-Workflow `.github/workflows/pages.yml` ist entfernt. Die Seite wird über „Deploy from a branch“ veröffentlicht (der Lauf „pages build and deployment“ ist bei jedem Push grün, die Seiteninhalte kommen direkt aus `main`). Der Actions-Workflow scheiterte dagegen immer in `deploy-pages@v4`, weil die Pages-Quelle kein Actions-Deploy erlaubt – bei erfolgreichem Push stand nur ein rotes X.
+    - `CAREER` in `js/backend.js`: 20 Linien mit je 4–5 Stufen (82 Stufen). Neue Linien: Vielspieler, Feldherr, Belagerer, Architekt, Korsar, Unterhändler, Ausgräber, Herrscher, Legende. Tages- (12) und Wochenquests (17) unverändert.
+    - Karriere-UI (`js/ui-quests.js`, `css/ui.css`): Kopf mit Stufen-/Quest-Zähler und Prozent-Ring, Kategorien als Chips statt Seitenleiste, Karten mit nummerierten Stufen-Punkten (erledigt/aktuell/offen), Prozent-Badge, Balken und Abholen-Knopf unten rechts.
+    - CSS-Dopplung der v21-Sektion entfernt: die alten Karriere-Regeln kamen nach den neuen und machten aus den Kategorie-Chips eine gestapelte Liste.
+    - Supabase live: `quests` 113 Zeilen (82 Karriere, 13 täglich inkl. Bonus, 18 wöchentlich inkl. Bonus), News v21.2.
+
+22. Update v21.1 – Korrektur: Karriere zurück auf 44 Stufen, dafür mehr einzelne Quests (getestet: quests, cosmetics, solo, ui2, hud):
+    - `CAREER` in `js/backend.js` wieder auf dem alten Stand (5/4/4/5/4/4/4/3/4/4/3 = 44 Stufen); Prozentwert und Balken bleiben korrekt.
+    - Statt mehr Stufen jetzt mehr einzelne Quests: 12 Tagesquests (vorher 6) und 17 Wochenquests (vorher 10). Neue IDs: d_conq2, d_build2, d_found, d_sunk, d_allied, d_score, w_conq2, w_build2, w_sunk2, w_terr2, w_found2, w_allied2, w_score; der Bonus zählt automatisch alle Quests der Art.
+    - Quest-Liste aufgeräumt: Symbol, Aufgabe und Belohnung in einer Zeile, Balken mit „x / y“ direkt darunter statt eigener Spalte „FORTSCHRITT“; Kopf als schmale Leiste mit Zurücksetzen-, Erledigt- und Serien-Pille plus Prozent-Ring; Karriere-Karten gleich hoch, „Stufe 2 / 5“ statt Strich-Punkten, Abholen-Knopf unten rechts.
+    - `supabase/schema.sql` (Quest-Liste, News v21.1) und die Live-DB nachgezogen: 75 Zeilen (44 Karriere, 13 täglich inkl. Bonus, 18 wöchentlich inkl. Bonus). News v21 nennt jetzt 12/17 Quests und 44 Stufen.
+    - Englische Titel der neuen Quests in `js/i18n-en.js`.
+
+21. Update v21 – Liquid Glass, SVG-Skins, mehr Quests (getestet: quests, cosmetics, solo, ui2, hud, worldupdate, radial):
+    - Liquid Glass in css/ui.css: Kopfzeile, Screens, Hauptmenü (rail, hhero, hact), Glas-Karten mit Lichtkante und tiefer Unschärfe; die Anzeige „Spieler des Tages“ ist jetzt eine Glas-Pille im FrontWars-Stil.
+    - Alle Kosmetik als eigene SVG-Dateien: img/skins/hats (18), img/skins/crowns (13 inkl. Standardkrone), img/skins/ships (10), erzeugt von scripts/gen-skins.js. cosmetics.js lädt sie einmal je Datei und zeichnet sie per drawSkin (Hut auf Ameisen, Krone über der Hauptstadt und in der Bestenliste, Schiff auf Flößen). Muster sind neu (12, u. a. Waben, Schuppen, Pfeile).
+    - Katalog und Preise angepasst (backend.js, svgart.js): neue Hüte, Kronen, Schiffe, Muster sowie Gebäude-, Händler- und Wege-Skins (Obsidian, Korallen, Neon, Schatten, Jade, Eis, Lava). Die Preise steigen mit der neuen Qualität.
+    - Quests: 66 Karrierestufen (statt 44), 6 Tages- und 10 Wochenquests (je plus Bonus). UI neu: Kachel in Questfarbe, farbiger Fortschrittsbalken, großer orangener Abholen-Knopf mit Glanz, grüne „Abgeholt“-Markierung, Stufen-Punkte und ein Prozentwert, der abgeholte Stufen plus die laufende Stufe zählt (vorher zählten nur abgeholte Stufen).
+    - Behoben: js/ui-screens.js war durch einen auskommentierten „Öffentliche Spiele“-Block syntaktisch kaputt (needLogin und mehrere Screens fehlten im Browser); der tote Block ist entfernt, der News-Screen ist wieder aktiv und der tote Knopf „Öffentliche Spiele“ im Hauptmenü ist weg.
+    - Supabase live aktualisiert: shop_items (123 Artikel, neue Preise), quests (84 Zeilen, Tabelle neu aufgebaut) und News v21. Dasselbe SQL steht am Ende von supabase/schema.sql.
+    - News v21 in DEFAULT_NEWS (js/backend.js) und am Ende von supabase/schema.sql.
+
 ## Offen (neu)
 - Mehrspieler-Kosmetik (v16): Kronen/Muster/Schiffe werden beim Start gemeldet (`ready` → Host → `init`, `cosmPack/cosmClean/cosmOf`), „Kosmetik anderer ausblenden“ wirkt jetzt. Hüte/Flaggen anderer Spieler werden noch nicht synchronisiert; Bots tragen nur die Standardkrone.
 - Bots nutzen die Bauleiste/Spenden nicht, Gebietsbeschriftung auf der Karte noch im alten Stil.
@@ -59,3 +96,20 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
 - Lobby-Beitritt/-Erstellen zeigen jetzt die echte Ursache („Server noch nicht aktualisiert“), Code wird kleingeschrieben gesucht. Freunde/Lobbys gehen nur, wenn `supabase/schema.sql` komplett im Supabase-SQL-Editor ausgeführt wurde.
 - Login: Google entfernt, GitHub-Anmeldung statt dessen (Discord bleibt). Offen: GitHub-Provider in Supabase einrichten (OAuth App, Callback-URL aus Supabase eintragen).
 - Auth-Callback: kein await auf Supabase im onAuthStateChange (SDK-Deadlock); unerwartetes SIGNED_OUT zeigt Toast 'Abgemeldet (Sitzung ungültig)'. Ursache für sofortige Abmeldung nach Login noch nicht bestätigt.
+
+16. Update v19 (getestet: alle `tests/*.spec.js`, neu `quests.spec.js`):
+    - Modi fest: Klassisch 2x, Schnell 3x, Chaos (Zufallsstart, 3x), Unlimited 3x; keine Tempo-Regler, Echtzeit-Timer (`rtime()`), keine Marionettenstaaten.
+    - Automatische Wege/Händler/Kriegsschiffe in `js/game-trade.js`; SVG-Grafik und Skins in `js/svgart.js`; manuelles Wegemalen entfernt.
+    - VSync-Fehler behoben (`nextFrame` in game-settings.js, Cap 1024 FPS); Eingabe-Fokus nach Reglern (`typing(e)`).
+    - Quests neu (`QUESTS`/`CAREER` in backend.js, SQL-Migration am Ende von schema.sql); UI in `js/ui-quests.js` (Erfolge, Profil, Spielverlauf `Hist` lokal `aw_hist`, Bild-Zuschnitt `cropAvatar`).
+    - Offen: SQL "Update v19" im Supabase-SQL-Editor ausführen; Events-Tab ist leer (Rahmen); Spielverlauf nur lokal, ohne Replay; neue Texte nur teils ins Englische übersetzt.
+
+20. Update v20 – Öffentliche Spiele auf eigenem Server (getestet: `cd server && npm test`, `node tests/public-match.spec.js`, solo, multiplayer, worldupdate, radial, ui2):
+    - Neu `server/`: Welt aus denselben Dateien (`game-core`, `game-world`, `game-sea`) in einem `vm`-Kontext je Match, Fraktion 0 als toter Platzhalter, Menschen 1…n. `room.js` (Countdown ab 2, 30 s Schonfrist, Bot-Übernahme), `protocol.js` (Schema, 4 KiB), `auth.js` (Supabase-JWKS, kein Geheimnis), `limits.js`, `index.js` (nur 127.0.0.1, Origin-Liste, 1 Verbindung je Konto, Sperrliste, `/healthz`, `/matches`). Lasttest `node server/test/load.js`: 10 Räume, 77 MB RSS, 0,8 % eines Kerns.
+    - `startGame` geteilt in `initWorld({hostStart,humans})` + Kolonieteil; Host-Prinzip unverändert.
+    - Client: `js/net-ws.js`, `NET.server`/`NET.roomId`, Karte kommt mit dem Raum-Seed, Bildschirm „Öffentliche Spiele“ (Liste alle 5 s, Beitritt, „Weiterspielen“ nach Neuladen) und Menüknopf.
+    - `deploy/`: `harden.sh`, `check.sh`, `antwars-server.service` (MemoryMax 1G), `cloudflared-config.yml`, deutsche `ANLEITUNG-SERVER.md`.
+    - News v20 in `DEFAULT_NEWS` und `supabase/schema.sql`.
+    - Nachbesserung für die Einrichtung: `harden.sh` legt `/opt/antwars/server` nicht mehr vorab an (sonst verweigert `git clone` das Ziel); der Pages-Workflow reicht das Secret `SERVER_URL` an `gen-config.sh` durch, sonst bliebe die Serveradresse im Build leer. `harden.sh --root /mnt/storage/antwars` erlaubt einen anderen Projektpfad (`/opt/antwars` wird Symlink, `check.sh` folgt ihm).
+    - Offen: `SERVER_URL` in `config.js`/Secrets setzen; Cloudflare-Tunnel und Domain beim Nutzer einrichten; SQL v20 im Supabase-SQL-Editor ausführen; kompletter Lauf gegen echtes Supabase steht aus.
+    - Domain: öffentliche Serveradresse ist `https://antwars.123lumc.de` (gesetzt in `config.js`, `deploy/cloudflared-config.yml`, `deploy/ANLEITUNG-SERVER.md`; der Pages-Workflow fällt ohne Secret `SERVER_URL` darauf zurück). Über den Cloudflare-Connector ließ sich kein DNS-Eintrag anlegen: der Token darf keine Zonen lesen (Fehler 9109) und im Konto existiert noch kein Tunnel – Tunnel und Public Hostname `antwars.123lumc.de` → `HTTP 127.0.0.1:8787` entstehen im Dashboard und legen den CNAME selbst an.

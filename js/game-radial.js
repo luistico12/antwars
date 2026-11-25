@@ -2,8 +2,8 @@
 document.body.insertAdjacentHTML('beforeend','<div id="radial" hidden><div class="why"><span id="radialWhy"></span></div><div class="ring" id="radialRing"></div></div>');
 function bestSource(t){
   let from=null;
-  if(selT!=null&&T[selT].owner===0&&!T[selT].puppet&&T[selT].adj.includes(t.id))from=T[selT];
-  if(!from){for(const i of t.adj){const c=T[i];if(c.owner===0&&!c.puppet&&(!from||c.troops>from.troops))from=c}}
+  if(selT!=null&&T[selT].owner===0&&T[selT].adj.includes(t.id))from=T[selT];
+  if(!from){for(const i of t.adj){const c=T[i];if(c.owner===0&&(!from||c.troops>from.troops))from=c}}
   return from;
 }
 let radialAt=0;function closeRadial(){$('#radial').hidden=true}
@@ -20,11 +20,11 @@ const RIC={
   line:'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
   port:'<path d="M12 22V8"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/><circle cx="12" cy="5" r="3"/>',
   raft:'<path d="M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1 .6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M19.38 20A11.6 11.6 0 0 0 21 14l-9-4-9 4c0 2.9.94 5.34 2.81 7.76"/><path d="M19 13V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6"/><path d="M12 10v4"/><path d="M12 2v3"/>',
-  road:'<path d="M4 19 8 3"/><path d="m16 3 4 16"/><path d="M12 5v2"/><path d="M12 11v2"/><path d="M12 17v2"/>',
+  war:'<path d="M2 18h20l-3 4H5z"/><path d="M12 18V4l7 9h-7"/><path d="M12 4 6 14h6"/>',
   wall:'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
   troops:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'
 };
-const RCOL={info:'#8f95a1',mat:'#e0a91d',troops:'#3dbf6a',ally:'#3dbf6a',brk:'#e5534b',build:'#d9b520',x:'#6e8576',back:'#8f95a1',out:'#3dbf6a',line:'#4a7ab8',port:'#2f7fd0',raft:'#4f78e0',road:'#b08a4a',ship:'#4f78e0'};
+const RCOL={info:'#8f95a1',mat:'#e0a91d',troops:'#3dbf6a',ally:'#3dbf6a',brk:'#e5534b',build:'#d9b520',x:'#6e8576',back:'#8f95a1',out:'#3dbf6a',line:'#4a7ab8',port:'#2f7fd0',raft:'#4f78e0',war:'#e5534b',ship:'#4f78e0'};
 RIC.ship=RIC.raft;
 /* Ring wie bei FrontWars: Schwert in der Mitte (Angriff), darum Segmente (Info, Bündnis, Spenden) */
 function radialSVG(segs,atk){
@@ -59,16 +59,16 @@ function showRing(segs,atk,cx,cy,title,meta){
 }
 /* Rechtsklick aufs eigene Gebiet: Info, Bauen, Schließen; Mitte = Verteidigungswall */
 function ownRing(t,mode,cx,cy,wx,wy){
-  const owned=T.filter(x=>x.owner===0&&!x.puppet),cap=t.isCap?' · Hauptstadt':'';
-  const info=`${t.name}${cap}${t.puppet?' · Marionettenstaat':''}: ${Math.floor(t.troops)} Soldaten`+(t.regArea&&!t.puppet?`, Reich mit ${owned.length} Gebieten`:'')
+  const owned=T.filter(x=>x.owner===0),cap=t.isCap?' · Hauptstadt':'';
+  const info=`${t.name}${cap}: ${Math.floor(t.troops)} Soldaten`+(t.regArea?`, Reich mit ${owned.length} Gebieten`:'')
     +(t.str.out?`, Außenposten ${t.str.out}`:'')+(t.walls&&t.walls.length?`, ${t.walls.length} Wälle`:'')+(t.port?', Hafen':'');
   const foes=t.adj.filter(i=>T[i].owner!==0);
   let segs,atk,title=`${t.name} · Dein Gebiet`;
   if(mode==='main'){
     segs=[{k:'info',l:'Info',why:info,info}];
-    if(!t.puppet)segs.push({k:'build',l:'Bauen',why:'Strukturen bauen: Außenposten, Hafen, Weg, Verteidigungslinie'});
+    segs.push({k:'build',l:'Bauen',why:'Strukturen bauen: Außenposten, Hafen, Weg, Verteidigungslinie'});
     segs.push({k:'x',l:'Schließen',why:'Menü schließen'});
-    const wd=t.puppet?'Marionettenstaaten bekommen keine Bauten':t.walls.length>=WALL_MAX?'Hier stehen schon 3 Wälle':poorFor(WALL_COST)?`Zu wenig Material (${costLbl(WALL_COST)} nötig)`:'';
+    const wd=t.walls.length>=WALL_MAX?'Hier stehen schon 3 Wälle':poorFor(WALL_COST)?`Zu wenig Material (${costLbl(WALL_COST)} nötig)`:'';
     atk={ic:'wall',dis:!!wd,why:wd||`Verteidigungswall frei platzieren (${costLbl(WALL_COST)}). Verstärkt die Grenzen im Umkreis um +50%`,n:t.walls.length?`${t.walls.length}/${WALL_MAX}`:0};
   }else if(mode==='build'){
     const lv=t.str.out,cOut=STR_COST.out[Math.min(lv,1)],cLn=STR_COST.line[0];
@@ -76,9 +76,10 @@ function ownRing(t,mode,cx,cy,wx,wy){
     segs=[{k:'back',l:'Zurück',why:'Zurück zum Hauptmenü'},
       {k:'out',l:'Außenposten',dis:lv>=2||poorFor(cOut),why:lv>=2?'Außenposten ist maximal ausgebaut':`Außenposten Stufe ${lv+1}: +40% Verteidigung (${costLbl(cOut)})`},
       {k:'line',l:'Linie',dis:!foes.length,why:foes.length?`Verteidigungslinie gegen eine Grenze: +60% je Stufe (ab ${costLbl(cLn)})`:'Alle Nachbarn gehören dir, hier ist keine Linie nötig'},
-      {k:'port',l:'Hafen',dis:!!wPort,why:wPort||`Hafen bauen (${costLbl(PORT_COST)}). Floße und Seewege`}];
-    if(t.port)segs.push({k:'raft',l:'Floß',n:`${t.port.rafts}/${t.port.max}`,dis:t.port.rafts>=t.port.max||poorFor(RAFT_COST),why:t.port.rafts>=t.port.max?'Alle Flöße dieses Hafens sind gebaut':`Floß bauen (${costLbl(RAFT_COST)}). Damit greifst du über Wasser an`});
-    segs.push({k:'road',l:'Weg',why:'Wege malen: Handelsstrecken und schneller Transport für Soldaten. Seewege im Wasser brauchen Flöße (1 je 8 Abschnitte) und bringen doppelten Handel'});
+      {k:'port',l:'Hafen',dis:!!wPort,why:wPort||`Hafen bauen (${costLbl(PORT_COST)}). Schiffe und Seewege`}];
+    if(t.port)segs.push({k:'raft',l:'Schiff',n:`${t.port.rafts}/${t.port.max}`,dis:t.port.rafts>=t.port.max||poorFor(RAFT_COST),why:t.port.rafts>=t.port.max?'Alle Schiffe dieses Hafens sind gebaut':`Schiff bauen (${costLbl(RAFT_COST)}). Damit greifst du über Wasser an`});
+    if(t.port){const wm=warsOf(t)>=WAR_MAX?`Dieser Hafen hat schon ${WAR_MAX} Kriegsschiffe`:poorFor(WAR_COST)?`Zu wenig Material (${costLbl(WAR_COST)} nötig)`:'';segs.push({k:'war',l:'Kriegsschiff',n:`${warsOf(t)}/${WAR_MAX}`,dis:!!wm,why:wm||`Kriegsschiff bauen (${costLbl(WAR_COST)}) und frei aufs Wasser stellen. Es greift gegnerische Schiffe in Reichweite an`})}
+    if(t.coast&&t.coast.length){const[ra,rm]=raftTotals(),src=seaSourceFor(t),sw=rm===0?'Du brauchst einen Hafen mit Schiff':ra===0?'Alle Schiffe sind unterwegs oder noch nicht gebaut':!src?'Zu wenige Soldaten in deinen Häfen':'';segs.push({k:'ship',l:'Verschiffen',n:`${ra}/${rm}`,dis:!!sw,why:sw||`Soldaten aus ${src.name} per Schiff hierher bringen, danach den Landepunkt an der Küste wählen`})}
     atk={ic:'build',dis:true,why:`Bauen in ${t.name}`};
   }else{
     segs=[{k:'back',l:'Zurück',why:'Zurück zum Bauen-Menü'}];
@@ -90,7 +91,7 @@ function ownRing(t,mode,cx,cy,wx,wy){
 }
 function openRadial(e){
   if(placing){placing=null;toast('Abgebrochen','');updateSide();return true}
-  const id=terrAtEvent(e);if(id==null||over||conqQueue.length)return false;
+  const id=terrAtEvent(e);if(id==null||over)return false;
   const t=T[id];
   if(t.owner===0){const[wx,wy]=mapWorld(e);ownRing(t,'main',e.clientX,e.clientY,Math.round(wx),Math.round(wy));return true}
   const o=t.owner,f=o>0?F[o]:null,ally=!!(f&&isFriend(0,o)),from=bestSource(t);
@@ -117,10 +118,10 @@ function openRadial(e){
       segs.push({k:'mat',l:'Material spenden',dis:G.mat<dm,why:dMa});
     }else segs.push({k:'ally',l:'Bündnis',dis:cd,why:cd?`${f.name} verhandelt erst in ${Math.ceil(f.dipCool)}s wieder`:'Bündnis vorschlagen'});
   }
-  /* Über Wasser: Floß aus einem Hafen, danach den Landepunkt an der Küste wählen */
+  /* Über Wasser: Schiff aus einem Hafen, danach den Landepunkt an der Küste wählen */
   {const[ra,rm]=raftTotals(),src=seaSource(),prot=!ally&&protLeft()>0;
-    const sw=!t.coast||!t.coast.length?`${t.name} hat keine Küste`:rm===0?'Du hast noch keinen Hafen. Baue einen im Bauen-Menü deines Gebiets':prot?`Schutzzeit: noch ${mmss(protLeft())}`:ra===0?'Alle Flöße sind unterwegs oder noch nicht gebaut':!src?'Zu wenige Soldaten in deinen Häfen':'';
-    segs.push({k:'ship',l:ally?'Floß schicken':'Floß-Angriff',n:`${ra}/${rm}`,dis:!!sw,why:sw||(ally?`Soldaten aus ${src.name} per Floß zu ${t.name} schicken`:`Per Floß aus ${src.name} über Wasser angreifen, danach den Landepunkt wählen`)})}
+    const sw=!t.coast||!t.coast.length?`${t.name} hat keine Küste`:rm===0?'Du hast noch keinen Hafen. Baue einen im Bauen-Menü deines Gebiets':prot?`Schutzzeit: noch ${mmss(protLeft())}`:ra===0?'Alle Schiffe sind unterwegs oder noch nicht gebaut':!src?'Zu wenige Soldaten in deinen Häfen':'';
+    segs.push({k:'ship',l:ally?'Schiff schicken':'Schiff-Angriff',n:`${ra}/${rm}`,dis:!!sw,why:sw||(ally?`Soldaten aus ${src.name} per Schiff zu ${t.name} schicken`:`Per Schiff aus ${src.name} über Wasser angreifen, danach den Landepunkt wählen`)})}
   showRing(segs,atk,e.clientX,e.clientY,`${t.name} · ${f?f.name:'Wilde Ameisen'}`,{t:id,from:from?from.id:'',own:0});
   return true;
 }
@@ -139,7 +140,8 @@ function ownRingClick(k,t,ring){
   else if(k.startsWith('ln'))buildStr(t,'line',+k.slice(2));
   else if(k==='port')buildPort(t,wx,wy);
   else if(k==='raft')buildRaft(t);
-  else if(k==='road')startRoad();
+  else if(k==='war')buildWar(t);
+  else if(k==='ship'){const src=seaSourceFor(t);if(src)startLanding(t,src)}
   updateSide();
 }
 $('#radial').addEventListener('click',e=>{

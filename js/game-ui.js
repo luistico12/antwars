@@ -66,17 +66,17 @@ function showTip(html,e){
 function hideTip(){tip.hidden=true}
 function terrTip(t){
   const q=TERR[t.terrain],own=t.owner===0,o=t.owner<0?'Wilde Ameisen':F[t.owner].name;
-  let h=`<b>${t.name}</b> <span class="dim">(${q.name})</span><br>${o}${t.owner>=0?' · '+SP[F[t.owner].species].name:''}${t.isCap?' · Hauptstadt':''}${t.puppet?' · Marionettenstaat':''}`;
+  let h=`<b>${t.name}</b> <span class="dim">(${q.name})</span><br>${o}${t.owner>=0?' · '+SP[F[t.owner].species].name:''}${t.isCap?' · Hauptstadt':''}`;
   if(started){
     h+=`<br>Soldaten: ${Math.floor(t.troops)}`;
     if(t.owner>0&&F[t.owner].allied)h+=' · Verbündet';
     if(own&&t.col)h+=`<br>Arbeiterinnen: ${t.col.w} · Eier: ${t.col.eggAges.length}<br>Hügelhöhe: ${moundH(t.col)}/${MR} · Wasser: ${WATER_N[t.col.water.size]}`;
-    if(own&&!t.isCap&&!t.col&&!t.puppet)h+='<br>Wartet auf deine Entscheidung';
+    if(own&&!t.isCap&&!t.col)h+='<br>Wartet auf deine Entscheidung';
     if(t.str.out)h+=`<br>Außenposten Stufe ${t.str.out}`;
     if(t.walls&&t.walls.length)h+=`<br>Verteidigungswälle: ${t.walls.length}`;
-    if(t.port)h+=`<br>Hafen · Flöße ${t.port.rafts}/${t.port.max}`;
+    if(t.port)h+=`<br>Hafen · Schiffe ${t.port.rafts}/${t.port.max}`;
     for(const k of Object.keys(t.str.lines))if(t.str.lines[k])h+=`<br>Verteidigungslinie gegen ${T[k].name}: Stufe ${t.str.lines[k]}`;
-    if(own&&!t.isCap&&!t.puppet)h+=`<br>Ertrag: ${q.food?'+'+fmt(q.food*60)+' Blätter/Min ':''}${q.mat?'+'+fmt(q.mat*60)+' Erde/Min':''}`;
+    if(own&&!t.isCap)h+=`<br>Ertrag: ${q.food?'+'+fmt(q.food*60)+' Blätter/Min ':''}${q.mat?'+'+fmt(q.mat*60)+' Erde/Min':''}`;
     if(t.item)h+=`<br><b style="color:#7fe6f2">Powerup:</b> ${PW[t.item.type]} +${t.item.pct}% <span class="dim">(Rechtsklick: Spähtrupp bergen oder Gebiet erobern)</span>`;
   }
   return h;
@@ -209,7 +209,7 @@ function renderStat(){
     <div><h3>Pro Kolonie</h3><dl class="kv">${Es.map(x=>`<dt>${nm(x)}</dt><dd>${x.C.w} (${x.e.foragers}/${x.C.diggers}/${x.C.farmers})</dd>`).join('')}</dl><p class="mini">Klammer: sammeln / graben / Pilze</p></div>`;
   }else if(statKey==='soldiers'){
     h=`<div><h3>Soldaten: ${tt.sold} / ${tt.sCap}</h3><dl class="kv"><dt>Unterhalt pro Minute</dt><dd class="neg">${sgn(-tt.sold*0.012*60)} Pilze</dd><dt>Anteil an Nachwuchs</dt><dd>${Es.length?Math.round(Es.reduce((s,x)=>s+x.C.spct,0)/Es.length):0}%</dd></dl></div>
-    <div><h3>Pro Gebiet</h3><dl class="kv">${T.filter(t=>t.owner===0).map(t=>`<dt>${t.isCap?'★ ':''}${t.name}${t.puppet?' (Vasall)':''}</dt><dd>${Math.floor(t.troops)}${t.col?' / '+t.col.stats.soldierCap:''}</dd>`).join('')}</dl></div>`;
+    <div><h3>Pro Gebiet</h3><dl class="kv">${T.filter(t=>t.owner===0).map(t=>`<dt>${t.isCap?'★ ':''}${t.name}</dt><dd>${Math.floor(t.troops)}${t.col?' / '+t.col.stats.soldierCap:''}</dd>`).join('')}</dl></div>`;
   }else if(statKey==='eggs'){
     const lay=sum(x=>x.C.eggAges.length<x.e.S.eggCap?x.e.lay:0),ready=Es.reduce((s,x)=>s+x.C.eggAges.filter(a=>a>=EGG_T).length,0);
     h=`<div><h3>Eier: ${tt.eggs} / ${tt.eggCap}</h3><dl class="kv"><dt>Gelegt pro Minute</dt><dd class="pos">${sgn(lay*60)}</dd><dt>Schlupfbereit (warten auf Platz)</dt><dd class="${ready?'neg':''}">${ready}</dd></dl><p class="mini">Ein Ei braucht 2 Minuten und kostet 2 Pilze. Sind Häuser und Kasernen voll, bleibt es liegen.</p></div>
@@ -217,7 +217,7 @@ function renderStat(){
   }else if(statKey==='terr'){
     const own=T.filter(t=>t.owner===0);
     h=`<div><h3>Gebiete: ${own.length} / ${T.length}</h3><dl class="kv">${rateRow('Blätter',ti.food)}${rateRow('Material',ti.mat)}${rateRow('Pilze',ti.fungus)}</dl><p class="mini">Die Hauptstadt (★) und eigene Kolonien bringen keinen Gebietsertrag.</p></div>
-    <div><h3>Deine Gebiete</h3><dl class="kv">${own.map(t=>{const q=TERR[t.terrain];return`<dt>${t.isCap?'★ ':''}${t.name}</dt><dd>${t.isCap?'Hauptstadt':t.puppet?'Vasall':t.col?'Kolonie':'offen'}</dd>`}).join('')}</dl></div>`;
+    <div><h3>Deine Gebiete</h3><dl class="kv">${own.map(t=>{const q=TERR[t.terrain];return`<dt>${t.isCap?'★ ':''}${t.name}</dt><dd>${t.isCap?'Hauptstadt':t.col?'Kolonie':'offen'}</dd>`}).join('')}</dl></div>`;
   }else if(statKey==='heat'){
     const hs=heatStage();
     h=`<div><h3>Fahndungsstufe ${hs} / 5</h3><div style="height:10px;background:var(--soil-3);margin:6px 0"><div style="height:10px;width:${H.v}%;background:${hs>=4?'#e0523d':hs>=2?'#f0b94a':'#9be86a'}"></div></div><p class="mini">Je mehr verschiedene Gegner du angreifst, desto schneller steigt sie. Hohe Stufen locken Angriffe auf dich, machen Bündnisse unwahrscheinlicher und sinken langsam wieder.</p></div>
@@ -242,7 +242,7 @@ function refreshLive(){
   $('#cT').textContent=owned;$('#cTm').textContent='/'+T.length;
   $('#cH').textContent=heatStage();
   $('#chipFood').classList.toggle('warn',G.food<10);
-  {const pl=protLeft();if(pl>0)prevProt=1;else if(prevProt){prevProt=0;toast('Die Schutzzeit ist vorbei. Ab jetzt sind Angriffe möglich','bad')}$('#dayLabel').textContent=`Tag ${dayNo()} · ${clockT(gtime)}`+(pl>0?` · Schutz ${mmss(pl)}`:'')}
+  {const pl=protLeft();if(pl>0)prevProt=1;else if(prevProt){prevProt=0;toast('Die Schutzzeit ist vorbei. Ab jetzt sind Angriffe möglich','bad')}$('#dayLabel').textContent=pl>0?`Schutz ${mmss(pl)}`:''}
   renderStat();renderColSwitch();renderPw();
   if(!col)return;
   const e=econC(col),t=T[col.tid];
@@ -292,7 +292,6 @@ $('#stInfo').onclick=()=>setSideTab('info');
 $('#terrInfo').insertAdjacentHTML('afterend','<div id="openBox" style="margin-top:8px"></div>');
 $('#openBox').addEventListener('click',e=>{
   const b=e.target.closest('[data-open]');if(b)openColony(+b.dataset.open);
-  const a=e.target.closest('[data-annex]');if(a){annex(+a.dataset.annex);updateSide()}
 });
 $('#facList').addEventListener('click',e=>{
   const a=e.target.closest('[data-ally]');if(!a)return;const id=+a.dataset.ally;
@@ -310,31 +309,19 @@ function updateSide(){
   const info=$('#terrInfo'),hint=$('#terrHint'),send=$('#sendBox');
   if(selT==null){info.innerHTML='';send.hidden=true;setHTML($('#openBox'),'');hint.textContent='Linksklick: eigenes Gebiet wählen (Verstärkung). Rechtsklick auf ein Gebiet: Angriff, Bündnis, Spenden oder Bauen.'}
   else{
-    const t=T[selT],q=TERR[t.terrain],own=t.owner===0,cmd=own&&!t.puppet&&!conqQueue.includes(t.id);
+    const t=T[selT],q=TERR[t.terrain],own=t.owner===0,cmd=own;
     const stt=(t.str.out?`Außenposten ${t.str.out}`:'')+Object.keys(t.str.lines).filter(k=>t.str.lines[k]).map(k=>` · Linie ${T[k].name} ${t.str.lines[k]}`).join('');
     info.innerHTML=`<dt>Name</dt><dd>${t.name}</dd><dt>Gelände</dt><dd>${q.name}</dd><dt>Besitzer</dt><dd>${t.owner<0?'Wilde Ameisen':F[t.owner].name}</dd><dt>Soldaten</dt><dd>${Math.floor(t.troops)}</dd>`
-      +(t.isCap?'<dt>Status</dt><dd>Hauptstadt</dd>':t.puppet?'<dt>Status</dt><dd>Marionettenstaat</dd>':'')+(own&&!t.isCap&&!t.puppet?`<dt>Ertrag</dt><dd>${q.food?'+'+fmt(q.food*60)+' Blätter/Min ':''}${q.mat?'+'+fmt(q.mat*60)+' Erde/Min':''}</dd>`:'')+(stt?`<dt>Bauten</dt><dd>${stt}</dd>`:'')+(t.item?`<dt>Powerup</dt><dd>${PW[t.item.type]} +${t.item.pct}%</dd>`:'');
-    setHTML($('#openBox'),own&&t.col?`<button class="btn primary" type="button" data-open="${t.id}">Kolonie öffnen</button>`:own&&t.puppet?`<button class="btn primary" type="button" data-annex="${t.id}">Annektieren (30 Erde, 30 Blätter)</button>`:'');
+      +(t.isCap?'<dt>Status</dt><dd>Hauptstadt</dd>':'')+(own&&!t.isCap?`<dt>Ertrag</dt><dd>${q.food?'+'+fmt(q.food*60)+' Blätter/Min ':''}${q.mat?'+'+fmt(q.mat*60)+' Erde/Min':''}</dd>`:'')+(stt?`<dt>Bauten</dt><dd>${stt}</dd>`:'')+(t.item?`<dt>Powerup</dt><dd>${PW[t.item.type]} +${t.item.pct}%</dd>`:'');
+    setHTML($('#openBox'),own&&t.col?`<button class="btn primary" type="button" data-open="${t.id}">Kolonie öffnen</button>`:'');
     const can=cmd&&Math.floor(t.troops)>=2;send.hidden=!can;
     if(can)$('#pctN').textContent=Math.floor((Math.floor(t.troops)-1)*pct/100);
-    hint.textContent=cmd?'Linksklick auf ein eigenes Gebiet: Verstärkung. Rechtsklick auf ein fremdes Gebiet: Angriff, Bündnis, Spenden.':own?'Marionettenstaaten bekommen keine Befehle.':'Nur eigene Gebiete können Soldaten schicken.';
+    hint.textContent=cmd?'Linksklick auf ein eigenes Gebiet: Verstärkung. Rechtsklick auf ein fremdes Gebiet: Angriff, Bündnis, Spenden.':'Nur eigene Gebiete können Soldaten schicken.';
   }
   const ms=marches.filter(m=>(m.f===0||m.to.owner===0)&&m.phase!=='join');
   $('#marches').innerHTML=ms.length?ms.map(m=>`<div><i style="width:8px;height:8px;background:${rgb(F[m.f].rgb)};display:inline-block;margin-top:5px"></i><span>${m.from.name} → ${m.to.name}: ${m.n} (${m.phase==='fight'?'Kampf':Math.ceil(m.dur-m.t)+'s'})</span></div>`).join(''):'keine';
 }
 
-/* ----- Eroberungs-Dialog ----- */
-function showConquest(){
-  const el=$('#conq');
-  if(!conqQueue.length){el.hidden=true;return}
-  const t=T[conqQueue[0]];
-  $('#conqT').textContent=`${t.name} erobert`;
-  $('#conqP').textContent='Was soll mit dem Gebiet passieren?'+(conqQueue.length>1?` (noch ${conqQueue.length-1} weitere)`:'');
-  $('#conqKeepS').textContent=`Das Gebiet verschmilzt mit deinem Reich. Du bekommst sofort ${(t.conqN||4)*6} Erde und ${(t.conqN||4)*4} Blätter und es liefert Ertrag.`;
-  el.hidden=false;
-}
-$('#conqKeep').onclick=()=>{if(conqQueue.length)chooseConquest(conqQueue[0],'keep')};
-$('#conqPup').onclick=()=>{if(conqQueue.length)chooseConquest(conqQueue[0],'puppet')};
 
 /* ----- Kamera und Eingaben ----- */
 function colWorld(e){const r=cv.getBoundingClientRect();return[(e.clientX-r.left)/r.width*VW/ccam.z+ccam.x,(e.clientY-r.top)/r.height*VH/ccam.z+ccam.y]}
@@ -439,7 +426,7 @@ mv.addEventListener('wheel',e=>{
 },{passive:false});
 const KEYMAP={ArrowLeft:'l',a:'l',A:'l',ArrowRight:'r',d:'r',D:'r',ArrowUp:'u',w:'u',W:'u',ArrowDown:'d',s:'d',S:'d'};
 document.addEventListener('keydown',e=>{
-  if(e.target&&/INPUT|TEXTAREA/.test(e.target.tagName))return;
+  if(typing(e))return;
   if(e.key==='Escape'){if(typeof placing!=='undefined'&&placing){placing=null;updateSide()}if(col){col.buildSel=null;col.tun=null;col.pin=null}selT=null;statKey=null;statPin=false;if(started){refreshLive();renderStat()}return}
   const k=KEYMAP[e.key];if(k&&started&&(view==='colony'||view==='map')){keys.add(k);if(e.key.startsWith('Arrow'))e.preventDefault()}
 });
@@ -455,7 +442,6 @@ $('#pct').oninput=e=>{pct=+e.target.value;$('#pctLbl').textContent=pct+'%';updat
 {const m={ants:'ant',rooms:'clay',upg:'star'};$$('#dock .tab').forEach(b=>b.insertAdjacentHTML('afterbegin',ih(m[b.dataset.tab])));$('#stInfo').insertAdjacentHTML('afterbegin',ih('flag'))}
 $$('#dock .tab').forEach(b=>b.onclick=()=>{dockTab=b.dataset.tab;renderDock()});
 $('#tabColony').onclick=()=>{if(col)setView('colony')};$('#tabMap').onclick=()=>setView('map');
-$$('#speed [data-sp]').forEach(b=>b.onclick=()=>{speed=+b.dataset.sp;$$('#speed [data-sp]').forEach(x=>x.classList.toggle('on',x===b))});
 $$('#diffSeg [data-d]').forEach(b=>b.onclick=()=>{diffKey=b.dataset.d;$$('#diffSeg [data-d]').forEach(x=>x.classList.toggle('on',x===b))});
 $('#btnReroll').onclick=()=>{newMap((Math.random()*1e6)|0);renderSetup()};
 function drawAntIcon(c,id){
@@ -484,14 +470,13 @@ $('#btnStart').onclick=()=>{
   if(setupStart==null)return;
   startGame();
   $('#setupPanel').hidden=true;$('#playPanel').hidden=false;$('#viewtabs').hidden=false;$('#speed').hidden=false;$('#chips').hidden=false;
-  $$('#speed [data-sp]').forEach(x=>x.classList.toggle('on',x.dataset.sp==='1'));
   dockTab='ants';statKey=null;statPin=false;resetCam();setSideTab('info');setView('colony');renderDock();renderColSwitch();updateSide();
   if(G.items.length)renderPw();
   toast(`Deine ${SP[setupSp].name} starten in ${T[F[0].capital].name}. Baue Räume und wachse.`,'good');
 };
 $('#endCont').onclick=()=>{contWin=true;over=false;$('#end').hidden=true;toast('Du spielst weiter. Es gibt kein Ende mehr','good')};
 $('#endBtn').onclick=()=>{
-  contWin=false;started=false;over=false;col=null;G=null;curT=-1;marches=[];fxs=[];conqQueue=[];statKey=null;$('#statp').hidden=true;$('#end').hidden=true;$('#conq').hidden=true;
+  contWin=false;started=false;over=false;col=null;G=null;curT=-1;marches=[];fxs=[];statKey=null;$('#statp').hidden=true;$('#end').hidden=true;
   $('#setupPanel').hidden=false;$('#playPanel').hidden=true;$('#viewtabs').hidden=true;$('#speed').hidden=true;$('#chips').hidden=true;
   $('#dayLabel').textContent='';newMap((Math.random()*1e6)|0);renderSetup();setView('map');
 };
@@ -499,10 +484,10 @@ $('#endBtn').onclick=()=>{
 /* ----- Hauptschleife ----- */
 let last=performance.now(),acc5=0;
 function frame(now){
-  if(typeof ST!=='undefined'&&ST.fpsMax&&now-(frame.t||0)<1000/ST.fpsMax-1.5){requestAnimationFrame(frame);return}
+  if(typeof ST!=='undefined'&&ST.fpsMax&&now-(frame.t||0)<1000/ST.fpsMax-1.5){nextFrame(frame);return}
   frame.t=now;
   const rdt=Math.min(0.1,(now-last)/1000);last=now;
-  if(started&&!over&&speed>0&&!conqQueue.length){
+  if(started&&!over&&speed>0){
     const dt=rdt*speed,n=Math.ceil(dt/0.1),h=dt/n;
     for(let i=0;i<n;i++){updateColonies(h);updateWorld(h);if(over)break}
   }

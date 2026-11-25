@@ -81,13 +81,13 @@ S.achievements.bind=p=>{p.querySelectorAll('#achT [data-k]').forEach(b=>b.onclic
 
 /* ---------- Shop: Hüte, Weltflaggen, Ameisenflaggen ---------- */
 /* Vorschau und Ausrüstungsstatus für alle Kosmetik-Arten */
-const COS_TABS=[['hat','Hüte'],['crown','Kronen'],['pattern','Muster'],['ship','Schiffe'],['world','Weltflaggen'],['ant','Ameisenflaggen']];
+const COS_TABS=[['hat','Hüte'],['crown','Kronen'],['pattern','Muster'],['ship','Schiffe'],['bskin','Gebäude'],['tskin','Händler'],['rskin','Wege'],['world','Weltflaggen'],['ant','Ameisenflaggen']];
 const cosKind=tab=>tab==='world'||tab==='ant'?'flag':tab;
 const cosFilter=(tab,i)=>tab==='world'?i.kind==='flag'&&!i.custom:tab==='ant'?i.kind==='flag'&&i.custom:i.kind===tab;
 const cosEq=(i,p)=>p[i.kind]===i.key;
 const cosPv=i=>i.kind==='flag'?flagSVG(i.key):`<span data-cos="${i.kind}:${i.key}"></span>`;
 function cosBind(p){p.querySelectorAll('[data-cos]').forEach(c=>{const[k,id]=c.dataset.cos.split(':');
-  c.appendChild(k==='hat'?hatPreview(id):k==='crown'?crownPreview(id):k==='pattern'?patternPreview(id):shipPreview(id))})}
+  c.appendChild(cosPreview(k,id))})}
 UI.shopTab='hat';
 S.shop=()=>{
   const p=AW.profile||{owned:[]},tab=UI.shopTab;
@@ -101,7 +101,7 @@ S.shop=()=>{
   return shell(t('Shop'),{right:`<span class="ruby" style="font-size:17px">${ico('ruby')} ${p.rubys||0}</span>`},
    `<div class="pills" id="shopT" style="align-self:flex-start">${COS_TABS.map(([k,n])=>`<button data-k="${k}" class="${tab===k?'on':''}" type="button">${t(n)}</button>`).join('')}</div>
     ${needLogin()?`<div class="msg">${t('Melde dich an, um zu spielen')}</div>`:''}
-    <div class="msg">${LANG==='de'?'Rubys verdienst du mit Quests (Erfolge). Hüte tragen deine Ameisen, die Flagge steht auf deinem Hügel, Muster färben deine Gebiete, Schiffe fahren über Wasser und die Krone trägt, wer das meiste Land hat.':'Earn Rubys with quests (Achievements). Hats are worn by your ants, the flag flies on your mound, patterns cover your territories, ships sail the seas and the crown goes to whoever holds the most land.'}</div>
+    <div class="msg">${LANG==='de'?'Rubys verdienst du mit Quests (Erfolge). Hüte tragen deine Ameisen, die Flagge steht auf deinem Hügel, Muster färben deine Gebiete, Schiffe fahren über Wasser und die Krone trägt, wer das meiste Land hat. Gebäude-, Händler- und Wegskins verändern dein Reich auf der Weltkarte.':'Earn Rubys with quests (Achievements). Hats are worn by your ants, the flag flies on your mound, patterns cover your territories, ships sail the seas and the crown goes to whoever holds the most land.'}</div>
     <div class="shopgrid">${items.map(card).join('')}</div>`);
 };
 S.shop.bind=p=>{
@@ -124,7 +124,7 @@ S.inventory=()=>{
     return `<div class="shopit ${eq?'eq':''}"><div class="pv">${pv}</div><b>${esc(i.name)}</b><button class="btn sm ${eq?'':'pri'} block" data-eq="${i.id}" type="button">${eq?t('Ablegen'):t('Ausrüsten')}</button></div>`;
   };
   return shell(t('Inventar'),{right:`<span class="tag">${own.length} ${t('Gegenstände')}</span>`},
-   `<div class="panel row" style="gap:18px;flex-wrap:wrap">${[['hat','Hut'],['crown','Krone'],['pattern','Muster'],['ship','Schiff']].map(([k,n])=>`<div class="field"><span class="lbl">${t(n)}</span><b>${slot(k)}</b></div>`).join('')}<div class="field"><span class="lbl">${t('Flagge')}</span><b>${(p.flag&&SHOP_BY_ID['flag:'+p.flag]?esc(SHOP_BY_ID['flag:'+p.flag].name):'—')}</b></div></div>
+   `<div class="panel row" style="gap:18px;flex-wrap:wrap">${[['hat','Hut'],['crown','Krone'],['pattern','Muster'],['ship','Schiff'],['bskin','Gebäude'],['tskin','Händler'],['rskin','Weg']].map(([k,n])=>`<div class="field"><span class="lbl">${t(n)}</span><b>${slot(k)}</b></div>`).join('')}<div class="field"><span class="lbl">${t('Flagge')}</span><b>${(p.flag&&SHOP_BY_ID['flag:'+p.flag]?esc(SHOP_BY_ID['flag:'+p.flag].name):'—')}</b></div></div>
     <div class="pills" id="invT" style="align-self:flex-start;flex-wrap:wrap">${COS_TABS.map(([k,n])=>`<button data-k="${k}" class="${tab===k?'on':''}" type="button">${t(n)}</button>`).join('')}</div>
     ${items.length?`<div class="shopgrid">${items.map(card).join('')}</div>`:`<div class="msg">${LANG==='de'?'Hier liegt noch nichts. Im Shop kaufst du Hüte und Flaggen mit Rubys, die du durch Quests verdienst.':'Nothing here yet. Buy hats and flags in the shop with Rubys earned from quests.'}</div><button class="btn pri" data-go="shop" type="button" style="align-self:flex-start">${ico('shop')} ${t('Shop')}</button>`}`);
 };
@@ -216,7 +216,7 @@ S.tutorial=()=>shell(t('Tutorial'),{narrow:true},`<ul style="margin:0;padding-le
  <li><b>1.</b> ${LANG==='de'?'Wähle Termiten, Blattschneider oder Bodenameisen und klicke ein passendes Startgebiet.':'Pick termites, leafcutters or ground ants and click a matching start territory.'}</li>
  <li><b>2.</b> ${LANG==='de'?'Baue Räume und Tunnel. Die Königin legt Eier, wenn Platz und Pilze da sind. Vergrabene Funde grabst du aus.':'Build rooms and tunnels. The queen lays eggs when there is space and fungus. Dig up buried finds.'}</li>
  <li><b>3.</b> ${LANG==='de'?'Zoome heraus zur Weltkarte. Rechtsklick (am Handy: lange drücken) auf ein fremdes Gebiet: Angriff, Bündnis, Spenden.':'Zoom out to the world map. Right-click (on mobile: long-press) a foreign territory: attack, alliance, donate.'}</li>
- <li><b>4.</b> ${LANG==='de'?'Zu Beginn schützt dich die Schutzzeit. Erobertes kannst du behalten oder als Marionettenstaat führen.':'A protection period shields you at the start. Conquered land can be kept or run as a puppet state.'}</li></ul>`);
+ <li><b>4.</b> ${LANG==='de'?'Zu Beginn schützt dich die Schutzzeit. Eroberte Gebiete gehören sofort zu deinem Reich.':'A protection period shields you at the start. Conquered land joins your realm right away.'}</li></ul>`);
 
 /* ---------- Lobby (Bild 6): erstellen, beitreten ---------- */
 const LOB={code:null,host:false,ch:null,players:[],chat:[],cfg:{diff:'normal',max:8,pub:true,seed:0,tab:'map'}};
@@ -366,4 +366,80 @@ S.admin.bind=async p=>{
       try{await AW.adminUpdate(e.id,up);UI.admEditP=null;UI.admPl=null;render();toast('✓','good')}catch(x){toastErr(x)}};
       p.querySelector('#pCn').onclick=()=>{UI.admEditP=null;render()}}
   }
+};
+
+/* ---------- Forum: Bugs, Vorschläge und Spieler-Reports (nur das Team liest alles) ---------- */
+const FORUM_KINDS={bug:'Bug',idea:'Vorschlag',report:'Spieler-Report'};
+UI.forumKind='bug';UI.forumFilter='';
+const forumTag=k=>`<span class="tag ${k==='bug'?'ac':''}">${t(FORUM_KINDS[k]||'Meldung')}</span>`;
+S.forum=()=>{
+  if(needLogin())return shell(t('Forum'),{},`<div class="msg">${t('Melde dich an, um das Forum zu nutzen')}</div>`);
+  const adm=AW.isAdmin,l=UI.forum,sel=UI.forumSel,det=UI.forumOpen;
+  const items=(l||[]).filter(x=>!adm||!UI.forumFilter||x.kind===UI.forumFilter);
+  const compose=adm?'':`<div class="panel"><div class="lbl" style="margin-bottom:8px">${t('Neue Meldung')}</div>
+    <div class="grid" style="gap:8px">
+      <div class="pills" id="fmK">${Object.keys(FORUM_KINDS).map(k=>`<button type="button" data-k="${k}" class="${UI.forumKind===k?'on':''}">${t(FORUM_KINDS[k])}</button>`).join('')}</div>
+      <input class="inp" id="fmT" maxlength="120" placeholder="${t('Kurzer Titel')}">
+      <textarea class="inp" id="fmB" rows="4" maxlength="4000" placeholder="${t('Was ist passiert? Bei einem Spieler-Report bitte Name#Tag, Zeit und was vorgefallen ist.')}"></textarea>
+      <button class="btn pri" id="fmSend" type="button">${ico('send')} ${t('Absenden')}</button>
+    </div></div>`;
+  const detail=!sel?`<div class="panel"><div class="mini">${adm?t('Wähle links eine Meldung aus.'):t('Wähle eine deiner Meldungen aus oder schreibe eine neue.')}</div></div>`
+    :(det?`<div class="panel" style="display:flex;flex-direction:column;gap:10px">
+        <div class="row">${forumTag(det.thread.kind)}<span class="sp"></span>${det.thread.status==='closed'?`<span class="tag">${t('Geschlossen')}</span>`:''}${adm?`<button class="btn sm" id="fmClose" type="button">${det.thread.status==='closed'?t('Wieder öffnen'):t('Schließen')}</button><button class="btn sm danger" id="fmDel" type="button" aria-label="Delete">${ico('trash')}</button>`:''}</div>
+        <div><b style="font-size:16px">${esc(det.thread.title)}</b><div class="mini">${esc(det.thread.author_name)}#${esc(det.thread.author_tag)} · ${fmtDate(det.thread.created_at)}</div></div>
+        <div class="msg" style="white-space:pre-wrap">${esc(det.thread.body)}</div>
+        <div class="lbl">${t('Verlauf')}</div>
+        ${det.posts.length?det.posts.map(m=>`<div class="li" style="flex-direction:column;align-items:flex-start;gap:2px">
+           <div class="row" style="gap:6px">${m.is_admin?`<span class="tag ac">Admin</span>`:''}<b>${esc(m.author_name)}#${esc(m.author_tag)}</b><span class="mini">${fmtDate(m.created_at)}</span></div>
+           <div style="white-space:pre-wrap;font-size:13.5px">${esc(m.body)}</div></div>`).join(''):`<div class="mini">${t('Noch keine Antworten.')}</div>`}
+        <textarea class="inp" id="fmR" rows="3" maxlength="2000" placeholder="${adm?t('Frage an den Spieler …'):t('Antwort an das Team …')}"></textarea>
+        <button class="btn pri" id="fmRSend" type="button">${ico('send')} ${t('Senden')}</button>
+      </div>`:spinner());
+  return shell(t('Forum'),{right:adm?`<div class="pills" id="fmF"><button data-k="" class="${UI.forumFilter===''?'on':''}" type="button">${t('Alle')}</button>${Object.keys(FORUM_KINDS).map(k=>`<button data-k="${k}" class="${UI.forumFilter===k?'on':''}" type="button">${t(FORUM_KINDS[k])}</button>`).join('')}</div>`:''},
+    `<div class="grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);align-items:start" id="fmGrid">
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+        ${compose}
+        <div class="panel" style="display:flex;flex-direction:column;gap:8px">
+          <div class="row"><span class="lbl">${adm?t('Alle Meldungen'):t('Meine Meldungen')}</span><span class="sp"></span><span class="mini">${items.length}</span></div>
+          ${l?items.map(x=>`<button class="li ${sel===x.id?'sel':''}" data-th="${esc(x.id)}" type="button" style="width:100%;text-align:left;font:inherit">
+            ${forumTag(x.kind)}<span class="sp" style="min-width:0;overflow:hidden"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.title)}</b>
+            <small>${adm?esc(x.author_name)+'#'+esc(x.author_tag)+' · ':''}${x.replies||0} ${t('Antworten')} · ${fmtDate(x.last_at)}</small></span>
+            ${x.status==='closed'?`<span class="tag">${t('Geschlossen')}</span>`:''}</button>`).join('')||`<div class="mini">${t('Noch keine Meldungen.')}</div>`:spinner()}
+        </div>
+      </div>
+      <div style="min-width:0">${detail}</div></div>`);
+};
+S.forum.bind=async p=>{
+  if(needLogin())return;
+  if(innerWidth<820)p.querySelector('#fmGrid').style.gridTemplateColumns='1fr';
+  const openSel=async()=>{
+    if(!UI.forumSel){UI.forumOpen=null;return}
+    try{const posts=await AW.forumOpen(UI.forumSel);UI.forumOpen={thread:(UI.forum||[]).find(x=>x.id===UI.forumSel),posts};
+      if(SCR.cur&&SCR.cur.name==='forum')render()}catch(e){toastErr(e)}
+  };
+  p.querySelectorAll('#fmF [data-k]').forEach(b=>b.onclick=()=>{UI.forumFilter=b.dataset.k;render()});
+  p.querySelectorAll('[data-th]').forEach(b=>b.onclick=()=>{UI.forumSel=b.dataset.th;UI.forumOpen=null;openSel()});
+  const ks=p.querySelectorAll('#fmK [data-k]');
+  ks.forEach(b=>b.onclick=()=>{UI.forumKind=b.dataset.k;ks.forEach(x=>x.classList.toggle('on',x.dataset.k===b.dataset.k))});
+  const send=p.querySelector('#fmSend');
+  if(send)send.onclick=async()=>{
+    const tt=p.querySelector('#fmT').value.trim(),bb=p.querySelector('#fmB').value.trim();
+    if(tt.length<3||bb.length<3){toast(LANG==='de'?'Bitte Titel und Text ausfüllen':'Please fill in title and text','bad');return}
+    try{UI.noRerender=true;UI.forumSel=await AW.forumSend(UI.forumKind,tt,bb);UI.noRerender=false;
+      p.querySelector('#fmT').value='';p.querySelector('#fmB').value='';
+      toast(LANG==='de'?'Meldung gesendet – nur das Team kann sie lesen':'Report sent – only the team can read it','good');
+      UI.forum=await AW.forumThreads();await openSel()}catch(e){UI.noRerender=false;toastErr(e)}};
+  const rs=p.querySelector('#fmRSend');
+  if(rs)rs.onclick=async()=>{
+    const b=p.querySelector('#fmR').value.trim();if(!b)return;
+    try{UI.noRerender=true;await AW.forumReply(UI.forumSel,b);UI.noRerender=false;
+      UI.forum=await AW.forumThreads();await openSel()}catch(e){UI.noRerender=false;toastErr(e)}};
+  const cl=p.querySelector('#fmClose');
+  if(cl)cl.onclick=async()=>{try{await AW.forumClose(UI.forumSel,UI.forumOpen.thread.status!=='closed');UI.forum=await AW.forumThreads();await openSel()}catch(e){toastErr(e)}};
+  const dl=p.querySelector('#fmDel');
+  if(dl)dl.onclick=async()=>{if(!confirm(LANG==='de'?'Meldung wirklich löschen?':'Delete this report?'))return;
+    try{await AW.forumDel(UI.forumSel);UI.forumSel=null;UI.forumOpen=null;UI.forum=await AW.forumThreads();render();toast('✓','good')}catch(e){toastErr(e)}};
+  if(!UI.forum){try{UI.forum=await AW.forumThreads()}catch(e){toastErr(e);UI.forum=[]}
+    if(SCR.cur&&SCR.cur.name==='forum'&&!UI.forumOpen)render();return}
+  if(UI.forumSel&&!UI.forumOpen)await openSel();
 };
