@@ -46,7 +46,7 @@ function startGame(){
   const taken=[st],dist=(a,b)=>Math.hypot(a.lx-b.lx,a.ly-b.ly);
   hum.forEach(h=>{const ht=T[h.start];ht.owner=h.fid;ht.isCap=true;ht.troops=3;taken.push(ht);
     F.push({id:h.fid,isPlayer:false,human:true,pid:h.pid,name:h.name,species:h.species,rgb:FCOL[h.fid],alive:true,capital:h.start,allied:false,dipCool:0,hurt:-999})});
-  const total=Math.max(2+hum.length,1+MODES[modeKey].bots);
+  const total=Math.max(2+hum.length,1+(typeof botCount==='number'&&botCount>0?botCount:MODES[modeKey].bots));
   for(let b=1+hum.length;b<total;b++){
     let best=null,bs=-1;
     if(MODES[modeKey].rnd){const fr=T.filter(q=>q.owner===-1&&q.adj.some(i=>T[i].owner===-1));best=fr[Math.floor(Math.random()*fr.length)]||null}

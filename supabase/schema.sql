@@ -692,6 +692,7 @@ create table if not exists public.clans(
   tag text not null check (tag ~ '^[A-Z0-9]{2,5}$'),
   tag_color text not null default '#ffd166' check (tag_color ~ '^#[0-9A-Fa-f]{6}$'),
   descr text not null default '' check (char_length(descr) <= 600),
+  logo text check (logo is null or (length(logo) <= 40000 and logo ~ '^data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$')),
   is_open boolean not null default true,
   min_wins int not null default 0 check (min_wins >= 0),
   max_members int not null default 50 check (max_members between 2 and 100),
@@ -733,6 +734,9 @@ create table if not exists public.clan_messages(
 create index if not exists clan_messages_idx on public.clan_messages (clan_id, created_at desc);
 
 alter table public.profiles add column if not exists clan_id uuid;
+-- Clan-Logo (v21.7): nur PNG/JPG/WebP als Data-URL, hoechstens 40 kB
+alter table public.clans add column if not exists logo text;
+do $$ begin alter table public.clans add constraint clans_logo_chk check (logo is null or (length(logo) <= 40000 and logo ~ '^data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$')); exception when duplicate_object then null; end $$;
 
 alter table public.clans         enable row level security;
 alter table public.clan_members  enable row level security;
@@ -770,10 +774,11 @@ begin
 end $$;
 
 -- Suche / Rangliste: alle Clans mit Mitgliederzahl, Siegen und Siegen dieser Woche
+drop function if exists public.clan_find(text,text);
 create or replace function public.clan_find(q text default '', mode text default 'all')
-returns table(id uuid, name text, tag text, tag_color text, descr text, is_open boolean, min_wins int, max_members int, members int, wins int, games int, week_wins int, mine boolean, joined boolean, pending boolean)
+returns table(id uuid, name text, tag text, tag_color text, logo text, descr text, is_open boolean, min_wins int, max_members int, members int, wins int, games int, week_wins int, mine boolean, joined boolean, pending boolean)
 language sql security definer set search_path=public stable as $$
-  select c.id, c.name, c.tag, c.tag_color, c.descr, c.is_open, c.min_wins, c.max_members,
+  select c.id, c.name, c.tag, c.tag_color, c.logo, c.descr, c.is_open, c.min_wins, c.max_members,
     (select count(*)::int from public.clan_members m where m.clan_id = c.id) as members,
     coalesce((select sum(p.wins)::int from public.clan_members m join public.profiles p on p.id = m.user_id where m.clan_id = c.id),0) as wins,
     coalesce((select sum(p.games)::int from public.clan_members m join public.profiles p on p.id = m.user_id where m.clan_id = c.id),0) as games,
@@ -789,10 +794,11 @@ language sql security definer set search_path=public stable as $$
   limit 100
 $$;
 
--- Clan gründen: kostet 600 Rubys, Tag wird hier fest vergeben
-create or replace function public.clan_create(n text, t text, color text, d text, op boolean, mw int default 0) returns uuid
+-- Clan gründen: kostet 600 Rubys, Tag wird hier fest vergeben (v21.7: Logo optional)
+drop function if exists public.clan_create(text,text,text,text,boolean,int);
+create or replace function public.clan_create(n text, t text, color text, d text, op boolean, mw int default 0, logo text default null) returns uuid
 language plpgsql security definer set search_path=public as $$
-declare me public.profiles; nm text; tg text; col text; newid uuid; cost int := 600;
+declare me public.profiles; nm text; tg text; col text; newid uuid; cost int := 600; lg text;
 begin
   if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
   if exists (select 1 from public.clan_members where user_id = auth.uid()) then raise exception 'Du bist schon in einem Clan'; end if;
@@ -802,12 +808,14 @@ begin
   if char_length(nm) < 3 then raise exception 'Name zu kurz (3–28 Zeichen)'; end if;
   if char_length(tg) < 2 then raise exception 'Tag zu kurz (2–5 Zeichen)'; end if;
   if col !~ '^#[0-9a-f]{6}$' then col := '#ffd166'; end if;
+  lg := nullif(logo,'');
+  if lg is not null and (length(lg) > 40000 or lg !~ '^data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$') then raise exception 'Logo ungültig (nur PNG, JPG oder WebP bis 40 kB)'; end if;
   if exists (select 1 from public.clans where upper(tag) = tg) then raise exception 'Tag ist schon vergeben'; end if;
   if exists (select 1 from public.clans where lower(name) = lower(nm)) then raise exception 'Name ist schon vergeben'; end if;
   select * into me from public.profiles where id = auth.uid() for update;
   if me.rubys < cost then raise exception 'Nicht genug Rubys (600 nötig)'; end if;
-  insert into public.clans(name, tag, tag_color, descr, is_open, min_wins, owner)
-    values (nm, tg, col, left(coalesce(d,''),600), coalesce(op,true), greatest(0, coalesce(mw,0)), auth.uid())
+  insert into public.clans(name, tag, tag_color, descr, logo, is_open, min_wins, owner)
+    values (nm, tg, col, left(coalesce(d,''),600), lg, coalesce(op,true), greatest(0, coalesce(mw,0)), auth.uid())
     returning id into newid;
   insert into public.clan_members(clan_id, user_id, role) values (newid, auth.uid(), 'owner');
   perform set_config('app.rpc','1',true);
@@ -815,10 +823,11 @@ begin
   return newid;
 end $$;
 
--- Name, Beschreibung, Farbe, offen/geschlossen, Mindest-Siege ändern (Besitzer und Admins)
-create or replace function public.clan_update(n text, d text, color text, op boolean, mw int default 0) returns void
+-- Name, Beschreibung, Farbe, Logo, offen/geschlossen, Mindest-Siege ändern (Besitzer und Admins)
+drop function if exists public.clan_update(text,text,text,boolean,int);
+create or replace function public.clan_update(n text, d text, color text, op boolean, mw int default 0, logo text default null) returns void
 language plpgsql security definer set search_path=public as $$
-declare m public.clan_members; nm text; col text;
+declare m public.clan_members; nm text; col text; lg text;
 begin
   select * into m from public.clan_members where user_id = auth.uid();
   if m.clan_id is null or m.role not in ('owner','admin') then raise exception 'Keine Berechtigung'; end if;
@@ -826,8 +835,10 @@ begin
   col := lower(coalesce(nullif(color,''), '#ffd166'));
   if char_length(nm) < 3 then raise exception 'Name zu kurz (3–28 Zeichen)'; end if;
   if col !~ '^#[0-9a-f]{6}$' then col := '#ffd166'; end if;
+  lg := nullif(logo,'');
+  if lg is not null and (length(lg) > 40000 or lg !~ '^data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$') then raise exception 'Logo ungültig (nur PNG, JPG oder WebP bis 40 kB)'; end if;
   if exists (select 1 from public.clans where lower(name) = lower(nm) and id <> m.clan_id) then raise exception 'Name ist schon vergeben'; end if;
-  update public.clans set name = nm, descr = left(coalesce(d,''),600), tag_color = col,
+  update public.clans set name = nm, descr = left(coalesce(d,''),600), tag_color = col, logo = lg,
     is_open = coalesce(op, is_open), min_wins = greatest(0, coalesce(mw,0)) where id = m.clan_id;
 end $$;
 
@@ -916,10 +927,11 @@ begin
   end if;
 end $$;
 
+drop function if exists public.clan_invites();
 create or replace function public.clan_invites()
-returns table(id uuid, kind text, clan_id uuid, clan_name text, clan_tag text, tag_color text, username text, tag text, created_at timestamptz, outgoing boolean)
+returns table(id uuid, kind text, clan_id uuid, clan_name text, clan_tag text, tag_color text, logo text, username text, tag text, created_at timestamptz, outgoing boolean)
 language sql security definer set search_path=public stable as $$
-  select i.id, i.kind, c.id, c.name, c.tag, c.tag_color, p.username, p.tag, i.created_at, (i.user_id <> auth.uid())
+  select i.id, i.kind, c.id, c.name, c.tag, c.tag_color, c.logo, p.username, p.tag, i.created_at, (i.user_id <> auth.uid())
   from public.clan_invites i
     join public.clans c on c.id = i.clan_id
     join public.profiles p on p.id = i.user_id
@@ -1037,10 +1049,10 @@ language sql security definer set search_path=public as $$
   update public.clan_members set last_seen = now() where user_id = auth.uid()
 $$;
 
-revoke all on function public.clan_my(), public.clan_find(text,text), public.clan_create(text,text,text,text,boolean,int), public.clan_update(text,text,text,boolean,int),
+revoke all on function public.clan_my(), public.clan_find(text,text), public.clan_create(text,text,text,text,boolean,int,text), public.clan_update(text,text,text,boolean,int,text),
   public.clan_members(), public.clan_chat(), public.clan_say(text), public.clan_join(uuid), public.clan_apply(uuid), public.clan_invite(text,text),
   public.clan_invites(), public.clan_invite_respond(uuid,boolean), public.clan_member_act(uuid,text), public.clan_leave(), public.clan_stats(), public.clan_touch() from public, anon;
-grant execute on function public.clan_my(), public.clan_find(text,text), public.clan_create(text,text,text,text,boolean,int), public.clan_update(text,text,text,boolean,int),
+grant execute on function public.clan_my(), public.clan_find(text,text), public.clan_create(text,text,text,text,boolean,int,text), public.clan_update(text,text,text,boolean,int,text),
   public.clan_members(), public.clan_chat(), public.clan_say(text), public.clan_join(uuid), public.clan_apply(uuid), public.clan_invite(text,text),
   public.clan_invites(), public.clan_invite_respond(uuid,boolean), public.clan_member_act(uuid,text), public.clan_leave(), public.clan_stats(), public.clan_touch() to authenticated;
 
@@ -1048,3 +1060,8 @@ grant execute on function public.clan_my(), public.clan_find(text,text), public.
 insert into public.news (version, title, body)
 select 'v21.6', 'Clans neu, Erfolge als Karten und besseres Handy-Spiel', 'Clans sind jetzt echte Teams: eigene Seite mit Mitgliederliste (Rollen, Siege, zuletzt online), Clan-Chat mit Beitritts-Verlauf, Statistik mit Rang, Siegquote und besten Spielern sowie eine Suche mit offenen und geschlossenen Clans. Ohne Clan gründest du für 600 Rubys einen eigenen – Name, Tag, Tagfarbe, Beschreibung mit Markdown und klickbaren Discord-Links, offen oder auf Anfrage, Mindest-Siege und Einladungen. Der Tag wird bei der Gründung vergeben und ist nicht mehr frei wählbar. Clan-Besitzer und Admins können Mitglieder befördern, stummschalten und entfernen. Außerdem: der Forum-Knopf sitzt jetzt oben neben den News (jeder darf schreiben, auch Admins), die Sprachwahl liegt in den Einstellungen, abholbereite Quests leuchten beim Abholen auf, die Karriere zeigt sich als Kartenraster mit Kategorien, Symbolen, Stufen und Fortschritt – und auf dem Handy sind Knöpfe, Leisten und das Kreismenü deutlich besser zu treffen. PC und Tablet bleiben unverändert.'
 where not exists (select 1 from public.news where version = 'v21.6');
+
+-- News v21.7
+insert into public.news (version, title, body)
+select 'v21.7', 'Große Abholen-Taste, Clan-Logos und neues Menü', 'Die Erfolge haben jetzt den großen Abholen-Knopf: Sobald eine Stufe geschafft ist, füllt die orange Taste die ganze Karte – wie im Vorbild. Clans bekommen ein eigenes Logo: Bild wählen (nur PNG, JPG oder WebP, höchstens 4 MB), es wird quadratisch zugeschnitten und erscheint als Wappen in Clan-Karte, Chat, Statistik, Suche und Einladungen. Im Hauptmenü gibt es einen Schieberegler für die Anzahl der Gegner (1 bis 12) und die Modi sind jetzt Karten mit Namen, Tempo und Beschreibung. Die Werbefläche ist an den Glas-Hintergrund angepasst, und die Menüknöpfe stehen etwas höher, näher zur Mitte – zentriert ist nichts.'
+where not exists (select 1 from public.news where version = 'v21.7');

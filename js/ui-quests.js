@@ -92,7 +92,9 @@ function careerCard(key){
     <div class="cc-steps">${steps}</div>
     <div class="cc-pg"><label>${t('FORTSCHRITT')}</label><em>${num(g.v)} / ${num(g.goal)}</em></div>
     <div class="cc-bar"><i style="width:${bp}%"></i></div>
-    <div class="cc-rw ${ready?'go':''}">${full?`<span class="cc-rl">${t('ALLE STUFEN')}</span><b class="cc-rd">${ico('check')}</b>`:`<span class="cc-rl">${t('BELOHNUNG')} ${t('Stufe')} ${x.tier}</span>${rewardPill(q,g)}`}</div>
+    ${full?`<div class="cc-rw"><span class="cc-rl">${t('ALLE STUFEN')}</span><b class="cc-rd">${ico('check')}</b></div>`
+      :ready?`<button class="qx-claim cc-claim" data-claim="${q[0]}" type="button"><i></i><span>${t('ABHOLEN')}</span><b>+${q[4]} ${ico('ruby')}</b></button>`
+      :`<div class="cc-rw"><span class="cc-rl">${t('BELOHNUNG')} ${t('Stufe')} ${x.tier}</span><span class="qx-rw">+${q[4]} ${ico('ruby')}</span></div>`}
   </div>`;
 }
 
@@ -216,9 +218,10 @@ S.profile.bind=p=>{
 };
 
 /* ---------- Profilbild zuschneiden: Bild verschieben, zoomen, als Kreis speichern ---------- */
-function cropAvatar(f){return new Promise((ok,no)=>{
+function cropAvatar(f,out,mb){return new Promise((ok,no)=>{
+  const OUT=out||96,MAX=mb||8;
   if(!f)return ok(null);
-  if(!/^image\/(png|jpeg|webp)$/.test(f.type)||f.size>8e6)return no(new Error(LANG==='de'?'Bitte ein PNG, JPG oder WebP unter 8 MB wählen':'Please choose a PNG, JPG or WebP under 8 MB'));
+  if(!/^image\/(png|jpeg|webp)$/.test(f.type)||f.size>MAX*1e6)return no(new Error(LANG==='de'?`Bitte ein PNG, JPG oder WebP unter ${MAX} MB wählen`:`Please choose a PNG, JPG or WebP under ${MAX} MB`));
   const im=new Image(),url=URL.createObjectURL(f);
   im.onerror=()=>{URL.revokeObjectURL(url);no(new Error(LANG==='de'?'Bild konnte nicht gelesen werden':'Could not read the image'))};
   im.onload=()=>{
@@ -242,8 +245,8 @@ function cropAvatar(f){return new Promise((ok,no)=>{
     m.querySelector('#cropZ').oninput=e=>{z=+e.target.value;draw()};
     m.querySelector('#cropNo').onclick=()=>close(()=>ok(null));
     m.querySelector('#cropOk').onclick=()=>{
-      const o=document.createElement('canvas');o.width=o.height=96;const og=o.getContext('2d');og.fillStyle='#fff';og.fillRect(0,0,96,96);
-      clampO();paint(og,96);
+      const o=document.createElement('canvas');o.width=o.height=OUT;const og=o.getContext('2d');og.fillStyle='#fff';og.fillRect(0,0,OUT,OUT);
+      clampO();paint(og,OUT);
       let d=o.toDataURL('image/webp',.85);if(!d.startsWith('data:image/webp'))d=o.toDataURL('image/jpeg',.85);
       close(()=>safeAvatar(d)?ok(d):no(new Error('Bild zu groß')))};
     draw();m.querySelector('#cropOk').focus();

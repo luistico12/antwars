@@ -16,7 +16,7 @@ function clAgo(ts){
   return fmtDate(ts);
 }
 const clClock=ts=>{try{return new Date(ts).toLocaleTimeString(LANG==='de'?'de-DE':'en-GB',{hour:'2-digit',minute:'2-digit'})}catch(e){return''}};
-const clCrest=(tag,color,cls)=>`<span class="cl-crest ${cls||''}" style="--tc:${esc(color||'#ffd166')}">${esc(tag||'?')}</span>`;
+const clCrest=(tag,color,cls,logo)=>{const im=safeAvatar(logo);return `<span class="cl-crest ${cls||''}" style="--tc:${esc(color||'#ffd166')}">${im?`<img alt="" src="${im}">`:esc(tag||'?')}</span>`};
 const clRoleBadge=r=>r==='owner'?`<span class="cl-rb ow">${ico('crown')} ${t('Besitzer')}</span>`:r==='admin'?`<span class="cl-rb ad">${ico('shield')} Admin</span>`:'';
 /* Markdown in der Beschreibung: **fett**, *kursiv*, `code` und klickbare Links (auch Discord) */
 function mdInline(s){
@@ -49,7 +49,7 @@ function clMembersTab(st){
   const c=st.clan,adm=st.role==='owner'||st.role==='admin',mem=UI.clanMembers||[],stt=UI.clanStats||{};
   const week=stt.clan?stt.clan.week_wins:c.week_wins,rank=stt.rank;
   const left=`<div class="cl-card">
-    ${clCrest(c.tag,c.tag_color,'big')}
+    ${clCrest(c.tag,c.tag_color,'big',c.logo)}
     <div class="cl-name"><span class="cl-tag" style="--tc:${esc(c.tag_color)}">${esc(c.tag)}</span><b>${esc(c.name)}</b></div>
     <div class="cl-flags">${clOpenBadge(c.is_open)}${c.min_wins?`<span class="cl-open">${ico('trophy')} ${c.min_wins}+ ${t('Siege')}</span>`:''}</div>
     <div class="cl-desc">${c.descr?mdInline(c.descr):`<span class="mini">${t('Noch keine Beschreibung.')}</span>`}</div>
@@ -94,10 +94,15 @@ function clMembersTab(st){
       </div></div></div>`;
 }
 function clEditForm(c){
+  const lg=safeAvatar(UI.clanLogo===undefined?c.logo:UI.clanLogo);
   return `<div class="panel cl-edit"><div class="row"><span class="lbl">${t('Clan bearbeiten')}</span><span class="sp"></span><button class="ibtn" id="clEditX" type="button" aria-label="${t('Schließen')}">${ico('close')}</button></div>
     <div class="grid" style="gap:8px">
       <input class="inp" id="cleName" maxlength="28" value="${esc(c.name)}" placeholder="${t('Clan-Name')}">
       <div class="cl-colors" id="cleColors">${CLAN_COLORS.map(col=>`<button type="button" data-c="${col}" class="${c.tag_color===col?'on':''}" style="--c:${col}" aria-label="${col}"></button>`).join('')}</div>
+      <div class="cl-logo"><span class="cl-crest big" id="cleLogoP">${lg?`<img alt="" src="${lg}">`:ico('shield')}</span>
+        <div class="cl-logof"><div class="row"><label class="btn sm" for="cleLogoF">${ico('edit')} ${t('Bild wählen')}</label><button class="btn sm" id="cleLogoX" type="button">${ico('trash')} ${t('Entfernen')}</button></div>
+          <div class="mini">${t('PNG, JPG oder WebP, max. 4 MB – quadratisch zugeschnitten.')}</div></div></div>
+      <input type="file" id="cleLogoF" accept="image/png,image/jpeg,image/webp" hidden>
       <textarea class="inp" id="cleDesc" rows="3" maxlength="600" placeholder="${t('Beschreibung – Markdown und Discord-Links erlaubt')}">${esc(c.descr||'')}</textarea>
       <div class="row"><label class="sw"><span>${t('Offen für alle')}</span><input type="checkbox" id="cleOpen" ${c.is_open?'checked':''}></label>
         <span class="sp"></span><label class="field" style="max-width:150px"><span class="lbl">${t('Mindest-Siege')}</span><input class="inp" id="cleMin" type="number" min="0" max="100000" value="${c.min_wins||0}"></label></div>
@@ -119,7 +124,7 @@ function clChatTab(st){
       <div class="lbl">${t('HEUTE')}</div>
       ${joins.length?joins.map(m=>`<div class="cl-ev">${ico('user')}<span class="sp"><b>${esc(m.username)}</b><small>${t('ist beigetreten')}</small></span><span class="mini">${clClock(m.joined_at)}</span></div>`).join(''):`<div class="mini">${t('Heute ist noch niemand beigetreten.')}</div>`}
       <div class="lbl" style="margin-top:14px">${t('CLAN')}</div>
-      <div class="cl-ev">${clCrest(c.tag,c.tag_color)}<span class="sp"><b>${esc(c.name)}</b><small>${c.members}/${c.max_members} ${t('Mitglieder')}</small></span></div>
+      <div class="cl-ev">${clCrest(c.tag,c.tag_color,'',c.logo)}<span class="sp"><b>${esc(c.name)}</b><small>${c.members}/${c.max_members} ${t('Mitglieder')}</small></span></div>
     </div></div>`;
 }
 
@@ -128,7 +133,7 @@ function clStatsTab(st){
   const s=UI.clanStats||{},c=s.clan||st.clan,week=UI.clanBest==='week';
   const best=(s.best||[]).slice().sort((a,b)=>(week?b.week-a.week:b.wins-a.wins)).slice(0,8);
   return `<div class="cl-shead">
-      ${clCrest(c.tag,c.tag_color,'big')}
+      ${clCrest(c.tag,c.tag_color,'big',c.logo)}
       <div class="cl-sname"><div class="cl-name"><span class="cl-tag" style="--tc:${esc(c.tag_color)}">${esc(c.tag)}</span><b>${esc(c.name)}</b></div>
         <div class="cl-desc">${c.descr?mdInline(c.descr):`<span class="mini">${t('Noch keine Beschreibung.')}</span>`}</div>
         <div class="cl-flags">${clOpenBadge(c.is_open)}<span class="cl-open">${ico('crown')} ${esc((UI.clanMembers||[]).find(m=>m.role==='owner')?.username||'')}</span><span class="cl-open">${ico('calendar')} ${fmtDate(c.created_at)}</span></div></div>
@@ -167,7 +172,7 @@ function clFindTab(st){
       <div class="cl-thead f"><span>#</span><span>${t('CLAN')}</span><span>${t('MITGLIEDER')}</span><span>${t('SIEGE')}</span><span></span></div>
       ${rows.map((r,i)=>`<div class="cl-frow${me&&me.id===r.id?' me':''}">
         <span class="cl-rk r${i+1}">${i+1}</span>
-        <span class="cl-fn">${clCrest(r.tag,r.tag_color)}<b>${esc(r.name)}</b>${me&&me.id===r.id?`<span class="cl-rb me">${t('DU')}</span>`:''}${!r.is_open?`<span class="mini">${ico('lock')}</span>`:''}</span>
+        <span class="cl-fn">${clCrest(r.tag,r.tag_color,'',r.logo)}<b>${esc(r.name)}</b>${me&&me.id===r.id?`<span class="cl-rb me">${t('DU')}</span>`:''}${!r.is_open?`<span class="mini">${ico('lock')}</span>`:''}</span>
         <span class="cl-fm">${r.members}/${r.max_members}</span>
         <span class="cl-w">${num(r.wins)}</span>
         <span class="cl-fa">${act(r)}</span></div>`).join('')||`<div class="mini" style="padding:18px;text-align:center">${t('Kein Clan gefunden.')}</div>`}
@@ -183,6 +188,11 @@ function clHomeTab(){
         <div class="row"><label class="field" style="flex:1"><span class="lbl">${t('Tag (2–5 Zeichen)')}</span><input class="inp" id="clcTag" maxlength="5" placeholder="TAG" style="text-transform:uppercase;font-weight:800;letter-spacing:.12em"></label>
           <label class="field" style="max-width:170px"><span class="lbl">${t('Mindest-Siege')}</span><input class="inp" id="clcMin" type="number" min="0" max="100000" value="0"></label></div>
         <div class="field"><span class="lbl">${t('Tagfarbe')}</span><div class="cl-colors" id="clcColors">${CLAN_COLORS.map((col,i)=>`<button type="button" data-c="${col}" class="${i===0?'on':''}" style="--c:${col}" aria-label="${col}"></button>`).join('')}</div></div>
+        <div class="field"><span class="lbl">${t('Clan-Logo')}</span>
+          <div class="cl-logo"><span class="cl-crest big" id="clcLogoP">${safeAvatar(UI.clanLogo)?`<img alt="" src="${safeAvatar(UI.clanLogo)}">`:ico('shield')}</span>
+            <div class="cl-logof"><div class="row"><label class="btn sm" for="clcLogoF">${ico('edit')} ${t('Bild wählen')}</label><button class="btn sm" id="clcLogoX" type="button">${ico('trash')} ${t('Entfernen')}</button></div>
+              <div class="mini">${t('PNG, JPG oder WebP, max. 4 MB – quadratisch zugeschnitten.')}</div></div></div>
+          <input type="file" id="clcLogoF" accept="image/png,image/jpeg,image/webp" hidden></div>
         <label class="field"><span class="lbl">${t('Beschreibung – Markdown und Discord-Links erlaubt')}</span><textarea class="inp" id="clcDesc" rows="3" maxlength="600" placeholder="${t('Worum geht es bei euch? Discord: discord.gg/…')}"></textarea></label>
         <label class="sw"><span>${t('Offen für alle')}<br><small class="mini">${t('Aus: Beitritt nur auf Anfrage oder per Einladung')}</small></span><input type="checkbox" id="clcOpen" checked></label>
         <div class="msg">${ico('ruby')} ${t('Gründung kostet')} <b>${CL_COST} Rubys</b> ${t('von deinen')} ${num(AW.profile?.rubys||0)}.</div>
@@ -206,7 +216,7 @@ function clHomeTab(){
 /* ---------- Einladungen ---------- */
 function clInvTab(){
   const l=UI.clanInvites||[],sub=UI.clanInvSub||'in',rows=l.filter(i=>sub==='in'?!i.outgoing:i.outgoing);
-  const item=i=>`<div class="cl-invrow">${clCrest(i.clan_tag,i.tag_color)}<span class="sp" style="min-width:0"><b>${esc(i.clan_name)}</b>
+  const item=i=>`<div class="cl-invrow">${clCrest(i.clan_tag,i.tag_color,'',i.logo)}<span class="sp" style="min-width:0"><b>${esc(i.clan_name)}</b>
       <small>${i.kind==='apply'?`${esc(i.username)}#${esc(i.tag)} ${t('möchte beitreten')}`:`${t('Einladung von')} ${esc(i.clan_name)}`}</small></span>
     <button class="btn sm pri" data-ci="ok:${esc(i.id)}" type="button">${ico('check')}</button>
     <button class="btn sm" data-ci="no:${esc(i.id)}" type="button">${ico('close')}</button></div>`;
@@ -218,7 +228,7 @@ function clInvTab(){
 
 /* Beim Öffnen des Clan-Screens frisch laden (Rangliste, Mitglieder, Chat) */
 (function(){const os=openScreen;openScreen=function(name,arg,push){
-  if(name==='clan'){UI.clan=undefined;UI.clanMembers=undefined;UI.clanChat=undefined;UI.clanStats=undefined;UI.clanFind=undefined;UI.clanInvites=undefined;UI.clanMenu=null;UI.clanEdit=false}
+  if(name==='clan'){UI.clan=undefined;UI.clanMembers=undefined;UI.clanChat=undefined;UI.clanStats=undefined;UI.clanFind=undefined;UI.clanInvites=undefined;UI.clanMenu=null;UI.clanEdit=false;UI.clanLogo=undefined}
   return os(name,arg,push)}})();
 
 /* ---------- Screen ---------- */
@@ -257,8 +267,15 @@ S.clan.bind=async p=>{
     try{await AW.clanRespond(id,k==='ok');clReset();await clLoad(true);render();toast('✓','good')}catch(e){toastErr(e)}});
   const ef=p.querySelector('#clEmptyFind');if(ef)ef.onclick=()=>{UI.clanTab='find';render()};
 
+  /* Logo wählen (nur Bilder, max. 4 MB, quadratisch zugeschnitten) */
+  const bindLogo=(inId,prevId,rmId)=>{
+    const inp=p.querySelector('#'+inId);if(inp)inp.onchange=async()=>{try{const d=await cropAvatar(inp.files[0],128,4);inp.value='';if(!d)return;UI.clanLogo=d;const pv=p.querySelector('#'+prevId);if(pv)pv.innerHTML=`<img alt="" src="${safeAvatar(d)}">`;toast(t('Gespeichert'),'good')}catch(e){inp.value='';toastErr(e)}};
+    const rm=p.querySelector('#'+rmId);if(rm)rm.onclick=()=>{UI.clanLogo=null;const pv=p.querySelector('#'+prevId);if(pv)pv.innerHTML=ico('shield')};
+  };
+  bindLogo('clcLogoF','clcLogoP','clcLogoX');bindLogo('cleLogoF','cleLogoP','cleLogoX');
+
   /* ohne Clan: Gründung */
-  const nw=p.querySelector('#clcNew');if(nw)nw.onclick=()=>{UI.clanCreate=true;render()};
+  const nw=p.querySelector('#clcNew');if(nw)nw.onclick=()=>{UI.clanCreate=true;UI.clanLogo=null;render()};
   const fd=p.querySelector('#clcFind');if(fd)fd.onclick=()=>{UI.clanTab='find';render()};
   const bk=p.querySelector('#clcBack');if(bk)bk.onclick=()=>{UI.clanCreate=false;render()};
   p.querySelectorAll('#clcColors [data-c]').forEach(b=>b.onclick=()=>{p.querySelectorAll('#clcColors [data-c]').forEach(x=>x.classList.toggle('on',x===b));UI.clanColor=b.dataset.c});
@@ -267,19 +284,19 @@ S.clan.bind=async p=>{
     if(name.length<3){toast(t('Name zu kurz (3–28 Zeichen)'),'bad');return}
     if(tag.length<2){toast(t('Tag zu kurz (2–5 Zeichen)'),'bad');return}
     go.disabled=true;
-    try{await AW.clanCreate({name,tag,color:UI.clanColor||CLAN_COLORS[0],descr:p.querySelector('#clcDesc').value.trim(),open:p.querySelector('#clcOpen').checked,minWins:+p.querySelector('#clcMin').value||0});
-      UI.clanCreate=false;UI.clanTab='members';clReset();await clLoad(true);render();toast(t('Clan gegründet'),'good')}
+    try{await AW.clanCreate({name,tag,color:UI.clanColor||CLAN_COLORS[0],descr:p.querySelector('#clcDesc').value.trim(),open:p.querySelector('#clcOpen').checked,minWins:+p.querySelector('#clcMin').value||0,logo:UI.clanLogo||null});
+      UI.clanCreate=false;UI.clanLogo=null;UI.clanTab='members';clReset();await clLoad(true);render();toast(t('Clan gegründet'),'good')}
     catch(e){go.disabled=false;toastErr(e)}};
 
   if(!mine)return;
 
   /* mit Clan: Mitglieder */
-  const ed=p.querySelector('#clEdit');if(ed)ed.onclick=()=>{UI.clanEdit=!UI.clanEdit;render()};
+  const ed=p.querySelector('#clEdit');if(ed)ed.onclick=()=>{if(!UI.clanEdit)UI.clanLogo=st.clan.logo||null;UI.clanEdit=!UI.clanEdit;render()};
   const ex=p.querySelector('#clEditX');if(ex)ex.onclick=()=>{UI.clanEdit=false;render()};
   p.querySelectorAll('#cleColors [data-c]').forEach(b=>b.onclick=()=>{p.querySelectorAll('#cleColors [data-c]').forEach(x=>x.classList.toggle('on',x===b));UI.clanColor=b.dataset.c});
   const sv=p.querySelector('#cleSave');if(sv)sv.onclick=async()=>{
-    try{await AW.clanUpdate({name:p.querySelector('#cleName').value.trim(),descr:p.querySelector('#cleDesc').value.trim(),color:UI.clanColor||st.clan.tag_color,open:p.querySelector('#cleOpen').checked,minWins:+p.querySelector('#cleMin').value||0});
-      UI.clanEdit=false;clReset();await clLoad(true);render();toast('✓','good')}catch(e){toastErr(e)}};
+    try{await AW.clanUpdate({name:p.querySelector('#cleName').value.trim(),descr:p.querySelector('#cleDesc').value.trim(),color:UI.clanColor||st.clan.tag_color,open:p.querySelector('#cleOpen').checked,minWins:+p.querySelector('#cleMin').value||0,logo:UI.clanLogo!==undefined?UI.clanLogo:(st.clan.logo||null)});
+      UI.clanEdit=false;UI.clanLogo=undefined;clReset();await clLoad(true);render();toast('✓','good')}catch(e){toastErr(e)}};
   const lv=p.querySelector('#clLeave');if(lv)lv.onclick=async()=>{
     if(!confirm(st.role==='owner'?t('Clan verlassen? Als Besitzer geht der Clan an das nächste Mitglied.'):t('Clan wirklich verlassen?')))return;
     try{await AW.clanLeave();UI.clanTab=null;clReset();await clLoad(true);render();toast(t('Clan verlassen'),'good')}catch(e){toastErr(e)}};

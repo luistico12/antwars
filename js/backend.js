@@ -213,8 +213,8 @@ const Remote={
   /* Clans: Mitglieder, Chat, Statistik, Suche, Einladungen. Tags vergibt nur noch clan_create. */
   async clanMy(){const{data,error}=await AW.sb.rpc('clan_my');if(error)throw clanErr(error);return data||null},
   async clanFind(q,mode){const{data,error}=await AW.sb.rpc('clan_find',{q:q||'',mode:mode||'all'});if(error)throw clanErr(error);return data||[]},
-  async clanCreate(c){const{data,error}=await AW.sb.rpc('clan_create',{n:c.name,t:c.tag,color:c.color,d:c.descr,op:!!c.open,mw:+c.minWins||0});if(error)throw clanErr(error);await Remote.loadProfile();return data},
-  async clanUpdate(c){const{error}=await AW.sb.rpc('clan_update',{n:c.name,d:c.descr,color:c.color,op:!!c.open,mw:+c.minWins||0});if(error)throw clanErr(error)},
+  async clanCreate(c){const{data,error}=await AW.sb.rpc('clan_create',{n:c.name,t:c.tag,color:c.color,d:c.descr,op:!!c.open,mw:+c.minWins||0,l:c.logo||null});if(error)throw clanErr(error);await Remote.loadProfile();return data},
+  async clanUpdate(c){const{error}=await AW.sb.rpc('clan_update',{n:c.name,d:c.descr,color:c.color,op:!!c.open,mw:+c.minWins||0,l:c.logo||null});if(error)throw clanErr(error)},
   async clanMembers(){const{data,error}=await AW.sb.rpc('clan_members');if(error)throw clanErr(error);return data||[]},
   async clanChat(){const{data,error}=await AW.sb.rpc('clan_chat');if(error)throw clanErr(error);return (data||[]).slice().reverse()},
   async clanSay(b){const{error}=await AW.sb.rpc('clan_say',{b});if(error)throw clanErr(error)},
@@ -317,11 +317,11 @@ const Local={
   async clanCreate(c){const s=clStore();if(clMine(s))throw new Error('Du bist schon in einem Clan');
     if((AW.profile.rubys||0)<600)throw new Error('Nicht genug Rubys (600 nötig)');
     const id='c'+Date.now().toString(36);
-    s.clans.push({id,name:c.name,tag:c.tag,tag_color:c.color,descr:c.descr||'',is_open:!!c.open,min_wins:+c.minWins||0,max_members:50,owner:'local',created_at:new Date().toISOString()});
+    s.clans.push({id,name:c.name,tag:c.tag,tag_color:c.color,descr:c.descr||'',logo:c.logo||null,is_open:!!c.open,min_wins:+c.minWins||0,max_members:50,owner:'local',created_at:new Date().toISOString()});
     s.members.push({clan_id:id,user_id:'local',role:'owner',muted:false,joined_at:new Date().toISOString(),last_seen:new Date().toISOString()});
     clSave(s);AW.profile.rubys-=600;AW.profile.clan_id=id;AW.profile.clan_tag=c.tag;Local.save();return id},
   async clanUpdate(c){const s=clStore(),m=clMine(s);if(!m)throw new Error('Du bist in keinem Clan');const cl=s.clans.find(x=>x.id===m.clan_id);if(!cl)throw new Error('Clan nicht gefunden');
-    Object.assign(cl,{name:c.name,tag_color:c.color,descr:c.descr||'',is_open:!!c.open,min_wins:+c.minWins||0});clSave(s)},
+    Object.assign(cl,{name:c.name,tag_color:c.color,descr:c.descr||'',logo:c.logo||null,is_open:!!c.open,min_wins:+c.minWins||0});clSave(s)},
   async clanMembers(){const s=clStore(),m=clMine(s);if(!m)return[];const p=AW.profile||{};
     return s.members.filter(x=>x.clan_id===m.clan_id).map(x=>({user_id:x.user_id,username:p.username||'Gast',tag:p.tag||'0000',avatar:p.avatar||null,role:x.role,muted:!!x.muted,wins:p.wins||0,games:p.games||0,joined_at:x.joined_at,last_seen:new Date().toISOString()}))},
   async clanChat(){const s=clStore(),m=clMine(s);return m?s.chat.filter(x=>x.clan_id===m.clan_id):[]},
@@ -363,6 +363,7 @@ const Local={
   }
 };
 const DEFAULT_NEWS=[
+  {id:'d20',version:'v21.7',title:'Große Abholen-Taste, Clan-Logos und neues Menü',body:'Die Erfolge haben jetzt den großen Abholen-Knopf: Sobald eine Stufe geschafft ist, füllt die orange Taste die ganze Karte – wie im Vorbild. Clans bekommen ein eigenes Logo: Bild wählen (nur PNG, JPG oder WebP, höchstens 4 MB), es wird quadratisch zugeschnitten und erscheint als Wappen in Clan-Karte, Chat, Statistik, Suche und Einladungen. Im Hauptmenü gibt es einen Schieberegler für die Anzahl der Gegner (1 bis 12) und die Modi sind jetzt Karten mit Namen, Tempo und Beschreibung. Die Werbefläche ist an den Glas-Hintergrund angepasst, und die Menüknöpfe stehen etwas höher, näher zur Mitte – zentriert ist nichts.',created_at:'2026-11-25T16:30:00Z'},
   {id:'d19',version:'v21.6',title:'Clans neu, Erfolge als Karten und besseres Handy-Spiel',body:'Clans sind jetzt echte Teams: eigene Seite mit Mitgliederliste (Rollen, Siege, zuletzt online), Clan-Chat mit Beitritts-Verlauf, Statistik mit Rang, Siegquote und besten Spielern sowie eine Suche mit offenen und geschlossenen Clans. Ohne Clan gründest du für 600 Rubys einen eigenen – Name, Tag, Tagfarbe, Beschreibung mit Markdown und klickbaren Discord-Links, offen oder auf Anfrage, Mindest-Siege und Einladungen. Der Tag wird bei der Gründung vergeben und ist nicht mehr frei wählbar. Clan-Besitzer und Admins können Mitglieder befördern, stummschalten und entfernen. Außerdem: der Forum-Knopf sitzt jetzt oben neben den News (jeder darf schreiben, auch Admins), die Sprachwahl liegt in den Einstellungen, abholbereite Quests leuchten beim Abholen auf, die Karriere zeigt sich als Kartenraster mit Kategorien, Symbolen, Stufen und Fortschritt – und auf dem Handy sind Knöpfe, Leisten und das Kreismenü deutlich besser zu treffen. PC und Tablet bleiben unverändert.',created_at:'2026-11-25T10:00:00Z'},
   {id:'d18',version:'v21.5',title:'Forum für Bugs, Vorschläge und Spieler-Reports',body:'Im Menü gibt es jetzt ein Forum. Melde dort Fehler, schreibe Vorschläge oder erstatte einen Spieler-Report – mit Name#Tag, Zeit und Beschreibung. Nur das Team kann alle Meldungen lesen und Rückfragen stellen; deine eigene Meldung und die Antworten darauf siehst du weiterhin selbst, niemand sonst.',created_at:'2026-11-24T18:10:00Z'},
   {id:'d17',version:'v21.4',title:'Wege wieder auf dem kürzesten Weg',body:'Die automatischen Wege zwischen deinen Städten laufen wieder auf dem kürzesten Weg. Ein Fehler beim Glätten der Route hat jeden Weg pro Schritt um ein Drittel gestreckt, deshalb zogen sich die Verbindungen in riesigen Bögen über die Karte, statt Nachbargebiete direkt zu verbinden.',created_at:'2026-11-24T16:20:00Z'},

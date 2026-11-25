@@ -452,5 +452,7 @@ Object.assign(EN,{
 'Clan gegründet':'Clan created','Name zu kurz (3–28 Zeichen)':'Name too short (3–28 characters)','Tag zu kurz (2–5 Zeichen)':'Tag too short (2–5 characters)',
 'Melde dich an, um Clans zu nutzen':'Sign in to use clans','gerade eben':'just now','Min':'min','Std.':'h','Tage':'days',
 'FORTSCHRITT':'PROGRESS','BELOHNUNG':'REWARD','ALLE STUFEN':'ALL TIERS','Antwort schreiben …':'Write a reply …',
-'Kein Clan gefunden.':'No clan found.','von':'of','Stufe':'Tier','Siege':'Wins'
+'Kein Clan gefunden.':'No clan found.','von':'of','Stufe':'Tier','Siege':'Wins',
+'Clan-Logo':'Clan logo','Bild wählen':'Choose image','PNG, JPG oder WebP, max. 4 MB – quadratisch zugeschnitten.':'PNG, JPG or WebP, max. 4 MB – cropped to a square.',
+'Anzahl':'Count','Anzahl Gegner':'Number of opponents'
 });

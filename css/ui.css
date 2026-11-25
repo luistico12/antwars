@@ -862,3 +862,46 @@ body.wmv #chips{display:none}
   .cl-tabs button{flex:0 0 auto;padding:7px 11px;font-size:12.5px}
   .cl-findbar .pills{max-width:100%;overflow-x:auto}
 }
+
+/* ===== v21.7: Großer Abholen-Knopf, Clan-Logos, Menü-Regler ===== */
+/* Erfolge: Abholen füllt die Karte wie im Vorbild */
+.qx-claim{padding:12px 18px;font-size:14.5px}
+.qx-cc .cc-claim{width:100%;margin-top:4px;padding:15px 16px;border-radius:14px;font-size:16px;letter-spacing:.12em;gap:10px;justify-content:center}
+.qx-cc .cc-claim .svg{width:19px;height:19px}
+.qx-cc .cc-claim b{font-size:16px;letter-spacing:.02em;gap:6px}
+
+/* Clan-Logo */
+.cl-crest{overflow:hidden}
+.cl-crest img{width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block}
+.cl-logo{display:flex;align-items:center;gap:12px}
+.cl-logo .cl-crest.big{margin:0;flex:none;width:64px;height:64px;border-radius:18px;font-size:18px}
+.cl-logof{display:flex;flex-direction:column;gap:6px;min-width:0}
+.cl-logof .row{justify-content:flex-start}
+.cl-logof .mini{line-height:1.35}
+
+/* Hauptmenü: Gegner-Regler und Modus-Karten */
+.hopts{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.hopts .wide{grid-column:1/-1}
+.hsl{display:flex;align-items:center;gap:10px;margin-top:10px}
+.hsl>span{font:800 10px/1 var(--ui);letter-spacing:.1em;text-transform:uppercase;color:#8b96ad}
+.hsl input[type=range]{flex:1;min-width:0;accent-color:var(--ac);height:22px;cursor:pointer}
+.hsl b{min-width:20px;text-align:center;font-variant-numeric:tabular-nums;font-size:14px}
+.modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.mode-card{display:flex;flex-direction:column;gap:3px;align-items:flex-start;text-align:left;padding:10px 12px;border-radius:12px;border:1px solid var(--ln);background:var(--g2);color:var(--tx);cursor:pointer;transition:border-color .15s,background .15s}
+.mode-card:hover{background:var(--g3)}
+.mode-card small{color:#8b96ad;font-size:11.5px;line-height:1.3}
+.mode-card .mc-t{display:flex;align-items:center;gap:8px;width:100%}
+.mode-card .mc-t b{font-size:13.5px}
+.mode-card .mc-t em{margin-left:auto;font-style:normal;font-size:11px;font-weight:800;color:#8b96ad;background:rgba(255,255,255,.08);border-radius:6px;padding:1px 6px}
+.mode-card.on{border-color:var(--ac);background:rgba(255,87,87,.14);box-shadow:0 0 0 1px rgba(255,87,87,.4)}
+.mode-card.on .mc-t em{background:var(--ac);color:#fff}
+@media (max-width:640px){.hopts{grid-template-columns:1fr}.modes{grid-template-columns:1fr}}
+
+/* Werbefläche: passt sich dem Glas-Hintergrund an */
+#adrail{background:radial-gradient(120% 55% at 50% 0%,#141c2e 0,#0b1019 62%,#0a0e16 100%);border-left:1px solid rgba(255,255,255,.07);box-shadow:inset 1px 0 0 rgba(255,255,255,.04)}
+#adrail .ad{background:rgba(255,255,255,.035);border:1px solid var(--glass-edge);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 20px 44px -26px #000;position:relative}
+#adrail .ad:has(img):after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:2;background:linear-gradient(180deg,rgba(10,14,22,.6),transparent 15%,transparent 85%,rgba(10,14,22,.6))}
+#adrail .ad img{position:relative;z-index:1}
+
+/* Menüknöpfe etwas höher, näher zur Mitte (nicht zentriert) */
+@media (min-width:641px){.hmain{padding-bottom:clamp(20px,9vh,96px)}}
