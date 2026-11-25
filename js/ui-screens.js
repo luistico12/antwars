@@ -345,7 +345,7 @@ function pmRows(){
 S.publicMatches=()=>{
   const pm=UI.pm;
   const body=pm.err?`<div class="panel" style="display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center"><b>${t('Server nicht erreichbar')}</b><button class="btn pri" id="pmRetry" type="button">${ico('refresh')} ${t('Erneut versuchen')}</button></div>`
-   :pm.list?`<div class="field"><span class="lbl">${t('Modus')}</span><div class="pills" id="pmMode">${Object.keys(MODES).map(m=>`<button data-m="${m}" class="${pm.mode===m?'on':''}" type="button">${MODES[m].n}</button>`).join('')}</div></div>
+   :pm.list?`<div class="field"><span class="lbl">${t('Modus')}</span><div class="pills" id="pmMode">${Object.keys(MODES).map(m=>`<button data-m="${m}" class="${pm.mode===m?'on':''}" type="button">${esc(MODES[m].n)}</button>`).join('')}</div></div>
     <div id="pmList" style="display:flex;flex-direction:column;gap:8px">${pmRows()}</div>`:spinner();
   return shell(t('Öffentliche Spiele'),{},body,pm.err||!pm.list?'':`<button class="btn pri lg block" id="pmJoin" type="button">${t('Zufällig beitreten')}</button>`);
 };
@@ -356,6 +356,7 @@ async function pmJoin(mode){
     const{data}=await AW.sb.auth.getSession();const tok=data&&data.session&&data.session.access_token;if(!tok)throw new Error('auth');
     const ch=await WSNet.open(pmUrl(),tok);
     NET.begin({ch,host:false,players:[],server:true});ch.send({t:'join',mode});
+    try{await NET.waitRoom(5000)}catch(e){NET.close();throw new Error('timeout')}
     closeScreens();homeHide();setView('map');NET.refreshStart();
   }catch(e){toast(LANG==='de'?'Beitritt nicht möglich ('+String(e&&e.message||'').slice(0,40)+').':'Cannot join ('+String(e&&e.message||'').slice(0,40)+').','bad')}
   finally{UI.pm.busy=false}

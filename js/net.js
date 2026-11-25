@@ -17,6 +17,29 @@ const NET={server:false,role:null,ch:null,live:false,players:[],humans:[],ready:
     if(this.ch){try{if(this.role==='host'&&this.live&&!silent)this.send({t:'hostleft'});this.ch.leave()}catch(e){}}
     Object.assign(this,{server:false,role:null,ch:null,live:false,players:[],humans:[],ready:{},sent:false});
     const b=$('#btnStart');if(b)b.textContent=t('Spiel starten');
+    this.roomSeen=null;this._rw=null;const nr=$('#netRoom');if(nr)nr.remove();const rr=$('#btnReroll');if(rr)rr.hidden=false;
+  },
+  /* Server-Raum: Karte und Modus kommen vom Server; Spielerliste/Countdown im Setup-Panel (nur textContent) */
+  waitRoom(ms){return new Promise((res,rej)=>{if(this.roomSeen)return res();const tm=setTimeout(()=>{this._rw=null;rej(new Error('timeout'))},ms);this._rw=()=>{clearTimeout(tm);res()}})},
+  onRoom(m){
+    if(started||!Number.isInteger(m.seed)||typeof MODES!=='object'||!MODES[m.mode])return;
+    const rs=this.roomSeen;
+    if(!rs||rs.seed!==m.seed||rs.mode!==m.mode){
+      modeKey=m.mode;newMap(m.seed);this.sent=false;this.roomSeen={seed:m.seed,mode:m.mode};renderSetup();
+      const rr=$('#btnReroll');if(rr)rr.hidden=true;
+    }
+    this.room=m;this.renderRoom();
+    if(this._rw){const f=this._rw;this._rw=null;f()}
+  },
+  renderRoom(){
+    const sp=$('#setupPanel');if(!sp||!this.room)return;
+    let box=$('#netRoom');if(!box){box=document.createElement('div');box.id='netRoom';box.className='mini';box.style.cssText='margin:6px 0;display:flex;flex-direction:column;gap:3px';sp.insertBefore(box,$('#spcList'))}
+    const m=this.room,de=LANG==='de',ps=Array.isArray(m.players)?m.players.slice(0,8):[];
+    box.textContent='';
+    const h=document.createElement('b');
+    h.textContent=m.state==='countdown'?(de?'Start in ':'Starting in ')+mmss(Math.max(0,m.countdown|0)):(de?'Warte auf Spieler …':'Waiting for players …');
+    box.appendChild(h);
+    for(const p of ps){const d=document.createElement('div');d.textContent=String(p&&p.name||'').slice(0,24)+(p&&p.ready?(de?' – bereit':' – ready'):'');box.appendChild(d)}
   },
   /* Ansicht eines Gastes: Fraktions-ID des Gasts und die des Hosts (0) vertauschen, damit sich jeder selbst als „0“ sieht */
   V(h){return h===0?this.fid:h===this.fid?0:h},
@@ -116,8 +139,11 @@ const NET={server:false,role:null,ch:null,live:false,players:[],humans:[],ready:
         this.ready[m.p]={name:cleanName(m.name)||'Spieler',species:m.sp,start:m.start,c:cosmClean(m.c)};this.send({t:'ack',to:m.p});this.refreshStart();
       }else if(m.t==='cmd')this.hostCmd(m);
     }else{
-      if(m.t==='nack'&&m.to===PID){this.sent=false;toast(LANG==='de'?'Startgebiet nicht möglich. Wähle ein anderes.':'Start area not possible. Pick another.','bad');this.refreshStart()}
-      else if(m.t==='init'&&!started&&this.sent){setupSp=this.sentSp;setupStart=this.sentStart;F[0].species=setupSp;$('#btnStart').disabled=false;const o=NET.origStart;this.live=false;o.call($('#btnStart'));this.applyInit(m);
+      if(m.t==='room'&&this.server)this.onRoom(m);
+      else if(m.t==='nack'&&(m.to===PID||this.server)){this.sent=false;toast(LANG==='de'?'Startgebiet nicht möglich. Wähle ein anderes.':'Start area not possible. Pick another.','bad');this.refreshStart()}
+      else if(m.t==='init'&&!started&&this.sent){
+        if(this.server&&(!Array.isArray(m.T)||m.T.length!==T.length||!Array.isArray(m.Fi)||!Array.isArray(m.F)||!Array.isArray(m.C)||!m.fids||m.fids[PID]==null||(m.seed!=null&&m.seed!==CUR.seed))){toast(LANG==='de'?'Server: Karte passt nicht. Verbindung getrennt.':'Server: map mismatch. Disconnected.','bad');this.close();return}
+        setupSp=this.sentSp;setupStart=this.sentStart;F[0].species=setupSp;$('#btnStart').disabled=false;const o=NET.origStart;this.live=false;o.call($('#btnStart'));this.applyInit(m);
         toast(LANG==='de'?'Mehrspieler: Die Welt läuft beim Host.':'Multiplayer: the world runs on the host.','good')}
       else if(m.t==='snap')this.applySnap(m);
       else if(m.t==='hostleft'&&started&&!over){toast(LANG==='de'?'Der Host hat die Partie beendet.':'The host ended the match.','bad');endGame(false)}

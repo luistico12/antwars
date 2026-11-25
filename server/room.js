@@ -9,7 +9,7 @@ const isInt=n=>Number.isInteger(n);
 
 class Room{
   constructor({id,mode,send,onEmpty,seed,createWorld}){
-    this.id=id;this.mode=['classic','fast','chaos','unlimited'].includes(mode)?mode:'classic';this.state='waiting';
+    this.id=id;this.seed=seed;this.mode=['classic','fast','chaos','unlimited'].includes(mode)?mode:'classic';this.state='waiting';
     this._send=send;this._onEmpty=onEmpty;
     this.humans=new Map(); /* sub -> {sub,pid,name,ready,info,fid,absentAt} */
     this.nowMs=0;this.countdown=0;this._acc=0;this._snapMs=0;this._closed=false;this._lastCd=-1;
@@ -19,7 +19,7 @@ class Room{
   _present(){return[...this.humans.values()].filter(h=>h.absentAt==null)}
   _broadcast(msg){for(const h of this._present())this._send2(h.sub,msg)}
   _roomMsg(){
-    return{t:'room',state:this.state,players:[...this.humans.values()].map(h=>({name:h.name,ready:h.ready})),countdown:Math.ceil(this.countdown)}}
+    return{t:'room',state:this.state,seed:this.seed,mode:this.mode,players:[...this.humans.values()].map(h=>({name:h.name,ready:h.ready})),countdown:Math.ceil(this.countdown)}}
   _pushRoom(){this._broadcast(this._roomMsg())}
   listing(){return{id:this.id,mode:this.mode,state:this.state,humans:this.humans.size,max:C.MAX_HUMANS,countdown:this.state==='countdown'?Math.ceil(this.countdown):0}}
 
@@ -82,7 +82,7 @@ class Room{
     for(const o of this.humans.values())if(o.fid!=null)fids[o.pid]=o.fid;
     for(const o of this.humans.values())if(o.fid!=null&&info.Fi&&info.Fi[o.fid])info.Fi[o.fid].c=o.info.c;
     const w=this.world.snap();/* aktueller Weltzustand (auch beim Wiedereintritt) */
-    this._send2(h.sub,{t:'init',...info,T:w.T,F:w.F,C:w.C,M:w.M,sp:w.sp,sm:w.sm,gt:w.gt,fids,hp:null,d:info.d});
+    this._send2(h.sub,{t:'init',seed:this.seed,mode:this.mode,...info,T:w.T,F:w.F,C:w.C,M:w.M,sp:w.sp,sm:w.sm,gt:w.gt,fids,hp:null,d:info.d});
   }
 
   cmd(sub,c){

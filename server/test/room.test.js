@@ -150,3 +150,9 @@ test('Raum voll und gestartet',()=>{
   const g=running();assert.strictEqual(g.room.join('neu','qqqq','N'),'started');
   g.room.leave('s1');g.room.leave('s2');
 });
+
+test('room und init enthalten seed und mode des Raums',()=>{
+  const h=mk({mode:'fast'});h.room.join('s1','aaaa','A');
+  const r=h.of('s1','room')[0];assert.strictEqual(r.seed,1);assert.strictEqual(r.mode,'fast');
+  const g=running({mode:'fast'});const i=g.of('s1','init')[0];assert.strictEqual(i.seed,1);assert.strictEqual(i.mode,'fast');
+});

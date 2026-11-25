@@ -69,6 +69,31 @@ const fake=async t=>{if(typeof t==='string'&&t.startsWith('tok:'))return{sub:t.s
     ok(en,'DE- und EN-Texte vorhanden');
     await h2.close();
     ok(errs.length===0,'Teil B: keine pageerror: '+errs.join(' | '));
+
+    /* ===== Teil C: Karte/Modus vom Server, Bereit, Countdown, init ===== */
+    const h3=await start({port:0,verify:fake,config:{HOST:'127.0.0.1',ALLOWED_ORIGINS:[`http://localhost:${PORT}`],}});require('../server/config').COUNTDOWN_S=2;
+    const cfg3={SERVER_URL:`ws://127.0.0.1:${h3.port}/`};
+    const pj=async who=>{const p=await mk(cfg3);await p.evaluate(w=>{AW.sb={auth:{getSession:async()=>({data:{session:{access_token:'tok:'+w}}})}}},who);
+      await p.click('#rail [data-s="publicMatches"]');await p.waitForSelector('#pmJoin',{timeout:8000});
+      await p.evaluate(()=>{UI.pm.mode='fast'});await p.click('#pmJoin');
+      await p.waitForFunction(()=>NET.server&&NET.roomSeen&&document.querySelector('#netRoom'),null,{timeout:8000});return p};
+    const c1=await pj('carl'),c2=await pj('dora');
+    const st=async p=>p.evaluate(()=>({seed:CUR.seed,rs:NET.roomSeen.seed,mode:modeKey,rm:NET.roomSeen.mode,n:T.length,room:document.querySelector('#netRoom').textContent,btn:document.querySelector('#btnStart').textContent.trim()}));
+    const s1=await st(c1),s2=await st(c2);
+    ok(s1.seed===s1.rs&&s2.seed===s2.rs&&s1.seed===s2.seed&&s1.mode==='fast'&&s2.mode==='fast','Client-Karte == Raum-Seed/Modus (beide Clients)');
+    const srvN=await new Promise(res=>{const W=require('../server/sim/world-vm');const w=W.createWorld({mode:'fast',mapSeed:s1.seed,seed:1});const v=w.snap().T.length;w.dispose();res(v)});
+    ok(s1.n===srvN&&s2.n===srvN,'T.length gleich Server ('+srvN+')');
+    ok(/Warte auf Spieler/.test(s1.room)||/Start in/.test(s1.room),'Spielerliste/„Warte auf Spieler“ im Setup-Panel');
+    for(const [p,k] of [[c1,0],[c2,1]]){
+      await p.evaluate(k=>{const sp=setupSp,l=T.filter(q=>q.terrain===SP[sp].terr);mapClick(l[k?l.length-1:0].id)},k);
+      await p.click('#btnStart');
+    }
+    await c1.waitForFunction(()=>started&&NET.live,null,{timeout:15000}).catch(async e=>{console.log(await c1.evaluate(()=>JSON.stringify({s:started,l:NET.live,sent:NET.sent,room:NET.room,b:document.querySelector('#btnStart').textContent,ss:setupStart})));throw e});await c2.waitForFunction(()=>started&&NET.live,null,{timeout:15000});
+    const f=await c1.evaluate(()=>({nf:F.length,me:F[0].isPlayer,hum:F.filter(x=>x.human).length,own:T.filter(x=>x.owner===0).length}));
+    ok(f.nf>=3&&f.me&&f.hum===2&&f.own>=1,'init angewendet: Fraktionen/Menschen stimmen '+JSON.stringify(f));
+    ok(await c1.evaluate(()=>{const l=T.length;NET.onmsg({t:'init',T:[],Fi:[],F:[],C:[],fids:{}});return T.length===l}),'init mit falscher T-Länge nach Start ignoriert ohne Exception');
+    await h3.close();
+    ok(errs.length===0,'Teil C: keine pageerror: '+errs.join(' | '));
   }catch(e){ok(false,'Abbruch: '+e.message.split('\n')[0]);console.log(e.message.slice(0,600),errs.join('\n'))}
   await b.close();try{await h.close()}catch(e){}srv.kill();process.exit(fails?1:0);
 })();
