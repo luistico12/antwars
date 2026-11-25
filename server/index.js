@@ -176,6 +176,7 @@ async function start({port=0,verify,now=Date.now,blocklistPath,config}={}){
 
   return{
     port:server.address().port,
+    _rooms:rooms,/* nur fuer Tests */
     reloadBlocklist(){blocked=readBlocklist(blocklistPath)},
     stats:()=>({...stats}),
     close(){

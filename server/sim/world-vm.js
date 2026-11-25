@@ -6,13 +6,14 @@ const ROOT=path.resolve(__dirname,'../..');
 const SRC=['js/game-core.js','js/game-world.js','js/game-sea.js','js/game-trade.js'].map(f=>({f,code:fs.readFileSync(path.join(ROOT,f),'utf8')}));
 const STUBS=fs.readFileSync(path.join(__dirname,'stubs.js'),'utf8');
 
-function createWorld({mode,mapSeed,seed}){
+function createWorld({mode,mapSeed,seed,prot}){
   const ctx=vm.createContext({console});
   const run=(code,name)=>vm.runInContext(code,ctx,{filename:name});
   run(STUBS,'stubs.js');
   for(const s of SRC)run(s.code,s.f);
   ctx.__rng=seeded(seed);run('Math.random=__rng','world-vm-rng');
   run(`modeKey=${JSON.stringify(mode)};newMap(${+mapSeed});`,'world-vm-init');
+  if(prot!=null&&isFinite(prot))run(`for(const k in PROT)PROT[k]=${+prot}`,'world-vm-prot');
   const ev=code=>run(code,'world-vm-eval');
   const W={
     initWorld(humans,reseed){

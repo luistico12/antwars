@@ -8,12 +8,12 @@ const MAXSTEP=50; /* Schritte je tick() begrenzen, falls der Aufrufer stockt */
 const isInt=n=>Number.isInteger(n);
 
 class Room{
-  constructor({id,mode,send,onEmpty,seed,createWorld}){
-    this.id=id;this.seed=seed;this.mode=['classic','fast','chaos','unlimited'].includes(mode)?mode:'classic';this.state='waiting';
+  constructor({id,mode,send,onEmpty,seed,createWorld,config}){
+    this.C=config||C;this.id=id;this.seed=seed;this.mode=['classic','fast','chaos','unlimited'].includes(mode)?mode:'classic';this.state='waiting';
     this._send=send;this._onEmpty=onEmpty;
     this.humans=new Map(); /* sub -> {sub,pid,name,ready,info,fid,absentAt} */
     this.nowMs=0;this.countdown=0;this._acc=0;this._snapMs=0;this._closed=false;this._lastCd=-1;
-    this.world=(createWorld||realCreateWorld)({mode:this.mode,mapSeed:seed,seed});
+    this.world=(createWorld||realCreateWorld)({mode:this.mode,mapSeed:seed,seed,prot:this.C.PROT_S});
   }
   _send2(sub,msg){try{this._send(sub,msg)}catch(e){}}
   _present(){return[...this.humans.values()].filter(h=>h.absentAt==null)}
@@ -21,7 +21,7 @@ class Room{
   _roomMsg(){
     return{t:'room',state:this.state,seed:this.seed,mode:this.mode,players:[...this.humans.values()].map(h=>({name:h.name,ready:h.ready})),countdown:Math.ceil(this.countdown)}}
   _pushRoom(){this._broadcast(this._roomMsg())}
-  listing(){return{id:this.id,mode:this.mode,state:this.state,humans:this.humans.size,max:C.MAX_HUMANS,countdown:this.state==='countdown'?Math.ceil(this.countdown):0}}
+  listing(){return{id:this.id,mode:this.mode,state:this.state,humans:this.humans.size,max:this.C.MAX_HUMANS,countdown:this.state==='countdown'?Math.ceil(this.countdown):0}}
 
   join(sub,pid,name){
     if(this._closed||typeof sub!=='string'||typeof pid!=='string')return'started';
@@ -32,7 +32,7 @@ class Room{
       old.pid=pid;old.absentAt=null;this._sendInit(old);return'ok';
     }
     if(old){old.pid=pid;old.name=cleanName(name)||old.name;this._pushRoom();return'ok'}
-    if(this.humans.size>=C.MAX_HUMANS)return'full';
+    if(this.humans.size>=this.C.MAX_HUMANS)return'full';
     this.humans.set(sub,{sub,pid,name:cleanName(name)||'Spieler',ready:false,info:null,fid:null,absentAt:null,bot:false});
     this._pushRoom();return'ok';
   }
@@ -62,14 +62,14 @@ class Room{
   }
   _readyN(){let n=0;for(const h of this.humans.values())if(h.ready)n++;return n}
   _updateCountdown(){
-    const ok=this._readyN()>=C.MIN_HUMANS;
-    if(ok&&this.state==='waiting'){this.state='countdown';this.countdown=C.COUNTDOWN_S;this._lastCd=-1}
+    const ok=this._readyN()>=this.C.MIN_HUMANS;
+    if(ok&&this.state==='waiting'){this.state='countdown';this.countdown=this.C.COUNTDOWN_S;this._lastCd=-1}
     else if(!ok&&this.state==='countdown'){this.state='waiting';this.countdown=0}
   }
   _start(){
     for(const h of [...this.humans.values()])if(!h.ready){this._send2(h.sub,{t:'nack',why:'notready'});this.humans.delete(h.sub)}
     const list=[...this.humans.values()];
-    if(list.length<C.MIN_HUMANS){this.state='waiting';this.countdown=0;if(!list.length)this._close();return}
+    if(list.length<this.C.MIN_HUMANS){this.state='waiting';this.countdown=0;if(!list.length)this._close();return}
     this.state='running';this.countdown=0;
     this.world.initWorld(list.map(h=>({pid:h.pid,name:h.name,species:h.info.sp,start:h.info.start,c:h.info.c})));
     list.forEach((h,i)=>{h.fid=i+1});
@@ -111,16 +111,16 @@ class Room{
     if(this.state!=='running')return;
     /* abwesende Menschen: nach der Frist uebernimmt ein Bot */
     let botted=false;
-    for(const h of this.humans.values())if(h.absentAt!=null&&!h.bot&&this.nowMs-h.absentAt>=C.GRACE_S*1000){
+    for(const h of this.humans.values())if(h.absentAt!=null&&!h.bot&&this.nowMs-h.absentAt>=this.C.GRACE_S*1000){
       botted=true;h.bot=true;h.absentAt=null;try{this.world.setBot(h.fid)}catch(e){}
     }
     try{
       this._acc+=dt;let n=0;
-      while(this._acc>=C.STEP_DT-1e-9&&n<MAXSTEP){const k=this.world.simv?this.world.simv():1;for(let i=0;i<k;i++)this.world.step(C.STEP_DT);this._acc-=C.STEP_DT;n++}
-      if(this._acc>=C.STEP_DT)this._acc=0;
+      while(this._acc>=this.C.STEP_DT-1e-9&&n<MAXSTEP){const k=this.world.simv?this.world.simv():1;for(let i=0;i<k;i++)this.world.step(this.C.STEP_DT);this._acc-=this.C.STEP_DT;n++}
+      if(this._acc>=this.C.STEP_DT)this._acc=0;
       this._snapMs+=dt*1000;
       let snap=null;
-      if(this._snapMs>=C.SNAP_MS){this._snapMs=0;snap=this.world.snap();this._broadcast({t:'snap',...snap})}
+      if(this._snapMs>=this.C.SNAP_MS){this._snapMs=0;snap=this.world.snap();this._broadcast({t:'snap',...snap})}
       const o=this.world.over();
       if(o.over)return this._end(o.winnerFid);
       if(snap||botted)this._checkEnd(snap);

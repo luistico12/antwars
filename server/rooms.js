@@ -28,7 +28,7 @@ class Rooms{
   _create(mode){
     if(this.rooms.size>=this.C.MAX_ROOMS)return null;
     let id;do{id=crypto.randomBytes(4).toString('hex')}while(this.rooms.has(id));
-    const room=new Room({id,mode,seed:this._seed(),createWorld:this._createWorld,
+    const room=new Room({id,mode,seed:this._seed(),createWorld:this._createWorld,config:this.C,
       send:(s,m)=>this._wrapSend(s,m),
       onEmpty:()=>{
         this.rooms.delete(id);

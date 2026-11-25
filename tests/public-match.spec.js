@@ -71,7 +71,7 @@ const fake=async t=>{if(typeof t==='string'&&t.startsWith('tok:'))return{sub:t.s
     ok(errs.length===0,'Teil B: keine pageerror: '+errs.join(' | '));
 
     /* ===== Teil C: Karte/Modus vom Server, Bereit, Countdown, init ===== */
-    const h3=await start({port:0,verify:fake,config:{HOST:'127.0.0.1',ALLOWED_ORIGINS:[`http://localhost:${PORT}`],}});require('../server/config').COUNTDOWN_S=2;
+    const h3=await start({port:0,verify:fake,config:{HOST:'127.0.0.1',ALLOWED_ORIGINS:[`http://localhost:${PORT}`],COUNTDOWN_S:2}});
     const cfg3={SERVER_URL:`ws://127.0.0.1:${h3.port}/`};
     const pj=async who=>{const p=await mk(cfg3);await p.evaluate(w=>{AW.sb={auth:{getSession:async()=>({data:{session:{access_token:'tok:'+w}}})}}},who);
       await p.click('#rail [data-s="publicMatches"]');await p.waitForSelector('#pmJoin',{timeout:8000});
@@ -94,6 +94,51 @@ const fake=async t=>{if(typeof t==='string'&&t.startsWith('tok:'))return{sub:t.s
     ok(await c1.evaluate(()=>{const l=T.length;NET.onmsg({t:'init',T:[],Fi:[],F:[],C:[],fids:{}});return T.length===l}),'init mit falscher T-Länge nach Start ignoriert ohne Exception');
     await h3.close();
     ok(errs.length===0,'Teil C: keine pageerror: '+errs.join(' | '));
+
+    /* ===== Teil D: Ende zu Ende (Schutzzeit, Angriff, Weggang, Bot, Raum weg) ===== */
+    const h4=await start({port:0,verify:fake,config:{HOST:'127.0.0.1',ALLOWED_ORIGINS:[`http://localhost:${PORT}`],COUNTDOWN_S:2,GRACE_S:2,PROT_S:5}});
+    const cfg4={SERVER_URL:`ws://127.0.0.1:${h4.port}/`};
+    const mm=async()=>(await fetch(`http://127.0.0.1:${h4.port}/matches`)).json();
+    const pj4=async who=>{const p=await mk(cfg4);await p.evaluate(w=>{AW.sb={auth:{getSession:async()=>({data:{session:{access_token:'tok:'+w}}})}}},who);
+      await p.click('#rail [data-s="publicMatches"]');await p.waitForSelector('#pmJoin',{timeout:8000});
+      await p.evaluate(()=>{UI.pm.mode='fast'});await p.click('#pmJoin');
+      await p.waitForFunction(()=>NET.server&&NET.roomSeen&&document.querySelector('#netRoom'),null,{timeout:8000});return p};
+    const da=await pj4('erna'),db=await pj4('finn');
+    ok((await mm()).some(r=>r.state==='waiting'&&r.humans===2),'/matches: Raum mit 2 Spielern');
+    for(const [p,k] of [[da,0],[db,1]]){
+      await p.evaluate(k=>{const sp=setupSp,l=T.filter(q=>q.terrain===SP[sp].terr);mapClick(l[k?l.length-1:0].id)},k);
+      await p.click('#btnStart');
+    }
+    for(const p of [da,db])await p.waitForFunction(()=>started&&NET.live,null,{timeout:15000});
+    ok((await mm()).some(r=>r.state==='running'),'/matches: Raum läuft');
+    /* Angriff vor Ende der Schutzzeit: abgelehnt, kein Marsch */
+    const src=()=>da.evaluate(()=>{let best=null;for(const t of T)if(t.owner===0&&(!best||t.troops>best.troops))best=t;
+      if(!best)return null;const to=best.adj.find(i=>T[i].owner!==0);return{from:best.id,to,n:Math.max(1,Math.floor(best.troops/2)),tr:best.troops}});
+    const a0=await src();ok(a0&&a0.to!=null&&a0.n>=1,'A hat Angriffsziel '+JSON.stringify(a0));
+    const g0=await db.evaluate(()=>gtime);
+    await da.evaluate(a=>NET.cmd({k:'launch',from:a.from,to:a.to,n:a.n}),a0);
+    await db.waitForFunction(g=>gtime>g+1,g0,{timeout:8000});ok(true,'B sieht steigende gtime');
+    ok(await db.evaluate(()=>marches.length===0),'Angriff in der Schutzzeit abgelehnt (kein Marsch bei B)');
+    /* nach der Schutzzeit: Angriff wird ausgeführt und ist bei B sichtbar */
+    await db.waitForFunction(()=>gtime/SIMV>5.5,null,{timeout:15000});
+    const a1=await src();
+    await da.evaluate(a=>NET.cmd({k:'launch',from:a.from,to:a.to,n:a.n}),a1);
+    await db.waitForFunction(()=>marches.length>0,null,{timeout:8000}).catch(()=>{});
+    ok(await db.evaluate(()=>marches.length>0),'Angriff nach Schutzzeit: Marsch im Schnappschuss von B');
+    /* A schließt: nach GRACE wird die Fraktion Bot, B läuft weiter */
+    const room=[...h4._rooms.rooms.values()][0];
+    await da.context().close();
+    await sleep(500);ok(room.humans.size===2&&![...room.humans.values()].some(h=>h.bot),'A weg: innerhalb der Schonfrist noch kein Bot');
+    const t0=Date.now();
+    while(Date.now()-t0<8000&&![...room.humans.values()].some(h=>h.bot))await sleep(200);
+    ok([...room.humans.values()].filter(h=>h.bot).length===1,'nach GRACE_S ist As Fraktion Bot');
+    const g1=await db.evaluate(()=>gtime);await db.waitForFunction(g=>gtime>g+1,g1,{timeout:8000});
+    ok(await db.evaluate(()=>started&&NET.live),'B spielt weiter');
+    await db.context().close();
+    const t1=Date.now();while(Date.now()-t1<8000&&(await mm()).length)await sleep(200);
+    ok((await mm()).length===0,'/matches: Raum nach Weggang beider verschwunden');
+    await h4.close();
+    ok(errs.length===0,'Teil D: keine pageerror: '+errs.join(' | '));
   }catch(e){ok(false,'Abbruch: '+e.message.split('\n')[0]);console.log(e.message.slice(0,600),errs.join('\n'))}
   await b.close();try{await h.close()}catch(e){}srv.kill();process.exit(fails?1:0);
 })();
