@@ -108,6 +108,8 @@ begin
   if auth.uid() is null or coalesce(current_setting('app.rpc', true),'') = '1' or public.is_admin() then return new; end if;
   new.rubys := old.rubys; new.wins := old.wins; new.games := old.games; new.owned := old.owned;
   new.username := old.username; new.tag := old.tag; new.quests := old.quests; new.stats := old.stats; new.is_admin := old.is_admin; new.id := old.id; new.created_at := old.created_at;
+  -- Clan-Tag und Clan-Zugehörigkeit vergibt nur noch die Clan-Logik (clan_create/clan_join/clan_leave).
+  new.clan_tag := old.clan_tag; new.clan_id := old.clan_id;
   if new.hat is not null and not ('hat:'||new.hat) = any(old.owned) then new.hat := old.hat; end if;
   if new.flag is not null and not ('flag:'||new.flag) = any(old.owned) then new.flag := old.flag; end if;
   if new.crown is not null and not ('crown:'||new.crown) = any(old.owned) then new.crown := old.crown; end if;
@@ -391,6 +393,8 @@ begin
   if auth.uid() is null or coalesce(current_setting('app.rpc', true),'') = '1' or public.is_admin() then return new; end if;
   new.rubys := old.rubys; new.wins := old.wins; new.games := old.games; new.owned := old.owned;
   new.username := old.username; new.tag := old.tag; new.quests := old.quests; new.stats := old.stats; new.is_admin := old.is_admin; new.id := old.id; new.created_at := old.created_at;
+  -- Clan-Tag und Clan-Zugehörigkeit vergibt nur noch die Clan-Logik (clan_create/clan_join/clan_leave).
+  new.clan_tag := old.clan_tag; new.clan_id := old.clan_id;
   if new.hat is not null and not ('hat:'||new.hat) = any(old.owned) then new.hat := old.hat; end if;
   if new.flag is not null and not ('flag:'||new.flag) = any(old.owned) then new.flag := old.flag; end if;
   if new.crown is not null and not ('crown:'||new.crown) = any(old.owned) then new.crown := old.crown; end if;
