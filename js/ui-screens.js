@@ -325,6 +325,55 @@ S.lobbyJoin.bind=async p=>{
   if(!UI.lobbies){try{UI.lobbies=await AW.lobbies()}catch(e){UI.lobbies=[]}if(SCR.cur&&SCR.cur.name==='lobbyJoin')render()}
 };
 
+/* ---------- Öffentliche Spiele (Server-Räume, GET <SERVER_URL>/matches + WebSocket) ---------- */
+UI.pm={list:null,err:false,mode:'classic',busy:false,timer:null};
+const pmUrl=()=>String(CFG.SERVER_URL||'').trim();
+function pmHttp(){const u=pmUrl();if(!u)return'';try{const x=new URL(u);x.protocol=x.protocol==='wss:'?'https:':x.protocol==='ws:'?'http:':x.protocol;x.pathname=x.pathname.replace(/\/+$/,'')+'/matches';x.search='';x.hash='';return x.href}catch(e){return''}}
+async function pmFetch(){
+  const u=pmHttp();if(!u){UI.pm.err=true;UI.pm.list=null;return}
+  try{const c=new AbortController(),tm=setTimeout(()=>c.abort(),4000);const r=await fetch(u,{signal:c.signal,cache:'no-store'});clearTimeout(tm);
+    if(!r.ok)throw 0;const l=await r.json();if(!Array.isArray(l))throw 0;UI.pm.list=l.slice(0,50);UI.pm.err=false}
+  catch(e){UI.pm.err=true;UI.pm.list=null}
+}
+const pmState=r=>r.state==='waiting'||r.state==='countdown'?(r.humans>=r.max?'voll':'wartet'):'läuft';
+function pmRows(){
+  const l=UI.pm.list||[];
+  if(!l.length)return`<div class="mini" style="margin:auto">${t('Gerade kein offenes Spiel. Starte eines mit „Zufällig beitreten“.')}</div>`;
+  return l.map(r=>{const st=pmState(r),m=MODES[r.mode],cd=r.state==='countdown'&&r.countdown>0?` · ${mmss(r.countdown)}`:'';
+    return`<div class="li" style="padding:8px 12px"><b>${esc(m?m.n:String(r.mode).slice(0,20))}</b><span class="sp"></span><span>${(r.humans|0)}/${r.max|0}</span><span class="tag ${st==='wartet'?'ac':''}">${t(st)}${cd}</span>${st==='wartet'?`<button class="btn sm pri" data-m="${esc(r.mode)}" type="button">${t('Beitreten')}</button>`:''}</div>`}).join('');
+}
+S.publicMatches=()=>{
+  const pm=UI.pm;
+  const body=pm.err?`<div class="panel" style="display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center"><b>${t('Server nicht erreichbar')}</b><button class="btn pri" id="pmRetry" type="button">${ico('refresh')} ${t('Erneut versuchen')}</button></div>`
+   :pm.list?`<div class="field"><span class="lbl">${t('Modus')}</span><div class="pills" id="pmMode">${Object.keys(MODES).map(m=>`<button data-m="${m}" class="${pm.mode===m?'on':''}" type="button">${MODES[m].n}</button>`).join('')}</div></div>
+    <div id="pmList" style="display:flex;flex-direction:column;gap:8px">${pmRows()}</div>`:spinner();
+  return shell(t('Öffentliche Spiele'),{},body,pm.err||!pm.list?'':`<button class="btn pri lg block" id="pmJoin" type="button">${t('Zufällig beitreten')}</button>`);
+};
+async function pmJoin(mode){
+  if(UI.pm.busy||started)return;if(!MODES[mode])return;UI.pm.busy=true;
+  try{
+    if(!AW.sb||!AW.sb.auth)throw new Error('auth');
+    const{data}=await AW.sb.auth.getSession();const tok=data&&data.session&&data.session.access_token;if(!tok)throw new Error('auth');
+    const ch=await WSNet.open(pmUrl(),tok);
+    NET.begin({ch,host:false,players:[],server:true});ch.send({t:'join',mode});
+    closeScreens();homeHide();setView('map');NET.refreshStart();
+  }catch(e){toast(LANG==='de'?'Beitritt nicht möglich ('+String(e&&e.message||'').slice(0,40)+').':'Cannot join ('+String(e&&e.message||'').slice(0,40)+').','bad')}
+  finally{UI.pm.busy=false}
+}
+S.publicMatches.bind=p=>{
+  const alive=()=>SCR.cur&&SCR.cur.name==='publicMatches';
+  clearInterval(UI.pm.timer);
+  const rt=p.querySelector('#pmRetry');if(rt)rt.onclick=()=>{UI.pm.list=null;UI.pm.err=false;render()};
+  const md=p.querySelector('#pmMode');if(md)md.onclick=e=>{const b=e.target.closest('[data-m]');if(!b)return;UI.pm.mode=b.dataset.m;md.querySelectorAll('[data-m]').forEach(x=>x.classList.toggle('on',x===b))};
+  const jn=p.querySelector('#pmJoin');if(jn)jn.onclick=()=>pmJoin(UI.pm.mode);
+  const ls=p.querySelector('#pmList');if(ls)ls.onclick=e=>{const b=e.target.closest('[data-m]');if(b)pmJoin(b.dataset.m)};
+  const tick=async()=>{await pmFetch();if(!alive())return;
+    const was=!!p.querySelector('#pmList');
+    if(UI.pm.err||!UI.pm.list||!was)render();else{const l=$('#pmList');if(l)l.innerHTML=pmRows()}};
+  if(!UI.pm.list&&!UI.pm.err)tick();
+  UI.pm.timer=setInterval(()=>{if(!alive()){clearInterval(UI.pm.timer);return}if(!UI.pm.err)tick()},5000);
+};
+
 /* ---------- Admin: News und Spielerprofile (Rechte werden serverseitig per RLS erzwungen) ---------- */
 UI.admTab='news';
 S.admin=()=>{

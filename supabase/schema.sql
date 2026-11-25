@@ -680,3 +680,8 @@ grant execute on function public.forum_list(), public.forum_open(uuid), public.f
 insert into public.news (version, title, body)
 select 'v21.5', 'Forum für Bugs, Vorschläge und Spieler-Reports', 'Im Menü gibt es jetzt ein Forum. Melde dort Fehler, schreibe Vorschläge oder erstatte einen Spieler-Report – mit Name#Tag, Zeit und Beschreibung. Nur das Team kann alle Meldungen lesen und Rückfragen stellen; deine eigene Meldung und die Antworten darauf siehst du weiterhin selbst, niemand sonst.'
 where not exists (select 1 from public.news where version = 'v21.5');
+
+-- News v22
+insert into public.news (version, title, body)
+select 'v22', 'Öffentliche Spiele auf dem Spielserver', 'Im Menü gibt es jetzt Öffentliche Spiele: Tritt einem Raum auf dem Spielserver bei, wähle einen Modus (Klassisch, Schnell, Chaos oder Unbegrenzt) und spiele mit bis zu acht Mitspielern. Die Liste zeigt wartende und laufende Räume mit Spielerzahl und Countdown und aktualisiert sich alle paar Sekunden. Auch anonyme Spieler können mitmachen.'
+where not exists (select 1 from public.news where version = 'v22');

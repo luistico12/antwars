@@ -42,6 +42,33 @@ const fake=async t=>{if(typeof t==='string'&&t.startsWith('tok:'))return{sub:t.s
     await h.close();
     await pg.waitForFunction(()=>wsGone,null,{timeout:5000}).catch(async e=>{console.log(await pg.evaluate(()=>JSON.stringify({c:wsGone})));throw e});ok(true,'onclose beim Serverende');
     ok(errs.length===0,'keine pageerror: '+errs.join(' | '));
-  }catch(e){ok(false,'Abbruch: '+e.message.split('\n')[0]);console.log(errs.join('\n'))}
+
+    /* ===== Teil B: Bildschirm „Öffentliche Spiele“ ===== */
+    const mk=async cfg=>{const c=await b.newContext({locale:'de-DE'});await c.route('**/config.js',r=>r.fulfill({body:'window.AW_CONFIG='+JSON.stringify(cfg),contentType:'text/javascript'}));
+      await c.addInitScript(()=>{try{localStorage.setItem('aw_consent',JSON.stringify({set:true,prefs:true,ads:false}))}catch(e){}});
+      const p=await c.newPage();p.on('pageerror',e=>errs.push(e.message));await p.goto(url);await p.waitForFunction(()=>typeof AW!=='undefined'&&AW.ready&&typeof WSNet!=='undefined');await p.evaluate(()=>{const l=document.getElementById('login');if(l)l.hidden=true});return p};
+    const p1=await mk({});
+    ok(await p1.locator('#rail [data-s="publicMatches"]').isVisible(),'Menüeintrag „Öffentliche Spiele“ sichtbar');
+    await p1.click('#rail [data-s="publicMatches"]');
+    await p1.waitForSelector('#pmRetry',{timeout:5000});
+    ok((await p1.textContent('#scrP')).includes('Server nicht erreichbar')&&(await p1.textContent('#scrP')).includes('Erneut versuchen'),'ohne SERVER_URL: „Server nicht erreichbar“ mit „Erneut versuchen“');
+    await p1.click('#pmRetry');await p1.waitForSelector('#pmRetry',{timeout:5000});ok(true,'Erneut versuchen bleibt stabil');
+    const h2=await start({port:0,verify:fake,config:{HOST:'127.0.0.1',ALLOWED_ORIGINS:[`http://localhost:${PORT}`]}});
+    const cfg2={SERVER_URL:`ws://127.0.0.1:${h2.port}/`};
+    const pa=await mk(cfg2);
+    await pa.evaluate(async u=>{window.ch=await WSNet.open(u,'tok:alice');NET.begin({ch,host:false,players:[],server:true});ch.send({t:'join',mode:'classic'})},cfg2.SERVER_URL);
+    const pb=await mk(cfg2);
+    await pb.evaluate(()=>{AW.sb={auth:{getSession:async()=>({data:{session:{access_token:'tok:bob'}}})}}});
+    await pb.click('#rail [data-s="publicMatches"]');
+    await pb.waitForSelector('#pmList [data-m="classic"]',{timeout:8000});
+    const row=await pb.textContent('#pmList');ok(/Klassisch|Classic/i.test(row)&&row.includes('1/8')&&row.includes('wartet'),'wartender Raum in der Liste: '+row.replace(/\s+/g,' ').slice(0,60));
+    await pb.click('#pmList [data-m="classic"]');
+    await pb.waitForFunction(()=>NET.server&&NET.role==='guest'&&document.querySelector('#btnStart')&&document.querySelector('#btnStart').textContent.trim()===t('Bereit'),null,{timeout:8000});
+    ok(true,'Beitreten: Startgebiet-Menü, #btnStart zeigt „Bereit“');
+    const en=await pb.evaluate(()=>['Öffentliche Spiele','Server nicht erreichbar','Erneut versuchen','voll','wartet','läuft','Beitreten','Zufällig beitreten'].every(k=>EN[k]));
+    ok(en,'DE- und EN-Texte vorhanden');
+    await h2.close();
+    ok(errs.length===0,'Teil B: keine pageerror: '+errs.join(' | '));
+  }catch(e){ok(false,'Abbruch: '+e.message.split('\n')[0]);console.log(e.message.slice(0,600),errs.join('\n'))}
   await b.close();try{await h.close()}catch(e){}srv.kill();process.exit(fails?1:0);
 })();
