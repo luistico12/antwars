@@ -55,7 +55,7 @@ test('dasselbe Konto zweimal: zweite abgelehnt, erste bleibt; Wiederverbinden na
 test('Flut: 200 Nachrichten in einer Sekunde → Verbindung wird geschlossen',()=>withSrv(async h=>{
   const ws=await login(h,'flood');
   for(let i=0;i<200;i++)ws.send(JSON.stringify({t:'leave'}));
-  assert.strictEqual(await ws.closed,1008);
+  assert.strictEqual(await ws.closed,1006);/* terminate(): kein Close-Handshake */
 }));
 test('fünfte Verbindung derselben IP wird abgelehnt',()=>withSrv(async h=>{
   const ws=[];for(let i=0;i<4;i++)ws.push(await wsOpen(h));
@@ -129,4 +129,87 @@ test('Token eines fremden Schlüssels wird über den echten Serverpfad abgelehnt
     const ws=await wsOpen(h);ws.send(JSON.stringify({t:'auth',token:hp+'.'+sig,pid:'aaaa'}));
     assert.strictEqual(await ws.closed,1008);
   },{}, {verify});
+});
+
+test('Ping-Flut zählt gegen den Token-Bucket → terminate',()=>withSrv(async h=>{
+  const ws=await login(h,'pingflood');
+  for(let i=0;i<200;i++)ws.ping();
+  assert.strictEqual(await ws.closed,1006);
+  assert.ok(h.stats().flood>=1);
+}));
+test('Binärframe und Müll nach Anmeldung → terminate (1006)',()=>withSrv(async h=>{
+  const a=await login(h,'bin1');a.send(Buffer.from([1]));assert.strictEqual(await a.closed,1006);
+  const b=await login(h,'bin2');b.send('{kaputt');assert.strictEqual(await b.closed,1006);
+}));
+test('Doppelanmeldung gleichzeitig: genau eine Verbindung je Konto',()=>{
+  const slow=async t=>{await wait(60);return fake(t)};
+  return withSrv(async h=>{
+    const dup0=h.stats().dup;
+    const ws=await Promise.all([wsOpen(h),wsOpen(h),wsOpen(h)]);
+    for(const w of ws)w.send(auth('race'));
+    await Promise.all(ws.map(w=>Promise.race([w.closed,until(()=>w.msgs.some(m=>m.t==='authed'))])));
+    await wait(100);
+    const authed=ws.filter(w=>w.msgs.some(m=>m.t==='authed'));
+    assert.strictEqual(authed.length,1);
+    assert.strictEqual(ws.filter(w=>w.readyState===1).length,1);
+    assert.strictEqual(h.stats().dup-dup0,2);/* stats sind prozessweit */
+  },{},{verify:slow});
+});
+test('Beitritts-Ratenlimit je IP und Minute (JOIN_PER_MIN) gegen Raum-Churn',()=>withSrv(async h=>{
+  const ws=await login(h,'churn');
+  for(let i=0;i<3;i++){ws.send(JSON.stringify({t:'join',mode:'classic'}));ws.send(JSON.stringify({t:'leave'}));await wait(120)}
+  ws.send(JSON.stringify({t:'join',mode:'classic'}));
+  await until(()=>ws.msgs.some(m=>m.t==='err'&&m.why==='rate'));
+  /* andere IP (über CF-Connecting-IP) hat eigenes Limit */
+  const o=await wsOpen(h,{headers:{'CF-Connecting-IP':'203.0.113.9'}});o.send(auth('other'));
+  await until(()=>o.msgs.some(m=>m.t==='authed'));
+  o.send(JSON.stringify({t:'join',mode:'classic'}));
+  await until(()=>o.msgs.some(m=>m.t==='room'));
+  ws.close();o.close();
+},{JOIN_PER_MIN:3,MSG_BURST:100}));
+test('IPv6 aus demselben /64 teilt sich das Verbindungslimit; ::ffff:-Form zählt als IPv4',()=>withSrv(async h=>{
+  const hd=a=>({'CF-Connecting-IP':a});
+  const ws=[];
+  for(const a of['2001:db8:1:2::1','2001:db8:1:2:aaaa::5','2001:DB8:1:2:0:0:0:9','2001:db8:1:2:ffff:ffff:ffff:ffff'])ws.push(await wsOpen(h,{headers:hd(a)}));
+  const st=await new Promise(res=>{const w=new WebSocket('ws://127.0.0.1:'+h.port+'/',{headers:{Origin:O,...hd('2001:db8:1:2::77')}});w.on('unexpected-response',(q,r)=>res(r.statusCode));w.on('error',()=>{})});
+  assert.strictEqual(st,429);
+  const v4=[];for(let i=0;i<4;i++)v4.push(await wsOpen(h,{headers:hd(i%2?'::ffff:198.51.100.7':'198.51.100.7')}));
+  const st2=await new Promise(res=>{const w=new WebSocket('ws://127.0.0.1:'+h.port+'/',{headers:{Origin:O,...hd('198.51.100.7')}});w.on('unexpected-response',(q,r)=>res(r.statusCode));w.on('error',()=>{})});
+  assert.strictEqual(st2,429);
+  [...ws,...v4].forEach(w=>w.close());
+}));
+test('Auth-Nachricht mit 6000-Zeichen-Token geht durch, 9000 nicht; danach gilt 4096',()=>withSrv(async h=>{
+  const big=await wsOpen(h);big.send(JSON.stringify({t:'auth',token:'tok:'+'a'.repeat(6000),pid:'aaaa'}));
+  await until(()=>big.msgs.some(m=>m.t==='authed'));
+  big.send(JSON.stringify({t:'leave',pad:'x'.repeat(5000)}));assert.strictEqual(await big.closed,1006);
+  const huge=await wsOpen(h);huge.send(JSON.stringify({t:'auth',token:'tok:'+'a'.repeat(9000),pid:'aaaa'}));
+  const c=await huge.closed;assert.ok(c===1006||c===1009||c===1008);
+}));
+test('makeCrashGuard: loggt ohne Token/IP, >20 in 60 s → exit(1)',()=>{
+  const {makeCrashGuard}=require('../index');
+  const logs=[];let code=null,t=0,errs=0;
+  const g=makeCrashGuard({exit:c=>{code=c},log:m=>logs.push(m),now:()=>t,onError:()=>errs++});
+  const jwt='eyJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJhYmMifQ.c2lnbmF0dXJlc2lnbmF0dXJl';
+  const e=new TypeError('bad token '+jwt+' from 203.0.113.5 and 2001:db8::1');
+  for(let i=0;i<20;i++){t+=100;g('uncaughtException',e)}
+  assert.strictEqual(code,null);assert.strictEqual(errs,20);
+  const all=logs.join('\n');
+  assert.ok(/TypeError/.test(all));
+  assert.ok(!all.includes('eyJ')&&!all.includes('203.0.113')&&!all.includes('2001:db8')&&!all.includes('bad token'),all);
+  t+=100;g('unhandledRejection',e);assert.strictEqual(code,1);
+  /* verteilt über Zeit: kein Exit */
+  let c2=null,t2=0;const g2=makeCrashGuard({exit:c=>{c2=c},log:()=>{},now:()=>t2});
+  for(let i=0;i<100;i++){t2+=5000;g2('x',new Error('x'))}
+  assert.strictEqual(c2,null);
+  g2('x','kein Fehlerobjekt');assert.strictEqual(c2,null);
+});
+test('normIp: IPv4, ::ffff:, /64, ungültig',()=>{
+  const {normIp}=require('../limits');
+  assert.strictEqual(normIp('1.2.3.4'),'1.2.3.4');
+  assert.strictEqual(normIp('::ffff:1.2.3.4'),'1.2.3.4');
+  assert.strictEqual(normIp('::ffff:0102:0304'),'1.2.3.4');
+  assert.strictEqual(normIp('2001:db8:1:2:3:4:5:6'),normIp('2001:DB8:1:2::'));
+  assert.notStrictEqual(normIp('2001:db8:1:2::1'),normIp('2001:db8:1:3::1'));
+  assert.strictEqual(normIp('::1'),normIp('0:0:0:0:ffff::1'));
+  for(const bad of['','nonsense',undefined,null,'1.2.3','::g','1:2:3:4:5:6:7:8:9'])assert.strictEqual(normIp(bad),'invalid');
 });

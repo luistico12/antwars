@@ -3,7 +3,8 @@
 const crypto=require('node:crypto');
 const {Room}=require('./room');
 class Rooms{
-  constructor({config,send,seedFn,createWorld}){
+  constructor({config,send,seedFn,createWorld,onError}){
+    this._onError=onError||(()=>{});
     this.C=config;this._send=send;this._createWorld=createWorld;
     this._seed=seedFn||(()=>crypto.randomInt(1,2147483647));
     this.rooms=new Map();   /* id -> Room */
@@ -61,7 +62,17 @@ class Rooms{
     if(r._closed||!r.humans.has(sub))this.bySub.delete(sub);
   }
   listing(){return[...this.rooms.values()].map(r=>r.listing())}
-  tick(dt){for(const r of [...this.rooms.values()])r.tick(dt)}
+  /* ein werfender Raum wird beendet, die anderen laufen weiter */
+  tick(dt){
+    for(const r of [...this.rooms.values()]){
+      try{r.tick(dt)}catch(e){
+        try{this._onError(e)}catch(e2){}
+        try{r._end(null)}catch(e2){}
+        try{r._close()}catch(e2){}
+        if(this.rooms.get(r.id)===r)this.rooms.delete(r.id);
+      }
+    }
+  }
   dispose(){for(const r of [...this.rooms.values()])r._close();this.rooms.clear();this.bySub.clear()}
 }
 module.exports={Rooms};

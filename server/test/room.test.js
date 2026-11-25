@@ -156,3 +156,42 @@ test('room und init enthalten seed und mode des Raums',()=>{
   const r=h.of('s1','room')[0];assert.strictEqual(r.seed,1);assert.strictEqual(r.mode,'fast');
   const g=running({mode:'fast'});const i=g.of('s1','init')[0];assert.strictEqual(i.seed,1);assert.strictEqual(i.mode,'fast');
 });
+
+test('Squatter: Spieler ohne ready fliegt nach READY_TIMEOUT_S raus, Pong ändert nichts; Bereite bleiben',()=>{
+  const h=mk();
+  h.room.join('sq','aaaa','Sq');h.room.join('ok','bbbb','Ok');rd(h.room,'ok','ground');
+  h.room.tick(C.READY_TIMEOUT_S-1);
+  assert.ok(h.room.humans.has('sq'));
+  h.room.tick(2);
+  assert.ok(!h.room.humans.has('sq'));assert.ok(h.room.humans.has('ok'));
+  assert.deepStrictEqual(h.of('sq','err').map(m=>m.why),['room']);
+  /* Platz ist wieder frei */
+  assert.strictEqual(h.room.join('neu','cccc','N'),'ok');
+});
+test('Squatter allein im Raum: Raum wird geschlossen; im Countdown ebenso',()=>{
+  const h=mk();h.room.join('sq','aaaa','Sq');h.room.tick(C.READY_TIMEOUT_S+1);
+  assert.strictEqual(h.empty(),1);
+  const c=mk();c.room.join('a','aaaa','A');c.room.join('b','bbbb','B');c.room.join('z','zzzz','Z');
+  rd(c.room,'a','ground');rd(c.room,'b','leaf');
+  assert.strictEqual(c.room.state,'countdown');
+  c.room.tick(C.READY_TIMEOUT_S+1);
+  assert.ok(!c.room.humans.has('z'));
+});
+test('Rooms.tick: werfender Raum wird beendet, andere laufen weiter',()=>{
+  const {Rooms}=require('../rooms');
+  const out=[];let errs=0;
+  const rooms=new Rooms({config:C,send:(s,m)=>out.push({s,m}),onError:()=>errs++});
+  const a=rooms.join('a','aaaa','A','classic').room;
+  const b=rooms.join('b','bbbb','B','fast').room;
+  const c=rooms.join('c','cccc','C','chaos').room;
+  let ticks=0;const ob=c.tick.bind(c);c.tick=dt=>{ticks++;return ob(dt)};
+  b.tick=()=>{throw new Error('kaputt')};
+  rooms.tick(0.1);
+  assert.strictEqual(errs,1);
+  assert.ok(b._closed);assert.ok(!rooms.rooms.has(b.id));
+  assert.ok(out.some(o=>o.s==='b'&&o.m.t==='end'));
+  assert.ok(!a._closed&&!c._closed);assert.strictEqual(ticks,1);
+  assert.strictEqual(rooms.roomOf('b'),null);
+  rooms.tick(0.1);assert.strictEqual(ticks,2);
+  rooms.dispose();
+});

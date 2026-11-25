@@ -7,7 +7,7 @@ const fs=require('node:fs');
 const {WebSocketServer}=require('ws');
 const baseConfig=require('./config');
 const {parseClientMsg}=require('./protocol');
-const {TokenBucket,IpCounter}=require('./limits');
+const {TokenBucket,IpCounter,RateWindow,normIp}=require('./limits');
 const {Rooms}=require('./rooms');
 
 const MAX_BUFFERED=1024*1024;
@@ -22,7 +22,7 @@ function readBlocklist(p){
     const st=fs.statSync(p);if(!st.isFile()||st.size>1024*1024)return s;
     for(const line of fs.readFileSync(p,'utf8').split('\n')){
       const t=line.replace(/#.*/,'').trim();
-      if(t&&t.length<=128)s.add(t);
+      if(t&&t.length<=128)s.add(net.isIP(t)?normIp(t):t);
     }
   }catch(e){}
   return s;
@@ -32,9 +32,33 @@ function clientIp(req){
   const raw=req.socket.remoteAddress||'';
   if(LOOPBACK.has(raw)){
     const h=req.headers['cf-connecting-ip'];
-    if(typeof h==='string'&&net.isIP(h.trim()))return h.trim();
+    if(typeof h==='string'&&net.isIP(h.trim()))return normIp(h);
   }
-  return raw||'unknown';
+  return normIp(raw);
+}
+
+/* Absturzwaechter: nur Fehlername und Stack-Kopf, ohne Token/IP; zu viele Fehler in kurzer Zeit -> Neustart durch systemd */
+function scrub(x){
+  return String(x==null?'':x)
+    .replace(/[A-Za-z0-9_-]{24,}(\.[A-Za-z0-9_-]{8,}){0,2}/g,'<x>')
+    .replace(/\b\d{1,3}(\.\d{1,3}){3}\b/g,'<ip>')
+    .replace(/\b[0-9a-fA-F]{1,4}(:[0-9a-fA-F]{1,4}){3,7}\b|(\b[0-9a-fA-F]{1,4})?::[0-9a-fA-F:]*/g,'<ip>')
+    .slice(0,160);
+}
+function describeError(e){
+  const name=e&&typeof e.name==='string'?scrub(e.name).slice(0,40):typeof e;
+  const st=e&&typeof e.stack==='string'?e.stack.split('\n').find(l=>/^\s*at /.test(l)):'';
+  return name+(st?' '+scrub(st.trim().replace(/\(?\/[^)]*\/([^/)]+)\)?$/,'($1)')):'');
+}
+function makeCrashGuard({exit=process.exit,log=console.error,now=Date.now,max=20,windowMs=60000,onError}={}){
+  let times=[];
+  return function(kind,e){
+    try{if(onError)onError()}catch(e2){}
+    const t=now();
+    times=times.filter(x=>t-x<windowMs);times.push(t);
+    try{log(kind+': '+describeError(e))}catch(e2){}
+    if(times.length>max){try{log('zu viele Fehler, beende')}catch(e2){}exit(1)}
+  };
 }
 
 async function start({port=0,verify,now=Date.now,blocklistPath,config}={}){
@@ -49,11 +73,12 @@ async function start({port=0,verify,now=Date.now,blocklistPath,config}={}){
     const c=conns.get(sub);
     if(!c||c.ws.readyState!==1)return;
     try{
-      if(c.ws.bufferedAmount>MAX_BUFFERED){c.ws.close(1013);return}
+      if(c.ws.bufferedAmount>MAX_BUFFERED){c.ws.terminate();return}
       c.ws.send(JSON.stringify(msg));
     }catch(e){stats.errors++}
   };
-  const rooms=new Rooms({config:C,send:sendTo});
+  const rooms=new Rooms({config:C,send:sendTo,onError:()=>{stats.errors++}});
+  const joins=new RateWindow(C.JOIN_PER_MIN||10,60000,now);
 
   const server=http.createServer((req,res)=>{
     try{
@@ -74,7 +99,7 @@ async function start({port=0,verify,now=Date.now,blocklistPath,config}={}){
   server.on('error',()=>{stats.errors++});
   server.on('clientError',(e,sock)=>{try{sock.destroy()}catch(e2){}});
 
-  const wss=new WebSocketServer({noServer:true,maxPayload:C.MAX_MSG_BYTES,perMessageDeflate:false});
+  const wss=new WebSocketServer({noServer:true,maxPayload:Math.max(C.MAX_MSG_BYTES,C.AUTH_MAX_BYTES||0),perMessageDeflate:false});
   wss.on('error',()=>{stats.errors++});
 
   const refuse=(socket,code,text)=>{try{socket.end(`HTTP/1.1 ${code} ${text}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`)}catch(e){}try{socket.destroy()}catch(e){}};
@@ -90,20 +115,22 @@ async function start({port=0,verify,now=Date.now,blocklistPath,config}={}){
       if(blocked.has(ip)){stats.blocked++;return refuse(socket,403,'Forbidden')}
       if(!ipc.open(ip)){stats.rejected++;return refuse(socket,429,'Too Many Requests')}
       socket.once('close',()=>ipc.close(ip));
-      wss.handleUpgrade(req,socket,head,ws=>onConnection(ws));
+      wss.handleUpgrade(req,socket,head,ws=>{ws._awIp=ip;onConnection(ws)});
     }catch(e){stats.errors++;try{socket.destroy()}catch(e2){}}
   });
 
   function onConnection(ws){
     stats.conn++;
-    const c={ws,sub:null,pid:null,authing:false,closed:false,bucket:new TokenBucket(C.MSG_BURST,C.MSG_PER_S,now)};
+    const c={ws,ip:ws._awIp||'invalid',sub:null,pid:null,authing:false,closed:false,bucket:new TokenBucket(C.MSG_BURST,C.MSG_PER_S,now)};
     all.add(c);
     const kill=(code)=>{try{ws.close(code||1008)}catch(e){}};
+    const hard=()=>{try{ws.terminate()}catch(e){}};
     const authTimer=setTimeout(()=>kill(1008),AUTH_MS);
     const idle=setTimeout(()=>kill(1001),C.IDLE_MS);
     const touch=()=>idle.refresh();
     ws.on('error',()=>{stats.errors++;try{ws.terminate()}catch(e){}});
     ws.on('pong',touch);
+    ws.on('ping',()=>{touch();if(!c.bucket.take()){stats.flood++;hard()}});
     ws.on('close',()=>{
       c.closed=true;clearTimeout(authTimer);clearTimeout(idle);all.delete(c);
       if(c.sub!==null&&conns.get(c.sub)===c){
@@ -114,19 +141,21 @@ async function start({port=0,verify,now=Date.now,blocklistPath,config}={}){
     ws.on('message',(data,isBinary)=>{
       try{
         touch();
-        if(isBinary){stats.badMsg++;return kill(1003)}
-        if(!c.bucket.take()){stats.flood++;return kill(1008)}
-        const p=parseClientMsg(data);
-        if(!p.ok){stats.badMsg++;return kill(1008)}
+        if(isBinary){stats.badMsg++;return hard()}
+        if(!c.bucket.take()){stats.flood++;return hard()}
+        const p=parseClientMsg(data,c.sub===null?(C.AUTH_MAX_BYTES||C.MAX_MSG_BYTES):C.MAX_MSG_BYTES);
+        if(!p.ok){stats.badMsg++;return hard()}
         const m=p.msg;
         if(c.sub===null){
           if(c.authing||m.t!=='auth'){stats.badMsg++;return kill(1008)}
           c.authing=true;
           return doAuth(c,m,authTimer,kill);
         }
+        if(conns.get(c.sub)!==c)return hard();/* verdraengte Verbindung: nichts mehr annehmen */
         switch(m.t){
           case'auth':stats.badMsg++;return kill(1008);
           case'join':{
+            if(!joins.hit(c.ip)){stats.flood++;sendTo(c.sub,{t:'err',why:'rate'});return}
             const r=rooms.join(c.sub,c.pid,'',m.mode);
             if(r.err)sendTo(c.sub,{t:'err',why:r.err});
             return;
@@ -148,10 +177,14 @@ async function start({port=0,verify,now=Date.now,blocklistPath,config}={}){
       if(!sub){stats.authFail++;return kill(1008)}
       if(blocked.has(sub)){stats.blocked++;return kill(1008)}
       const other=conns.get(sub);
-      if(other&&other.ws.readyState===1){
-        stats.dup++;
-        try{c.ws.send(JSON.stringify({t:'err',why:'duplicate'}))}catch(e){}
-        return kill(1008);
+      if(other&&other!==c){
+        if(other.ws.readyState===1){
+          stats.dup++;
+          try{c.ws.send(JSON.stringify({t:'err',why:'duplicate'}))}catch(e){}
+          return kill(1008);
+        }
+        /* alte Verbindung schliesst gerade: hart beenden, genau eine Verbindung je sub */
+        try{other.ws.terminate()}catch(e){}
       }
       c.sub=sub;c.pid=m.pid;conns.set(sub,c);
       clearTimeout(authTimer);
@@ -188,7 +221,7 @@ async function start({port=0,verify,now=Date.now,blocklistPath,config}={}){
   };
 }
 
-module.exports={start};
+module.exports={start,makeCrashGuard,describeError};
 
 if(require.main===module){
   const {createVerifier,jwksFromUrl}=require('./auth');
@@ -201,8 +234,9 @@ if(require.main===module){
     let closing=false;
     const stop=()=>{if(closing)return;closing=true;h.close().then(()=>process.exit(0),()=>process.exit(1))};
     process.on('SIGTERM',stop);process.on('SIGINT',stop);
-    process.on('uncaughtException',()=>{stats.errors++});
-    process.on('unhandledRejection',()=>{stats.errors++});
+    const guard=makeCrashGuard({onError:()=>{stats.errors++}});
+    process.on('uncaughtException',e=>guard('uncaughtException',e));
+    process.on('unhandledRejection',e=>guard('unhandledRejection',e));
     setInterval(()=>{const s=h.stats();console.log('stats',JSON.stringify(s))},600000).unref();
   }).catch(()=>{console.error('start failed');process.exit(1)});
 }

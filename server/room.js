@@ -33,7 +33,7 @@ class Room{
     }
     if(old){old.pid=pid;old.name=cleanName(name)||old.name;this._pushRoom();return'ok'}
     if(this.humans.size>=this.C.MAX_HUMANS)return'full';
-    this.humans.set(sub,{sub,pid,name:cleanName(name)||'Spieler',ready:false,info:null,fid:null,absentAt:null,bot:false});
+    this.humans.set(sub,{sub,pid,joinedAt:this.nowMs,name:cleanName(name)||'Spieler',ready:false,info:null,fid:null,absentAt:null,bot:false});
     this._pushRoom();return'ok';
   }
   leave(sub){
@@ -102,6 +102,13 @@ class Room{
   tick(dt){
     if(this._closed||!(dt>0)||!isFinite(dt))return;
     this.nowMs+=dt*1000;
+    if(this.state==='waiting'||this.state==='countdown'){
+      /* Platzhalter ohne ready fliegen nach READY_TIMEOUT_S raus (Pong aendert daran nichts) */
+      const lim=(this.C.READY_TIMEOUT_S||120)*1000;
+      for(const h of [...this.humans.values()])
+        if(!h.ready&&this.nowMs-h.joinedAt>=lim){this._send2(h.sub,{t:'err',why:'room'});this.leave(h.sub)}
+      if(this._closed)return;
+    }
     if(this.state==='countdown'){
       this.countdown-=dt;
       if(this.countdown<=0)this._start();

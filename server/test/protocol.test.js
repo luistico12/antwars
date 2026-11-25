@@ -20,3 +20,24 @@ test('cosmClean und cleanName',()=>{
   assert.strictEqual(cleanName(' a#b \n c\u0000 '+'x'.repeat(30)).length,20);
   assert.strictEqual(cleanName(null),'');
 });
+
+test('Kosmetik-Whitelist und ID-Regex decken alle Client-IDs aus js/ ab (inkl. bskin)',()=>{
+  const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
+  const src=['svgart.js','flags.js','backend.js','cosmetics.js'].map(f=>fs.readFileSync(path.join(__dirname,'../../js',f),'utf8')).join('\n;');
+  const ctx=vm.createContext({console,Image:function(){},document:{getElementById(){return null},createElement(){return{getContext(){return{}},style:{}}}},window:{},localStorage:{getItem(){return null},setItem(){}},navigator:{}});
+  vm.runInContext(src+';this.__o={crown:CROWN_IDS,ship:SHIP_IDS,pattern:Object.keys(PATTERN_FN),flag:Object.keys(FL),bskin:Object.keys(BSKINS),pack:Object.keys(cosmPack())}',ctx);
+  const o=ctx.__o;
+  assert.ok(o.bskin.length>0&&o.flag.length>0&&o.pattern.length>0&&o.crown.length>0&&o.ship.length>0);
+  for(const k of o.pack)assert.ok(['crown','pattern','ship','flag','bskin'].includes(k),k);
+  for(const k of['crown','pattern','ship','flag','bskin'])for(const id of o[k]){
+    assert.deepStrictEqual(cosmClean({[k]:id}),{[k]:id},k+':'+id);
+  }
+  assert.deepStrictEqual(cosmClean({bskin:'x y'}),{});
+});
+test('auth: Token bis 8192 Zeichen erlaubt (Verifier-Limit), darüber nicht',()=>{
+  const m=n=>JSON.stringify({t:'auth',token:'a'.repeat(n),pid:'aaaa'});
+  assert.strictEqual(p(m(8192),9000).ok,true);
+  assert.strictEqual(p(m(8193),9000).ok,false);
+  assert.strictEqual(p(m(3000)).ok,Buffer.byteLength(m(3000))<=4096);
+  assert.strictEqual(p(m(6000)).ok,false);/* Standardgrenze 4096 für normale Nachrichten */
+});

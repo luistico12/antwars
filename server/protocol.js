@@ -9,20 +9,20 @@ const PID=/^[a-z0-9]{4,8}$/,ID=/^[A-Za-z0-9_-]{1,32}$/;
 /* wie cleanName in js/backend.js, zusaetzlich ohne Steuerzeichen */
 const cleanName=n=>String(n==null?'':n).replace(/[\u0000-\u001f\u007f-\u009f]/g,'').replace(/[#\s]+/g,' ').trim().slice(0,20);
 /* nur bekannte Schluessel, begrenzte Zeichenketten; neues Objekt ohne Prototyp-Zugriff */
-const COSM=['crown','pattern','ship','flag'];
+const COSM=['crown','pattern','ship','flag','bskin'];
 const cosmClean=c=>{const o={};if(isObj(c))for(const k of COSM){const v=Object.prototype.hasOwnProperty.call(c,k)?c[k]:undefined;if(typeof v==='string'&&ID.test(v))o[k]=v}return o};
 const NOK={ok:false};
-function parseClientMsg(raw){
+function parseClientMsg(raw,maxBytes=MAX_MSG_BYTES){
   let s;
   try{
     if(typeof raw==='string')s=raw;
-    else if(Buffer.isBuffer(raw)){if(raw.length>MAX_MSG_BYTES)return NOK;s=raw.toString('utf8');if(s.includes('�'))return NOK}
+    else if(Buffer.isBuffer(raw)){if(raw.length>maxBytes)return NOK;s=raw.toString('utf8');if(s.includes('�'))return NOK}
     else return NOK;
-    if(s.length>MAX_MSG_BYTES)return NOK;
+    if(s.length>maxBytes)return NOK;
     const m=JSON.parse(s);
     if(!isObj(m)||typeof m.t!=='string')return NOK;
     switch(m.t){
-      case'auth':if(typeof m.token!=='string'||m.token.length>2048||typeof m.pid!=='string'||!PID.test(m.pid))return NOK;return{ok:true,msg:{t:'auth',token:m.token,pid:m.pid}};
+      case'auth':if(typeof m.token!=='string'||m.token.length>8192||typeof m.pid!=='string'||!PID.test(m.pid))return NOK;return{ok:true,msg:{t:'auth',token:m.token,pid:m.pid}};
       case'join':if(!['classic','fast','chaos','unlimited'].includes(m.mode))return NOK;return{ok:true,msg:{t:'join',mode:m.mode}};
       case'leave':return{ok:true,msg:{t:'leave'}};
       case'ready':
