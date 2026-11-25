@@ -42,6 +42,10 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
 
 19. Update v18 (Flaggen im Mehrspieler): `cosmPack/cosmClean` tragen `flag`, Weltkarte zeichnet die Flagge jeder Hauptstadt über `cosmOf(owner)`. Hüte bleiben nur in der eigenen Kolonie (fremde Kolonien sind nicht sichtbar). Tests `worldupdate`/`radial` nutzen jetzt feste Zufallsfolge (`SEED=n`), vorher wegen Zufallskarten gelegentlich rot.
 
+31. Update v21.10 – mehr Platz für den neuesten Release (getestet: Playwright im Gastmodus, Desktop + Handy):
+    - `.nitem.latest`: Innenabstand 26/30 px, Titel `clamp(27px,3.8vw,42px)`, Fließtext 17,5 px mit `line-height:1.95`, Initiale 3em, mehr Abstand unten (`css/ui.css`); Handy-Werte angepasst.
+    - News v21.10 in `DEFAULT_NEWS` und `schema.sql`.
+
 30. Update v21.9 – News vollständig aufgeklappt (getestet: `node --check`, Playwright im Gastmodus):
     - Ursache: `.sb` (Inhaltsbereich der Screens) ist ein Flex-Container mit `overflow:auto`; die Kinder schrumpften per Default (`flex-shrink:1`) auf die Bildschirmhöhe, `.nitem{overflow:hidden}` schnitt den Rest ab – ohne Scrollen.
     - Fix in `css/ui.css`: `.sb>*{flex:0 0 auto}` (volle Höhe, Container scrollt) und `.nitem.latest{overflow:visible}`.

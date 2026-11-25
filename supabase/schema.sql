@@ -1075,3 +1075,8 @@ where not exists (select 1 from public.news where version = 'v21.8');
 insert into public.news (version, title, body)
 select 'v21.9', 'News wieder ganz aufgeklappt', 'Der neueste News-Eintrag wird jetzt vollständig angezeigt. Bisher stauchte der Menü-Bereich seinen Inhalt auf die Bildschirmhöhe zusammen, deshalb brach der Text am unteren Rand ab, ohne dass man weiterscrollen konnte. Jetzt behalten News, Panels und Listen ihre volle Höhe und der Bereich scrollt – es gibt kein Größenlimit mehr.'
 where not exists (select 1 from public.news where version = 'v21.9');
+
+-- News v21.10
+insert into public.news (version, title, body)
+select 'v21.10', 'Mehr Platz für den neuesten Release', 'Der neueste News-Eintrag nimmt sich jetzt deutlich mehr Raum: größere Überschrift, größerer Fließtext mit mehr Zeilenabstand, eine größere Initiale und großzügiger Innenabstand. Dadurch wirkt der aktuelle Release wie eine eigene Seite und läuft weiter nach unten aus, statt gedrängt über den älteren Einträgen zu stehen.'
+where not exists (select 1 from public.news where version = 'v21.10');
