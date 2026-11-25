@@ -74,34 +74,14 @@ const QUESTS=[
   Q('d_games','daily','games',2,3,'Spiele Partien','Jede gestartete Partie zählt, auch Solo.','gamepad','daily'),
   Q('d_wins','daily','wins',1,8,'Gewinne eine Partie','Ein Sieg in beliebigem Modus.','trophy','daily'),
   Q('d_conq','daily','conq',5,5,'Erobere Gebiete','Jede Eroberung zählt.','swords','daily'),
-  Q('d_conq2','daily','conq',12,8,'Erobere 12 Gebiete','Jede Eroberung zählt.','swords','daily'),
   Q('d_build','daily','built',8,6,'Baue Gebäude','Außenposten, Häfen, Wälle und Schiffe zählen.','hammer','daily'),
-  Q('d_build2','daily','built',20,9,'Baue 20 Gebäude','Außenposten, Häfen, Wälle und Schiffe zählen.','hammer','daily'),
-  Q('d_terr','daily','terr',3,4,'Besitze Gebiete','Besitze gleichzeitig 3 Gebiete.','map','daily'),
   Q('d_mins','daily','mins',10,4,'Spiele 10 Minuten','Zeit in Partien, auch Solo.','clock','daily'),
-  Q('d_found','daily','found',3,6,'Grabe 3 Funde aus','Vergrabene Funde in der Kolonie.','gem','daily'),
-  Q('d_sunk','daily','sunk',1,7,'Versenke ein Schiff','Deine Kriegsschiffe zählen.','anchor','daily'),
-  Q('d_allied','daily','allied',1,6,'Schließe ein Bündnis','Jedes neue Bündnis zählt.','handshake','daily'),
-  Q('d_score','daily','score',500,7,'Erreiche 500 Punkte','Dein höchster Punktestand in einer Partie.','star','daily'),
-  Q('b_daily','daily','bonus',12,6,'Bonus für alle erledigten Quests','Schließe alle Quests oben ab, um ihn freizuschalten.','chest','daily'),
+  Q('b_daily','daily','bonus',5,6,'Bonus für alle erledigten Quests','Schließe alle Quests oben ab, um ihn freizuschalten.','chest','daily'),
   Q('w_games','weekly','games',5,10,'Spiele 5 Partien','Jede gestartete Partie zählt, auch Solo.','gamepad','weekly'),
-  Q('w_wins','weekly','wins',1,14,'Gewinne eine Partie','Ein Sieg in beliebigem Modus.','trophy','weekly'),
-  Q('w_days','weekly','days',3,14,'Spiele an verschiedenen Tagen','Spiele an einem Tag mindestens eine Partie.','calendar','weekly'),
   Q('w_conq','weekly','conq',10,12,'Erobere Gebiete','Jede Eroberung zählt.','swords','weekly'),
-  Q('w_conq2','weekly','conq',25,18,'Erobere 25 Gebiete','Jede Eroberung zählt.','swords','weekly'),
   Q('w_build','weekly','built',40,14,'Baue 40 Gebäude','Außenposten, Häfen, Wälle und Schiffe zählen.','hammer','weekly'),
-  Q('w_build2','weekly','built',80,18,'Baue 80 Gebäude','Außenposten, Häfen, Wälle und Schiffe zählen.','hammer','weekly'),
-  Q('w_sunk','weekly','sunk',3,16,'Versenke gegnerische Schiffe','Deine Kriegsschiffe zählen.','anchor','weekly'),
-  Q('w_sunk2','weekly','sunk',8,18,'Versenke 8 Schiffe','Deine Kriegsschiffe zählen.','anchor','weekly'),
-  Q('w_terr','weekly','terr',15,14,'Besitze viele Gebiete','Gleichzeitig 15 Gebiete halten.','map','weekly'),
-  Q('w_terr2','weekly','terr',25,16,'Besitze 25 Gebiete','Gleichzeitig 25 Gebiete halten.','map','weekly'),
-  Q('w_found','weekly','found',10,14,'Grabe Funde aus','Vergrabene Funde in der Kolonie.','gem','weekly'),
-  Q('w_found2','weekly','found',25,16,'Grabe 25 Funde aus','Vergrabene Funde in der Kolonie.','gem','weekly'),
-  Q('w_allied','weekly','allied',1,12,'Schließe ein Bündnis','Jedes neue Bündnis zählt.','handshake','weekly'),
-  Q('w_allied2','weekly','allied',2,16,'Schließe 2 Bündnisse','Jedes neue Bündnis zählt.','handshake','weekly'),
   Q('w_mins','weekly','mins',120,14,'Spiele 2 Stunden','Zeit in Partien, auch Solo.','clock','weekly'),
-  Q('w_score','weekly','score',3000,18,'Erreiche 3000 Punkte','Dein höchster Punktestand in einer Partie.','star','weekly'),
-  Q('b_weekly','weekly','bonus',17,16,'Bonus für alle erledigten Quests','Schließe alle Quests oben ab, um ihn freizuschalten.','chest','weekly')
+  Q('b_weekly','weekly','bonus',4,16,'Bonus für alle erledigten Quests','Schließe alle Quests oben ab, um ihn freizuschalten.','chest','weekly')
 ];
 for(const[key,cat,title,desc,sub,ic,stat,goals,rew]of CAREER)goals.forEach((g,i)=>QUESTS.push(Q(`c_${key}_${i+1}`,'career',stat,g,rew[i],title,desc,ic,cat,{key,tier:i+1,tiers:goals.length,sub})));
 /*Q-END*/
@@ -363,6 +343,7 @@ const Local={
   }
 };
 const DEFAULT_NEWS=[
+  {id:'d21',version:'v21.8',title:'Weniger Quests, Schwierigkeits-Regler und große News',body:'Die täglichen und wöchentlichen Quests sind aufgeräumt: fünf Aufgaben pro Tag und vier pro Woche, der Bonus zählt genau diese. Auf der Karriere-Karte ist der Abholen-Bereich jetzt immer groß, auch wenn die Stufe noch läuft. Im Hauptmenü regelt ein Schieberegler die Schwierigkeit von Leicht bis Schwer – wie viele Gegner mitspielen, gibt der Modus vor. Die Modus-Karten tragen nur noch Name und Tempo, und der neueste News-Eintrag öffnet sich groß mit eigener Schrift. Im Shop ist der lange Erklärungstext weg.',created_at:'2026-11-25T18:40:00Z'},
   {id:'d20',version:'v21.7',title:'Große Abholen-Taste, Clan-Logos und neues Menü',body:'Die Erfolge haben jetzt den großen Abholen-Knopf: Sobald eine Stufe geschafft ist, füllt die orange Taste die ganze Karte – wie im Vorbild. Clans bekommen ein eigenes Logo: Bild wählen (nur PNG, JPG oder WebP, höchstens 4 MB), es wird quadratisch zugeschnitten und erscheint als Wappen in Clan-Karte, Chat, Statistik, Suche und Einladungen. Im Hauptmenü gibt es einen Schieberegler für die Anzahl der Gegner (1 bis 12) und die Modi sind jetzt Karten mit Namen, Tempo und Beschreibung. Die Werbefläche ist an den Glas-Hintergrund angepasst, und die Menüknöpfe stehen etwas höher, näher zur Mitte – zentriert ist nichts.',created_at:'2026-11-25T16:30:00Z'},
   {id:'d19',version:'v21.6',title:'Clans neu, Erfolge als Karten und besseres Handy-Spiel',body:'Clans sind jetzt echte Teams: eigene Seite mit Mitgliederliste (Rollen, Siege, zuletzt online), Clan-Chat mit Beitritts-Verlauf, Statistik mit Rang, Siegquote und besten Spielern sowie eine Suche mit offenen und geschlossenen Clans. Ohne Clan gründest du für 600 Rubys einen eigenen – Name, Tag, Tagfarbe, Beschreibung mit Markdown und klickbaren Discord-Links, offen oder auf Anfrage, Mindest-Siege und Einladungen. Der Tag wird bei der Gründung vergeben und ist nicht mehr frei wählbar. Clan-Besitzer und Admins können Mitglieder befördern, stummschalten und entfernen. Außerdem: der Forum-Knopf sitzt jetzt oben neben den News (jeder darf schreiben, auch Admins), die Sprachwahl liegt in den Einstellungen, abholbereite Quests leuchten beim Abholen auf, die Karriere zeigt sich als Kartenraster mit Kategorien, Symbolen, Stufen und Fortschritt – und auf dem Handy sind Knöpfe, Leisten und das Kreismenü deutlich besser zu treffen. PC und Tablet bleiben unverändert.',created_at:'2026-11-25T10:00:00Z'},
   {id:'d18',version:'v21.5',title:'Forum für Bugs, Vorschläge und Spieler-Reports',body:'Im Menü gibt es jetzt ein Forum. Melde dort Fehler, schreibe Vorschläge oder erstatte einen Spieler-Report – mit Name#Tag, Zeit und Beschreibung. Nur das Team kann alle Meldungen lesen und Rückfragen stellen; deine eigene Meldung und die Antworten darauf siehst du weiterhin selbst, niemand sonst.',created_at:'2026-11-24T18:10:00Z'},

@@ -905,3 +905,37 @@ body.wmv #chips{display:none}
 
 /* Menüknöpfe etwas höher, näher zur Mitte (nicht zentriert) */
 @media (min-width:641px){.hmain{padding-bottom:clamp(20px,9vh,96px)}}
+
+/* ===== v21.8: Schwierigkeits-Regler, große Abhol-Fläche, News-Typografie ===== */
+/* Hauptmenü: Schwierigkeits-Schieberegler, Modus-Karten ohne Beschreibungszeilen */
+.hmarks{display:flex;justify-content:space-between;gap:6px;margin-top:4px;font:800 9.5px/1 var(--ui);letter-spacing:.09em;text-transform:uppercase;color:#73809a}
+.hmarks span:nth-child(2){color:#9aa6bc}
+.modes{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.mode-card{padding:13px 14px}
+.mode-card .mc-t b{font-size:14.5px;letter-spacing:.01em}
+.mode-card .mc-t em{font-size:11.5px}
+@media (max-width:640px){.hmarks{font-size:9px}}
+
+/* Karriere: Abhol-Bereich immer in voller Größe, gesperrt bis die Stufe fertig ist */
+.qx-cc .cc-lock{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;margin-top:4px;padding:15px 16px;border-radius:14px;
+  border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.055);color:#93a0b8;cursor:default;
+  font-size:16px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}
+.qx-cc .cc-lock b{display:inline-flex;align-items:center;gap:6px;font-size:16px;letter-spacing:.02em;color:#bcc7d8}
+.qx-cc .cc-lock .svg{width:19px;height:19px}
+
+/* News: neuester Release groß und aufgeklappt, eigene Schrift */
+.nitem.latest{background:linear-gradient(158deg,rgba(255,87,87,.16),rgba(255,255,255,.045) 58%,rgba(255,255,255,.02));border-color:rgba(255,87,87,.5)}
+.nitem.latest>button.nhero{display:block;width:100%;padding:18px 20px 14px;text-align:left;background:transparent;border:0;color:var(--tx)}
+.nitem.latest .nrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.nitem.latest .nrow .ver{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase}
+.nitem.latest .nrow .dt{margin-left:auto;color:#aeb8c9;font-size:12.5px}
+.nitem.latest .nrow .svg{width:18px;height:18px;flex:none}
+.nitem.latest .ntitle{margin:12px 0 0;font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-weight:700;
+  font-size:clamp(23px,3vw,32px);line-height:1.14;letter-spacing:-.015em;color:#fff;text-wrap:balance}
+.nitem.latest .bd{padding:0 20px 20px;font-family:Georgia,"Iowan Old Style",Palatino,serif;font-size:15.5px;line-height:1.8;color:#dbe2ee}
+.nitem.latest .bd::first-letter{float:left;padding:2px 8px 0 0;font-size:2.5em;line-height:.86;font-weight:700;color:#ff8b8b}
+@media (max-width:640px){
+  .nitem.latest>button.nhero{padding:15px 15px 12px}
+  .nitem.latest .bd{padding:0 15px 16px;font-size:14.5px}
+  .nitem.latest .nrow .dt{order:3;margin-left:0;width:100%}
+}

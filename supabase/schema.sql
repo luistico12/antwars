@@ -1065,3 +1065,8 @@ where not exists (select 1 from public.news where version = 'v21.6');
 insert into public.news (version, title, body)
 select 'v21.7', 'Große Abholen-Taste, Clan-Logos und neues Menü', 'Die Erfolge haben jetzt den großen Abholen-Knopf: Sobald eine Stufe geschafft ist, füllt die orange Taste die ganze Karte – wie im Vorbild. Clans bekommen ein eigenes Logo: Bild wählen (nur PNG, JPG oder WebP, höchstens 4 MB), es wird quadratisch zugeschnitten und erscheint als Wappen in Clan-Karte, Chat, Statistik, Suche und Einladungen. Im Hauptmenü gibt es einen Schieberegler für die Anzahl der Gegner (1 bis 12) und die Modi sind jetzt Karten mit Namen, Tempo und Beschreibung. Die Werbefläche ist an den Glas-Hintergrund angepasst, und die Menüknöpfe stehen etwas höher, näher zur Mitte – zentriert ist nichts.'
 where not exists (select 1 from public.news where version = 'v21.7');
+
+-- News v21.8
+insert into public.news (version, title, body)
+select 'v21.8', 'Weniger Quests, Schwierigkeits-Regler und große News', 'Die täglichen und wöchentlichen Quests sind aufgeräumt: fünf Aufgaben pro Tag und vier pro Woche, der Bonus zählt genau diese. Auf der Karriere-Karte ist der Abholen-Bereich jetzt immer groß, auch wenn die Stufe noch läuft. Im Hauptmenü regelt ein Schieberegler die Schwierigkeit von Leicht bis Schwer – wie viele Gegner mitspielen, gibt der Modus vor. Die Modus-Karten tragen nur noch Name und Tempo, und der neueste News-Eintrag öffnet sich groß mit eigener Schrift. Im Shop ist der lange Erklärungstext weg.'
+where not exists (select 1 from public.news where version = 'v21.8');

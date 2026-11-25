@@ -42,6 +42,15 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
 
 19. Update v18 (Flaggen im Mehrspieler): `cosmPack/cosmClean` tragen `flag`, Weltkarte zeichnet die Flagge jeder Hauptstadt über `cosmOf(owner)`. Hüte bleiben nur in der eigenen Kolonie (fremde Kolonien sind nicht sichtbar). Tests `worldupdate`/`radial` nutzen jetzt feste Zufallsfolge (`SEED=n`), vorher wegen Zufallskarten gelegentlich rot.
 
+29. Update v21.8 – Schwierigkeits-Regler, weniger Quests, große News (getestet: `node --check`, Playwright im Gastmodus, SQL live eingespielt):
+    - Hauptmenü: der Schieberegler regelt jetzt die Schwierigkeit (Leicht/Normal/Schwer, `#hDiff` mit Skalenbeschriftung `#hDiffV`); die Gegnerzahl ist nicht mehr einstellbar, `MODES[modeKey].bots` gilt fest (`botCount` und `#hBots` entfernt, `js/game-world.js` nutzt wieder den Modus).
+    - Modi-Auswahl: Karten zeigen nur noch Name und Tempo, die Beschreibungszeile und die Feldüberschrift „Modus“ sind weg (`js/ui-boot.js`, `css/ui.css`).
+    - Erfolge: der Abhol-Bereich der Karriere-Karte ist immer groß – ohne fertige Stufe als gesperrte Fläche mit „ABHOLEN“ und Belohnung (`.cc-lock` in `js/ui-quests.js`/`css/ui.css`).
+    - Quests: täglich fünf (Partien, Sieg, Eroberungen, Gebäude, Minuten) und wöchentlich vier (Partien, Eroberungen, Gebäude, Minuten); Bonusziele auf 5 bzw. 4 gesetzt (`js/backend.js`).
+    - News: neuester Release als großer, standardmäßig aufgeklappter Hero mit Serifenschrift, größerem Fließtext und Initiale; die älteren Einträge bleiben als Liste (`S.news` in `js/ui-screens.js`, `css/ui.css`).
+    - Shop: langer Erklärtext unter den Reitern entfernt (`js/ui-screens.js`).
+    - News v21.8 in `DEFAULT_NEWS` und `schema.sql`, live eingespielt.
+
 28. Update v21.7 – großer Abholen-Knopf, Clan-Logos, Menü-Regler (getestet: `node --check`, Playwright im Gastmodus, SQL live eingespielt):
     - Erfolge: der Abholen-Knopf füllt jetzt die ganze Karriere-Karte (orange, groß, mit Glanz und Aufleuchten wie in der Vorlage); die Belohnungszeile zeigt vorher nur noch den Wert (`js/ui-quests.js` `careerCard`, `css/ui.css`).
     - Clan-Logo: Upload in Gründung und „Clan bearbeiten“ (nur PNG/JPG/WebP, max. 4 MB, quadratisch auf 128 px zugeschnitten, als Data-URL ≤30 kB). `cropAvatar(f,out,mb)` ist jetzt größenparametrisiert. Anzeige als Wappen in Clan-Karte, Chat, Statistik, Suche und Einladungen (`clCrest(tag,color,cls,logo)`). `js/backend.js` (`clan_create`/`clan_update` mit `l`), Gastmodus speichert `logo`; `supabase/schema.sql` und Live-DB: Spalte `clans.logo`, Check-Constraint, neue Signaturen `clan_create(...,logo)`, `clan_update(...,logo)`, `clan_find` und `clan_invites` mit `logo`.

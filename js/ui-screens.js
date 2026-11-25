@@ -106,7 +106,6 @@ S.shop=()=>{
   return shell(t('Shop'),{right:`<span class="ruby" style="font-size:17px">${ico('ruby')} ${p.rubys||0}</span>`},
    `<div class="pills" id="shopT" style="align-self:flex-start">${COS_TABS.map(([k,n])=>`<button data-k="${k}" class="${tab===k?'on':''}" type="button">${t(n)}</button>`).join('')}</div>
     ${needLogin()?`<div class="msg">${t('Melde dich an, um zu spielen')}</div>`:''}
-    <div class="msg">${LANG==='de'?'Rubys verdienst du mit Quests (Erfolge). Hüte tragen deine Ameisen, die Flagge steht auf deinem Hügel, Muster färben deine Gebiete, Schiffe fahren über Wasser und die Krone trägt, wer das meiste Land hat. Gebäude-, Händler- und Wegskins verändern dein Reich auf der Weltkarte.':'Earn Rubys with quests (Achievements). Hats are worn by your ants, the flag flies on your mound, patterns cover your territories, ships sail the seas and the crown goes to whoever holds the most land.'}</div>
     <div class="shopgrid">${items.map(card).join('')}</div>`);
 };
 S.shop.bind=p=>{
@@ -180,9 +179,11 @@ S.friends.bind=async p=>{
 
 /* ---------- Neuigkeiten (Bild 5) ---------- */
 S.news=()=>{
-  const l=UI.news;
+  const l=UI.news,isOpen=i=>UI.nOpen===i||(UI.nOpen==null&&i===0);
   return shell(t('Neuigkeiten'),{right:l&&l[0]?`<span class="tag">${esc(l[0].version)}</span>`:''},
-   l?l.map((n,i)=>`<div class="nitem ${i===0?'latest':''}"><button type="button" data-n="${i}"><span class="ver">${esc(n.version||'')}</span>${i===0?`<span class="tag ac">${t('Neueste')}</span>`:''}<b>${esc(n.title)}</b><span class="dt">${fmtDate(n.created_at)}</span>${ico(UI.nOpen===i||(UI.nOpen==null&&i===0)?'up':'down')}</button>${UI.nOpen===i||(UI.nOpen==null&&i===0)?`<div class="bd">${esc(n.body).replace(/\n/g,'<br>')}</div>`:''}</div>`).join(''):spinner());
+   l?l.map((n,i)=>i===0
+     ?`<article class="nitem latest"><button type="button" data-n="0" class="nhero"><span class="nrow"><span class="ver">${esc(n.version||'')}</span><span class="tag ac">${t('Neueste')}</span><span class="dt">${fmtDate(n.created_at)}</span>${ico(isOpen(0)?'up':'down')}</span><h2 class="ntitle">${esc(n.title)}</h2></button>${isOpen(0)?`<div class="bd">${esc(n.body).replace(/\n/g,'<br>')}</div>`:''}</article>`
+     :`<div class="nitem"><button type="button" data-n="${i}"><span class="ver">${esc(n.version||'')}</span><b>${esc(n.title)}</b><span class="dt">${fmtDate(n.created_at)}</span>${ico(isOpen(i)?'up':'down')}</button>${isOpen(i)?`<div class="bd">${esc(n.body).replace(/\n/g,'<br>')}</div>`:''}</div>`).join(''):spinner());
 };
 S.news.bind=async p=>{
   p.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{const i=+b.dataset.n,open=UI.nOpen==null?0:UI.nOpen;UI.nOpen=open===i?-1:i;render()});

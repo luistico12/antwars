@@ -94,7 +94,7 @@ function careerCard(key){
     <div class="cc-bar"><i style="width:${bp}%"></i></div>
     ${full?`<div class="cc-rw"><span class="cc-rl">${t('ALLE STUFEN')}</span><b class="cc-rd">${ico('check')}</b></div>`
       :ready?`<button class="qx-claim cc-claim" data-claim="${q[0]}" type="button"><i></i><span>${t('ABHOLEN')}</span><b>+${q[4]} ${ico('ruby')}</b></button>`
-      :`<div class="cc-rw"><span class="cc-rl">${t('BELOHNUNG')} ${t('Stufe')} ${x.tier}</span><span class="qx-rw">+${q[4]} ${ico('ruby')}</span></div>`}
+      :`<div class="cc-claim cc-lock" aria-disabled="true"><span>${t('ABHOLEN')}</span><b>+${q[4]} ${ico('ruby')}</b></div>`}
   </div>`;
 }
 
