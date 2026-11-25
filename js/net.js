@@ -3,11 +3,11 @@
    Gäste spielen ihre Kolonie lokal, simulieren die Welt aber nicht, sondern übernehmen den Schnappschuss, und senden Befehle.
    Transport: der Lobby-Kanal (AW.channel: Supabase Realtime bzw. BroadcastChannel im Gastmodus). Ein späterer Server
    oder WebRTC muss nur `NET.ch` (send/leave) und den Aufruf von `NET.onmsg` / `NET.onPresence` ersetzen. */
-const NET={role:null,ch:null,live:false,players:[],humans:[],ready:{},fid:0,hostPid:null,sent:false,sentSp:null,sentStart:null,miss:{},timer:null,
+const NET={server:false,role:null,ch:null,live:false,players:[],humans:[],ready:{},fid:0,hostPid:null,sent:false,sentSp:null,sentStart:null,miss:{},timer:null,
   active(){return !!this.role},
   /* Von der Lobby beim Spielstart übergeben */
-  begin({ch,host,players}){
-    this.close(true);Object.assign(this,{role:host?'host':'guest',ch,players:players||[],humans:[],ready:{},fid:0,hostPid:host?PID:null,live:false,sent:false,miss:{}});
+  begin({ch,host,players,server}){
+    this.close(true);Object.assign(this,{server:!!server,role:host?'host':'guest',ch,players:players||[],humans:[],ready:{},fid:0,hostPid:host?PID:null,live:false,sent:false,miss:{}});
     this.timer=setInterval(()=>this.tick(),500);this.refreshStart();
   },
   send(m){if(this.ch)this.ch.send({...m,p:PID})},
@@ -15,7 +15,7 @@ const NET={role:null,ch:null,live:false,players:[],humans:[],ready:{},fid:0,host
   close(silent){
     clearInterval(this.timer);this.timer=null;
     if(this.ch){try{if(this.role==='host'&&this.live&&!silent)this.send({t:'hostleft'});this.ch.leave()}catch(e){}}
-    Object.assign(this,{role:null,ch:null,live:false,players:[],humans:[],ready:{},sent:false});
+    Object.assign(this,{server:false,role:null,ch:null,live:false,players:[],humans:[],ready:{},sent:false});
     const b=$('#btnStart');if(b)b.textContent=t('Spiel starten');
   },
   /* Ansicht eines Gastes: Fraktions-ID des Gasts und die des Hosts (0) vertauschen, damit sich jeder selbst als „0“ sieht */
@@ -24,7 +24,7 @@ const NET={role:null,ch:null,live:false,players:[],humans:[],ready:{},fid:0,host
   onPresence(l){this.players=l;if(this.live){const now=Date.now();for(const p of l)delete this.miss[p.pid]}this.refreshStart()},
   /* Verbindungsprüfung: ein verschwundener Gast wird zum Bot, ein verschwundener Host beendet die Partie für Gäste */
   tick(){
-    if(!this.live||!started||over)return;
+    if(this.server||!this.live||!started||over)return;
     const present=new Set(this.players.map(p=>p.pid)),now=Date.now();
     const watch=this.role==='host'?this.humans.map(h=>h.pid):[this.hostPid];
     for(const pid of watch){
@@ -84,7 +84,7 @@ const NET={role:null,ch:null,live:false,players:[],humans:[],ready:{},fid:0,host
 
   /* ---------- Gast ---------- */
   applyInit(s){
-    SIMV=s.sm||2;this.fid=s.fids[PID];this.hostPid=s.hp;diffKey=s.d;const V=h=>this.V(h),nf=[];
+    SIMV=s.sm||2;speed=SIMV;this.fid=s.fids[PID];this.hostPid=s.hp;diffKey=s.d;const V=h=>this.V(h),nf=[];
     s.Fi.forEach((f,h)=>{const i=V(h);nf[i]={id:i,isPlayer:i===0,human:!!f.hum,name:i===0?'Du':f.n,species:f.sp,rgb:f.rgb,alive:!!s.F[h],capital:s.C[h],allied:false,dipCool:0,hurt:-999,timer:99,cosm:cosmClean(f.c)}});
     F=nf;
     T.forEach((x,i)=>{const d=s.T[i];x.owner=V(d[0]);x.troops=d[1];x.isCap=!!d[2];x.str=newStr();if(x.owner!==0)x.col=null});
@@ -121,6 +121,7 @@ const NET={role:null,ch:null,live:false,players:[],humans:[],ready:{},fid:0,host
         toast(LANG==='de'?'Mehrspieler: Die Welt läuft beim Host.':'Multiplayer: the world runs on the host.','good')}
       else if(m.t==='snap')this.applySnap(m);
       else if(m.t==='hostleft'&&started&&!over){toast(LANG==='de'?'Der Host hat die Partie beendet.':'The host ended the match.','bad');endGame(false)}
+      else if(m.t==='err'&&this.server)toast(LANG==='de'?'Server: Beitritt nicht möglich ('+m.why+').':'Server: cannot join ('+m.why+').','bad');
       else if(m.t==='end'&&started&&!over)endGame(false);
     }
   }
