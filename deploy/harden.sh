@@ -304,7 +304,7 @@ while :; do
   ask "Minecraft-Port (tippe  keiner , wenn hier KEIN Minecraft läuft)" "$MC_DEF"
   if [[ $ANSWER == keiner ]]; then MINECRAFT_PORT=""; break; fi
   if valid_ports "$ANSWER" && [[ $ANSWER != *" "* ]]; then MINECRAFT_PORT=$((10#$ANSWER)); break; fi
-  warn "Bitte genau eine Portnummer oder leer lassen."
+  warn "Bitte genau eine Portnummer (oder  keiner  tippen, wenn hier kein Minecraft läuft)."
   (( INTERACTIVE )) || { MINECRAFT_PORT=$MC_DEF; break; }
 done
 if [[ -n $MINECRAFT_PORT ]]; then
@@ -592,6 +592,7 @@ else UFW_RULES+=("from $SSH_SOURCE to any port $SSH_PORT proto tcp"); fi
 for p in $EXTRA_TCP; do UFW_RULES+=("$p/tcp"); done
 for p in $UDP_PORTS; do UFW_RULES+=("$p/udp"); done
 (( LAN_ALL )) && UFW_RULES+=("from $SSH_SOURCE")
+# Hinweis: Die Heimnetz-Regeln gelten nur für IPv4 (CIDR). Aus einem IPv6-Netz kommt man per SSH nur über die allgemeine SSH-Regel (SSH_SOURCE=ALLE).
 
 if (( DRY )); then
   have ufw || info "(ufw ist noch nicht installiert, wird in Schritt a) installiert)"

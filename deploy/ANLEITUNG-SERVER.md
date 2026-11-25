@@ -314,7 +314,9 @@ getent hosts cloudflare.com >/dev/null && echo dns-ok
 nslookup -type=NS DEINE-DOMAIN.de
 ```
 
-Die Ausgabe von `nslookup` zeigt die Cloudflare-Nameserver. Prüfe danach, ob deine **Website und E-Mail** noch funktionieren (Testmail senden und empfangen).
+Fehlt `nslookup` (Paket `dnsutils`), geht auch `dig NS DEINE-DOMAIN.de +short`; ohne beides zeigt `getent hosts DEINE-DOMAIN.de` wenigstens, dass die Auflösung funktioniert (die Nameserver siehst du dann nur im Cloudflare-Dashboard).
+
+Die Ausgabe zeigt die Cloudflare-Nameserver. Prüfe danach, ob deine **Website und E-Mail** noch funktionieren (Testmail senden und empfangen).
 Fehlt etwas, ergänze es sofort in Cloudflare unter **DNS → Records**.
 
 ### 5.3 Tunnel anlegen (Dashboard)
@@ -379,7 +381,7 @@ sudo ls -l /etc/cloudflared/tunnel.env
 
 ```bash
 sudo test -s /etc/cloudflared/tunnel.env && echo "Token-Datei nicht leer"
-sudo cut -c1-14 /etc/cloudflared/tunnel.env
+sudo cut -c1-16 /etc/cloudflared/tunnel.env
 ```
 
 **Erwartete Ausgabe:** `Token-Datei nicht leer` und `TUNNEL_TOKEN=eyJ`. (systemd liest `EnvironmentFile` als root, bevor der Dienst auf den Benutzer `cloudflared` wechselt. Deshalb reicht Modus 600.)
@@ -656,7 +658,7 @@ Nur zum Testen kannst du die Firewall kurz ausschalten: `sudo ufw disable` (dana
 
 **Ich komme nicht mehr per SSH rein**
 - Lass ein noch offenes Terminal offen und mache im Zweifel hier die SSH-Änderung rückgängig: `sudo rm /etc/ssh/sshd_config.d/00-antwars.conf && sudo systemctl reload ssh`.
-- Kommt deine Verbindung aus einem anderen Netz als dem eingetragenen: `sudo ufw allow from DEIN-NETZ/24 to any port 22 proto tcp`.
+- Kommt deine Verbindung aus einem anderen Netz als dem eingetragenen: `sudo ufw allow from DEIN-NETZ/24 to any port 22 proto tcp`. Die Heimnetz-Regel von `harden.sh` gilt nur für IPv4; kommst du über IPv6, brauchst du die allgemeine SSH-Regel (bei `harden.sh` Heimnetz `ALLE` wählen) oder `sudo ufw allow from DEIN-IPV6-PRÄFIX/64 to any port 22 proto tcp`.
 - Ist gar kein Terminal mehr offen, brauchst du Zugang direkt am Rechner (Monitor und Tastatur), dort dieselben Befehle ausführen oder `sudo ufw disable`.
 
 **Node ist kleiner als 22 oder `apt` meldet Fehler beim Node-Repository**

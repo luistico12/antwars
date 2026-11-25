@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Antwars: Zustand prüfen. Liest nur, ändert nichts.
 #   sudo ./check.sh        (mit root sind alle Prüfungen möglich)
-# Je Zeile: OK, FEHLER oder HINWEIS. Rückgabewert 0 nur, wenn es kein FEHLER gibt.
+# Je Zeile: OK, FEHLER oder HINWEIS. Rückgabewert 0 nur, wenn es kein FEHLER gibt UND nichts übersprungen wurde
+# (ohne root: Rückgabewert 2, weil ufw- und SSH-Prüfung fehlen).
 set -Eeuo pipefail
 
 N_OK=0; N_ERR=0; N_HINT=0
@@ -18,7 +19,8 @@ PORT=8787
 GRENZE=5.0
 
 echo "Antwars-Prüfung ($(date '+%Y-%m-%d %H:%M'))"
-(( IS_ROOT )) || hinweis "Nicht als root gestartet: Prüfungen für ufw und SSH sind nur mit  sudo ./check.sh  möglich."
+SKIPPED=0
+(( IS_ROOT )) || { SKIPPED=1; hinweis "Nicht als root gestartet: Prüfungen für ufw und SSH sind nur mit  sudo ./check.sh  möglich."; }
 
 HAVE_CONF=0
 if [[ -r $CONF ]]; then HAVE_CONF=1; else hinweis "$CONF fehlt: harden.sh ist noch nicht gelaufen. Prüfungen gegen die erlaubte Portliste entfallen."; fi
@@ -213,4 +215,8 @@ fi
 echo
 echo "Ergebnis: $N_OK OK, $N_HINT HINWEIS, $N_ERR FEHLER"
 if (( N_ERR > 0 )); then exit 1; fi
+if (( SKIPPED )); then
+  echo "UNVOLLSTÄNDIG: ufw- und SSH-Prüfung wurden übersprungen (kein root). Das ist KEIN bestandener Test. Starte:  sudo ./check.sh"
+  exit 2
+fi
 exit 0
