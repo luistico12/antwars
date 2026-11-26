@@ -3,6 +3,7 @@ const CUR={seed:0},MATCH={seed:null};
 (function(){const nm=newMap;newMap=function(s){CUR.seed=s;return nm(s)}})();
 const mapTitle=()=>t('Karte')+' '+String(CUR.seed||0).padStart(6,'0');
 const DFN={easy:'Leicht',normal:'Normal',hard:'Schwer'};
+const DIFF_ORDER=['easy','normal','hard'];
 
 /* ---------- Hauptmenü (Seitenleiste, Karte, vier große Aktionen) ---------- */
 function homeBuild(){
@@ -15,7 +16,6 @@ function homeBuild(){
     <button type="button" data-s="inventory">${ico('box')}<span>${t('Inventar')}</span></button>
     <button type="button" data-s="publicMatches">${ico('globe')}<span>${t('Öffentliche Spiele')}</span></button>
     <button type="button" data-s="friends">${ico('heart')}<span>${t('Freunde')}</span></button>
-    <button type="button" data-s="forum">${ico('chat')}<span>${t('Forum')}</span></button>
     <button type="button" data-s="clan">${ico('users')}<span>${t('Clan')}</span></button>
     <button type="button" data-s="leaderboard">${ico('board')}<span>Ranking</span></button>
     <div class="sp"></div>
@@ -25,8 +25,10 @@ function homeBuild(){
   <div class="hmain">
     <div class="hhero glass"><div class="lbl">${t('Nächste Karte')}</div><h2 id="hMapName"></h2><div class="hmeta" id="hTags"></div>
       <div class="hopts"><div class="field"><span class="lbl">${t('Art')}</span><div class="spsel" id="hSp"></div></div>
-      <div class="field"><span class="lbl">${t('Gegner')}</span><div class="pills" id="hDf"></div></div>
-      <div class="field"><span class="lbl">${t('Modus')}</span><div class="pills" id="hMode"></div></div></div>
+      <div class="field"><span class="lbl">${t('Schwierigkeit')}</span>
+        <div class="hsl"><input type="range" id="hDiff" min="1" max="3" step="1" value="2" aria-label="${t('Schwierigkeit')}"><b id="hDiffV">${t('Normal')}</b></div>
+        <div class="hmarks"><span>${t('Leicht')}</span><span>${t('Normal')}</span><span>${t('Schwer')}</span></div></div>
+      <div class="field wide"><div class="modes" id="hMode"></div></div></div>
       <div class="row"><button class="btn" id="hReroll" type="button">${ico('refresh')} ${t('Neue Karte')}</button></div></div>
     <div class="hacts">
       <button class="hact pri" id="hSolo" type="button">${ico('play')}<span>${t('Spielen')}</span></button>
@@ -52,22 +54,23 @@ function homeBuild(){
 }
 function renderHomeOpts(){
   $('#hSp').innerHTML=['ground','leaf','termite'].map(id=>`<button class="btn" data-sp="${id}" type="button">${SP[id].name}</button>`).join('');
-  $('#hDf').innerHTML=['easy','normal','hard'].map(d=>`<button data-d="${d}" type="button">${t(DFN[d])}</button>`).join('');
   $('#hSp').onclick=e=>{const b=e.target.closest('[data-sp]');if(!b)return;setupSp=b.dataset.sp;
     if(setupStart!=null&&T[setupStart].terrain!==SP[setupSp].terr){T[setupStart].owner=-1;setupStart=null;ownDirty=true}
     F[0].species=setupSp;renderSetup();homeFill()};
-  $('#hMode').innerHTML=Object.keys(MODES).map(m=>`<button data-m="${m}" type="button" title="${esc(t(MODES[m].d))}">${MODES[m].n}</button>`).join('');
+  $('#hMode').innerHTML=Object.keys(MODES).map(m=>{const x=MODES[m];return `<button data-m="${m}" type="button" class="mode-card"><span class="mc-t"><b>${x.n}</b><em>${x.spd}x</em></span></button>`}).join('');
+  const ds=$('#hDiff');if(ds)ds.oninput=()=>{diffKey=DIFF_ORDER[Math.max(0,Math.min(2,(+ds.value||2)-1))];homeFill()};
   $('#hMode').onclick=e=>{const b=e.target.closest('[data-m]');if(!b||modeKey===b.dataset.m)return;modeKey=b.dataset.m;newMap((Math.random()*1e6)|0);renderSetup();homeDraw();homeFill()};
-  $('#hDf').onclick=e=>{const b=e.target.closest('[data-d]');if(!b)return;diffKey=b.dataset.d;$$('#diffSeg [data-d]').forEach(x=>x.classList.toggle('on',x.dataset.d===diffKey));homeFill()};
 }
 function homeShow(){closeScreens();$('#home').hidden=false;homeDraw();homeFill();renderHeader()}
 function homeHide(){$('#home').hidden=true;renderHeader()}
 function homeDraw(){const c=$('#homeBg'),g=c.getContext('2d');g.imageSmoothingEnabled=false;g.clearRect(0,0,c.width,c.height);if(baseCanvas){g.drawImage(baseCanvas,0,0,c.width,c.height);if(ownCanvas)g.drawImage(ownCanvas,0,0,c.width,c.height)}}
 function homeFill(){
   $('#hMapName').textContent=mapTitle();
-  $('#hTags').innerHTML=`<span class="tag">${t(DFN[diffKey])}</span><span class="tag">${T.length} ${LANG==='de'?'Gebiete':'areas'}</span><span class="tag ac">${MODES[modeKey].bots} ${t('Gegner')}</span><span class="tag">${MODES[modeKey].n} · ${MODES[modeKey].spd}x</span><span class="tag">${LANG==='de'?'Schutz':'Protection'} ${mmss(PROT[diffKey])}</span>`;
+  const bots=MODES[modeKey].bots,ds=$('#hDiff');
+  if(ds)ds.value=DIFF_ORDER.indexOf(diffKey)+1;
+  const dv=$('#hDiffV');if(dv)dv.textContent=t(DFN[diffKey]);
+  $('#hTags').innerHTML=`<span class="tag">${t(DFN[diffKey])}</span><span class="tag">${T.length} ${LANG==='de'?'Gebiete':'areas'}</span><span class="tag ac">${bots} ${t('Gegner')}</span><span class="tag">${MODES[modeKey].n} · ${MODES[modeKey].spd}x</span><span class="tag">${LANG==='de'?'Schutz':'Protection'} ${mmss(PROT[diffKey])}</span>`;
   $$('#hSp [data-sp]').forEach(b=>b.classList.toggle('on',b.dataset.sp===setupSp));
-  $$('#hDf [data-d]').forEach(b=>b.classList.toggle('on',b.dataset.d===diffKey));
   $$('#hMode [data-m]').forEach(b=>b.classList.toggle('on',b.dataset.m===modeKey));
   $('#railAdmin').hidden=!AW.isAdmin;
 }

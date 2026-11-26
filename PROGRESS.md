@@ -42,6 +42,41 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
 
 19. Update v18 (Flaggen im Mehrspieler): `cosmPack/cosmClean` tragen `flag`, Weltkarte zeichnet die Flagge jeder Hauptstadt über `cosmOf(owner)`. Hüte bleiben nur in der eigenen Kolonie (fremde Kolonien sind nicht sichtbar). Tests `worldupdate`/`radial` nutzen jetzt feste Zufallsfolge (`SEED=n`), vorher wegen Zufallskarten gelegentlich rot.
 
+31. Update v21.10 – mehr Platz für den neuesten Release (getestet: Playwright im Gastmodus, Desktop + Handy):
+    - `.nitem.latest`: Innenabstand 26/30 px, Titel `clamp(27px,3.8vw,42px)`, Fließtext 17,5 px mit `line-height:1.95`, Initiale 3em, mehr Abstand unten (`css/ui.css`); Handy-Werte angepasst.
+    - News v21.10 in `DEFAULT_NEWS` und `schema.sql`.
+
+30. Update v21.9 – News vollständig aufgeklappt (getestet: `node --check`, Playwright im Gastmodus):
+    - Ursache: `.sb` (Inhaltsbereich der Screens) ist ein Flex-Container mit `overflow:auto`; die Kinder schrumpften per Default (`flex-shrink:1`) auf die Bildschirmhöhe, `.nitem{overflow:hidden}` schnitt den Rest ab – ohne Scrollen.
+    - Fix in `css/ui.css`: `.sb>*{flex:0 0 auto}` (volle Höhe, Container scrollt) und `.nitem.latest{overflow:visible}`.
+    - News v21.9 in `DEFAULT_NEWS` und `schema.sql`.
+
+29. Update v21.8 – Schwierigkeits-Regler, weniger Quests, große News (getestet: `node --check`, Playwright im Gastmodus, SQL live eingespielt):
+    - Hauptmenü: der Schieberegler regelt jetzt die Schwierigkeit (Leicht/Normal/Schwer, `#hDiff` mit Skalenbeschriftung `#hDiffV`); die Gegnerzahl ist nicht mehr einstellbar, `MODES[modeKey].bots` gilt fest (`botCount` und `#hBots` entfernt, `js/game-world.js` nutzt wieder den Modus).
+    - Modi-Auswahl: Karten zeigen nur noch Name und Tempo, die Beschreibungszeile und die Feldüberschrift „Modus“ sind weg (`js/ui-boot.js`, `css/ui.css`).
+    - Erfolge: der Abhol-Bereich der Karriere-Karte ist immer groß – ohne fertige Stufe als gesperrte Fläche mit „ABHOLEN“ und Belohnung (`.cc-lock` in `js/ui-quests.js`/`css/ui.css`).
+    - Quests: täglich fünf (Partien, Sieg, Eroberungen, Gebäude, Minuten) und wöchentlich vier (Partien, Eroberungen, Gebäude, Minuten); Bonusziele auf 5 bzw. 4 gesetzt (`js/backend.js`).
+    - News: neuester Release als großer, standardmäßig aufgeklappter Hero mit Serifenschrift, größerem Fließtext und Initiale; die älteren Einträge bleiben als Liste (`S.news` in `js/ui-screens.js`, `css/ui.css`).
+    - Shop: langer Erklärtext unter den Reitern entfernt (`js/ui-screens.js`).
+    - News v21.8 in `DEFAULT_NEWS` und `schema.sql`, live eingespielt.
+
+28. Update v21.7 – großer Abholen-Knopf, Clan-Logos, Menü-Regler (getestet: `node --check`, Playwright im Gastmodus, SQL live eingespielt):
+    - Erfolge: der Abholen-Knopf füllt jetzt die ganze Karriere-Karte (orange, groß, mit Glanz und Aufleuchten wie in der Vorlage); die Belohnungszeile zeigt vorher nur noch den Wert (`js/ui-quests.js` `careerCard`, `css/ui.css`).
+    - Clan-Logo: Upload in Gründung und „Clan bearbeiten“ (nur PNG/JPG/WebP, max. 4 MB, quadratisch auf 128 px zugeschnitten, als Data-URL ≤30 kB). `cropAvatar(f,out,mb)` ist jetzt größenparametrisiert. Anzeige als Wappen in Clan-Karte, Chat, Statistik, Suche und Einladungen (`clCrest(tag,color,cls,logo)`). `js/backend.js` (`clan_create`/`clan_update` mit `l`), Gastmodus speichert `logo`; `supabase/schema.sql` und Live-DB: Spalte `clans.logo`, Check-Constraint, neue Signaturen `clan_create(...,logo)`, `clan_update(...,logo)`, `clan_find` und `clan_invites` mit `logo`.
+    - Hauptmenü: Schieberegler „Anzahl“ für 1–12 Gegner (`botCount`, `game-world.js` nutzt ihn beim Aufbau), Modi als Karten mit Name, Tempo und Beschreibung statt kleiner Pillen.
+    - Werbefläche: Hintergrund als dunkler Farbverlauf statt Fläche, Plakat mit Glasrahmen und weicher Randblende; Menüblock steht auf PC/Tablet etwas höher (näher zur Mitte, nicht zentriert).
+    - News v21.7 in `DEFAULT_NEWS` und `schema.sql`, englische Texte ergänzt.
+
+27. Update v21.6 – Clans, Erfolge-Karten, Forum-Knopf, Sprachwahl, Handy (getestet: Playwright im Gastmodus, `node --check` aller geänderten Dateien, SQL live eingespielt):
+    - Navigation: Forum-Knopf aus der Seitenleiste entfernt und als `#hdrForum` neben die News in die Kopfzeile (`js/ui-core.js`); Sprachwahl-Knopf `#hdrLang` entfernt, Sprache ist jetzt ein Reiter „Sprache“ im Einstellungsdialog (`js/game-settings.js`, `data-st="lang"`).
+    - Forum: das Formular sieht jetzt jeder, auch Admins (`js/ui-screens.js`); Antwortfeld neutral „Antwort schreiben …“.
+    - Quests: Karriere als Kartenraster im Stil der Vorlage – Kategorien links (`.qx-career .qx-cats`), Karten mit Symbolkachel, Stufenleiste, „FORTSCHRITT x/y“, Balken und Belohnungsleiste (`careerCard` in `js/ui-quests.js`); `css/ui.css` ergänzt. Abholen leuchtet: `.qx-claim` pulsiert, beim Klick `.pop` mit Ring (`bindClaims`), auch für Quest-Pillen im Spiel.
+    - Clans (`js/ui-clan.js`, neu; `js/backend.js`): eigener Screen mit Reitern. Im Clan: Mitglieder (Liste mit Rolle, Siegen, zuletzt online; Aktionen für Besitzer/Admins: stumm, Admin/Mitglied, Besitzer, entfernen), Chat (Verlauf und Beitritte von heute, Poll alle 6 s), Statistik (Rang, Siege/Woche, Spiele, Siegquote, Mitglieder, beste Spieler Woche/Gesamt), Suche (Rangliste mit Beitreten/Anfragen/Voll/n Siege nötig). Ohne Clan: Übersicht mit „Clan gründen“ (600 Rubys) und „Clan finden“, Suche, Einladungen (an mich / meine Anfragen). Gründungsformular: Name, Tag (2–5, fest), Tagfarbe aus fester Palette, Beschreibung mit Markdown und klickbaren Discord-Links, offen/auf Anfrage, Mindest-Siege.
+    - Clan-Tags sind nicht mehr frei wählbar: `clan_tag` wird nur noch von `clan_create`/`clan_join` gesetzt, das Feld im Profil ist entfernt (`js/ui-quests.js`).
+    - `supabase/schema.sql`: Tabellen `clans`, `clan_members`, `clan_invites`, `clan_messages`, `profiles.clan_id`, RLS und 16 RPCs (`clan_my`, `clan_find`, `clan_create`, `clan_update`, `clan_members`, `clan_chat`, `clan_say`, `clan_join`, `clan_apply`, `clan_invite`, `clan_invites`, `clan_invite_respond`, `clan_member_act`, `clan_leave`, `clan_stats`, `clan_touch`); live eingespielt (16 Funktionen, 6 Policies, News v21.6).
+    - Handy: nur ≤600 px – größere Tasten (Dock, Tempo, Weltkarten-Leiste), Dock mit Snap, Quest-Pille größer, Safe-Area für die Werbeleiste, Reiter der Kopfzeile umbrechen statt die Seite zu verbreitern. PC und Tablet unverändert.
+    - News v21.6 in `DEFAULT_NEWS` und `schema.sql`, englische Texte ergänzt.
+
 26. Update v21.5 – Forum für Bugs, Vorschläge und Spieler-Reports (getestet: `node .t.js` mit Playwright im Gastmodus, `node --check` aller geänderten Dateien):
     - Menüknopf „Forum“ in der Seitenleiste (`js/ui-boot.js`), Screen `S.forum` (`js/ui-screens.js`): links Formular für neue Meldungen (Art Bug / Vorschlag / Spieler-Report, Titel, Text) und die Liste, rechts der Verlauf mit Antworten. Admins sehen alle Meldungen mit Filter-Chips und können schließen, wieder öffnen, löschen und Rückfragen stellen; Spieler sehen nur ihre eigenen Meldungen und die Antworten darauf.
     - `js/backend.js`: `forumThreads/forumOpen/forumSend/forumReply/forumClose/forumDel` für Supabase (RPCs) und für den Gastmodus (localStorage, maximal 8 Meldungen pro Tag).

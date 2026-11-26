@@ -74,34 +74,14 @@ const QUESTS=[
   Q('d_games','daily','games',2,3,'Spiele Partien','Jede gestartete Partie zählt, auch Solo.','gamepad','daily'),
   Q('d_wins','daily','wins',1,8,'Gewinne eine Partie','Ein Sieg in beliebigem Modus.','trophy','daily'),
   Q('d_conq','daily','conq',5,5,'Erobere Gebiete','Jede Eroberung zählt.','swords','daily'),
-  Q('d_conq2','daily','conq',12,8,'Erobere 12 Gebiete','Jede Eroberung zählt.','swords','daily'),
   Q('d_build','daily','built',8,6,'Baue Gebäude','Außenposten, Häfen, Wälle und Schiffe zählen.','hammer','daily'),
-  Q('d_build2','daily','built',20,9,'Baue 20 Gebäude','Außenposten, Häfen, Wälle und Schiffe zählen.','hammer','daily'),
-  Q('d_terr','daily','terr',3,4,'Besitze Gebiete','Besitze gleichzeitig 3 Gebiete.','map','daily'),
   Q('d_mins','daily','mins',10,4,'Spiele 10 Minuten','Zeit in Partien, auch Solo.','clock','daily'),
-  Q('d_found','daily','found',3,6,'Grabe 3 Funde aus','Vergrabene Funde in der Kolonie.','gem','daily'),
-  Q('d_sunk','daily','sunk',1,7,'Versenke ein Schiff','Deine Kriegsschiffe zählen.','anchor','daily'),
-  Q('d_allied','daily','allied',1,6,'Schließe ein Bündnis','Jedes neue Bündnis zählt.','handshake','daily'),
-  Q('d_score','daily','score',500,7,'Erreiche 500 Punkte','Dein höchster Punktestand in einer Partie.','star','daily'),
-  Q('b_daily','daily','bonus',12,6,'Bonus für alle erledigten Quests','Schließe alle Quests oben ab, um ihn freizuschalten.','chest','daily'),
+  Q('b_daily','daily','bonus',5,6,'Bonus für alle erledigten Quests','Schließe alle Quests oben ab, um ihn freizuschalten.','chest','daily'),
   Q('w_games','weekly','games',5,10,'Spiele 5 Partien','Jede gestartete Partie zählt, auch Solo.','gamepad','weekly'),
-  Q('w_wins','weekly','wins',1,14,'Gewinne eine Partie','Ein Sieg in beliebigem Modus.','trophy','weekly'),
-  Q('w_days','weekly','days',3,14,'Spiele an verschiedenen Tagen','Spiele an einem Tag mindestens eine Partie.','calendar','weekly'),
   Q('w_conq','weekly','conq',10,12,'Erobere Gebiete','Jede Eroberung zählt.','swords','weekly'),
-  Q('w_conq2','weekly','conq',25,18,'Erobere 25 Gebiete','Jede Eroberung zählt.','swords','weekly'),
   Q('w_build','weekly','built',40,14,'Baue 40 Gebäude','Außenposten, Häfen, Wälle und Schiffe zählen.','hammer','weekly'),
-  Q('w_build2','weekly','built',80,18,'Baue 80 Gebäude','Außenposten, Häfen, Wälle und Schiffe zählen.','hammer','weekly'),
-  Q('w_sunk','weekly','sunk',3,16,'Versenke gegnerische Schiffe','Deine Kriegsschiffe zählen.','anchor','weekly'),
-  Q('w_sunk2','weekly','sunk',8,18,'Versenke 8 Schiffe','Deine Kriegsschiffe zählen.','anchor','weekly'),
-  Q('w_terr','weekly','terr',15,14,'Besitze viele Gebiete','Gleichzeitig 15 Gebiete halten.','map','weekly'),
-  Q('w_terr2','weekly','terr',25,16,'Besitze 25 Gebiete','Gleichzeitig 25 Gebiete halten.','map','weekly'),
-  Q('w_found','weekly','found',10,14,'Grabe Funde aus','Vergrabene Funde in der Kolonie.','gem','weekly'),
-  Q('w_found2','weekly','found',25,16,'Grabe 25 Funde aus','Vergrabene Funde in der Kolonie.','gem','weekly'),
-  Q('w_allied','weekly','allied',1,12,'Schließe ein Bündnis','Jedes neue Bündnis zählt.','handshake','weekly'),
-  Q('w_allied2','weekly','allied',2,16,'Schließe 2 Bündnisse','Jedes neue Bündnis zählt.','handshake','weekly'),
   Q('w_mins','weekly','mins',120,14,'Spiele 2 Stunden','Zeit in Partien, auch Solo.','clock','weekly'),
-  Q('w_score','weekly','score',3000,18,'Erreiche 3000 Punkte','Dein höchster Punktestand in einer Partie.','star','weekly'),
-  Q('b_weekly','weekly','bonus',17,16,'Bonus für alle erledigten Quests','Schließe alle Quests oben ab, um ihn freizuschalten.','chest','weekly')
+  Q('b_weekly','weekly','bonus',4,16,'Bonus für alle erledigten Quests','Schließe alle Quests oben ab, um ihn freizuschalten.','chest','weekly')
 ];
 for(const[key,cat,title,desc,sub,ic,stat,goals,rew]of CAREER)goals.forEach((g,i)=>QUESTS.push(Q(`c_${key}_${i+1}`,'career',stat,g,rew[i],title,desc,ic,cat,{key,tier:i+1,tiers:goals.length,sub})));
 /*Q-END*/
@@ -132,6 +112,10 @@ const parseNameTag=s=>{const m=/^(.+)#(\d{4})$/.exec(String(s||'').trim());if(!m
 /* Zeilen von my_friends() → {list,incoming,outgoing}; jeweils {id,name,tag} */
 const groupFriends=rows=>{const r={list:[],incoming:[],outgoing:[]};for(const x of rows){const e={id:x.id,other:x.other_id,name:x.username,tag:x.tag};(x.status==='accepted'?r.list:x.incoming?r.incoming:r.outgoing).push(e)}return r};
 const isDefaultName=n=>!n||/^(gast|spieler)$/i.test(String(n).trim());
+/* Fehler der Clan-RPCs: fehlt das Schema, verständlich hinweisen */
+const clanErr=e=>new Error(/function|schema cache|does not exist|relation/i.test(String(e&&e.message||''))?'Server noch nicht aktualisiert: supabase/schema.sql im SQL-Editor ausführen':((e&&e.message)||'Clan-Aktion fehlgeschlagen'));
+/* Clan-Farben für den Tag (feste Palette, damit die Anzeige überall gleich aussieht) */
+const CLAN_COLORS=['#ffd166','#ff5757','#4f8cff','#3cc878','#a855f7','#f97316','#2dd4bf','#ec4899','#94a3b8','#eab308'];
 
 /* ===== REMOTE (Supabase) ===== */
 function loadSupabaseSDK(){
@@ -206,6 +190,23 @@ const Remote={
   async forumReply(id,b){const{error}=await AW.sb.rpc('forum_reply',{tid:id,b});if(error)throw new Error(error.message)},
   async forumClose(id,c){const{error}=await AW.sb.rpc('forum_close',{tid:id,c:!!c});if(error)throw new Error('Keine Berechtigung')},
   async forumDel(id){const{error}=await AW.sb.rpc('forum_remove',{tid:id});if(error)throw new Error('Keine Berechtigung')},
+  /* Clans: Mitglieder, Chat, Statistik, Suche, Einladungen. Tags vergibt nur noch clan_create. */
+  async clanMy(){const{data,error}=await AW.sb.rpc('clan_my');if(error)throw clanErr(error);return data||null},
+  async clanFind(q,mode){const{data,error}=await AW.sb.rpc('clan_find',{q:q||'',mode:mode||'all'});if(error)throw clanErr(error);return data||[]},
+  async clanCreate(c){const{data,error}=await AW.sb.rpc('clan_create',{n:c.name,t:c.tag,color:c.color,d:c.descr,op:!!c.open,mw:+c.minWins||0,l:c.logo||null});if(error)throw clanErr(error);await Remote.loadProfile();return data},
+  async clanUpdate(c){const{error}=await AW.sb.rpc('clan_update',{n:c.name,d:c.descr,color:c.color,op:!!c.open,mw:+c.minWins||0,l:c.logo||null});if(error)throw clanErr(error)},
+  async clanMembers(){const{data,error}=await AW.sb.rpc('clan_members');if(error)throw clanErr(error);return data||[]},
+  async clanChat(){const{data,error}=await AW.sb.rpc('clan_chat');if(error)throw clanErr(error);return (data||[]).slice().reverse()},
+  async clanSay(b){const{error}=await AW.sb.rpc('clan_say',{b});if(error)throw clanErr(error)},
+  async clanJoin(id){const{error}=await AW.sb.rpc('clan_join',{cid:id});if(error)throw clanErr(error);await Remote.loadProfile()},
+  async clanApply(id){const{error}=await AW.sb.rpc('clan_apply',{cid:id});if(error)throw clanErr(error)},
+  async clanInvite(n,tg){const{error}=await AW.sb.rpc('clan_invite',{n,tg});if(error)throw clanErr(error)},
+  async clanInvites(){const{data,error}=await AW.sb.rpc('clan_invites');if(error)throw clanErr(error);return data||[]},
+  async clanRespond(id,acc){const{error}=await AW.sb.rpc('clan_invite_respond',{iid:id,acc:!!acc});if(error)throw clanErr(error);await Remote.loadProfile()},
+  async clanAct(uid,act){const{error}=await AW.sb.rpc('clan_member_act',{uid,act});if(error)throw clanErr(error);await Remote.loadProfile()},
+  async clanLeave(){const{error}=await AW.sb.rpc('clan_leave');if(error)throw clanErr(error);await Remote.loadProfile()},
+  async clanStats(){const{data,error}=await AW.sb.rpc('clan_stats');if(error)throw clanErr(error);return data||null},
+  async clanTouch(){try{await AW.sb.rpc('clan_touch')}catch(e){}},
   channel(code,h){
     const ch=AW.sb.channel('lobby:'+code,{config:{presence:{key:AW.user.id},broadcast:{self:true}}});
     ch.on('presence',{event:'sync'},()=>h.presence(Object.values(ch.presenceState()).map(a=>a[0])))
@@ -217,6 +218,11 @@ const Remote={
 
 /* ===== LOKAL (Gastmodus, spiegelt die Server-Logik) ===== */
 const LP='aw_local_';
+const CLK=LP+'clan';
+const clStore=()=>{const s=lsGet(CLK,null);return s&&s.clans?{clans:s.clans,members:s.members||[],chat:s.chat||[],invites:s.invites||[]}:{clans:[],members:[],chat:[],invites:[]}};
+const clSave=s=>lsSet(CLK,s);
+const clMine=s=>s.members.find(x=>x.user_id==='local');
+const clName=()=>((AW.profile&&AW.profile.username)||'Gast')+'#'+((AW.profile&&AW.profile.tag)||'0000');
 const Local={
   async init(){
     let p=lsGet(LP+'profile',null);
@@ -280,6 +286,52 @@ const Local={
     x.posts=x.posts||[];x.posts.push({id:'p'+Date.now().toString(36),body:String(b).slice(0,2000),created_at:new Date().toISOString(),author_name:a.username||'Gast',author_tag:a.tag||'0000',admin:false});lsSet(LP+'forum',l)},
   async forumClose(id,c){const l=lsGet(LP+'forum',[]),x=l.find(t=>t.id===id);if(!x)return;x.status=c?'closed':'open';lsSet(LP+'forum',l)},
   async forumDel(id){lsSet(LP+'forum',lsGet(LP+'forum',[]).filter(t=>t.id!==id))},
+  /* Clans im Gastmodus: eine lokale Liste, damit Suche, Chat und Statistik funktionieren. */
+  async clanMy(){const s=clStore(),m=clMine(s);if(!m)return null;const c=s.clans.find(x=>x.id===m.clan_id);if(!c)return null;
+    const mem=s.members.filter(x=>x.clan_id===c.id),p=AW.profile||{};
+    return{clan:{...c,members:mem.length,wins:p.wins||0,games:p.games||0,week_wins:(p.stats&&p.stats.weekly&&p.stats.weekly.v&&p.stats.weekly.v.wins)||0},role:m.role,muted:!!m.muted}},
+  async clanFind(q,mode){const s=clStore(),p=AW.profile||{},Q=String(q||'').toLowerCase();
+    return s.clans.filter(c=>(!Q||c.name.toLowerCase().includes(Q)||c.tag.toLowerCase().includes(Q))&&(mode!=='open'||c.is_open)&&(mode!=='closed'||!c.is_open))
+      .map(c=>{const mem=s.members.filter(x=>x.clan_id===c.id);return{...c,members:mem.length,wins:p.wins||0,games:p.games||0,week_wins:0,mine:c.owner==='local',joined:mem.some(x=>x.user_id==='local'),pending:s.invites.some(i=>i.clan_id===c.id&&i.user_id==='local'&&i.status==='pending')}})
+      .sort((a,b)=>b.wins-a.wins)},
+  async clanCreate(c){const s=clStore();if(clMine(s))throw new Error('Du bist schon in einem Clan');
+    if((AW.profile.rubys||0)<600)throw new Error('Nicht genug Rubys (600 nötig)');
+    const id='c'+Date.now().toString(36);
+    s.clans.push({id,name:c.name,tag:c.tag,tag_color:c.color,descr:c.descr||'',logo:c.logo||null,is_open:!!c.open,min_wins:+c.minWins||0,max_members:50,owner:'local',created_at:new Date().toISOString()});
+    s.members.push({clan_id:id,user_id:'local',role:'owner',muted:false,joined_at:new Date().toISOString(),last_seen:new Date().toISOString()});
+    clSave(s);AW.profile.rubys-=600;AW.profile.clan_id=id;AW.profile.clan_tag=c.tag;Local.save();return id},
+  async clanUpdate(c){const s=clStore(),m=clMine(s);if(!m)throw new Error('Du bist in keinem Clan');const cl=s.clans.find(x=>x.id===m.clan_id);if(!cl)throw new Error('Clan nicht gefunden');
+    Object.assign(cl,{name:c.name,tag_color:c.color,descr:c.descr||'',logo:c.logo||null,is_open:!!c.open,min_wins:+c.minWins||0});clSave(s)},
+  async clanMembers(){const s=clStore(),m=clMine(s);if(!m)return[];const p=AW.profile||{};
+    return s.members.filter(x=>x.clan_id===m.clan_id).map(x=>({user_id:x.user_id,username:p.username||'Gast',tag:p.tag||'0000',avatar:p.avatar||null,role:x.role,muted:!!x.muted,wins:p.wins||0,games:p.games||0,joined_at:x.joined_at,last_seen:new Date().toISOString()}))},
+  async clanChat(){const s=clStore(),m=clMine(s);return m?s.chat.filter(x=>x.clan_id===m.clan_id):[]},
+  async clanSay(b){const s=clStore(),m=clMine(s);if(!m)throw new Error('Du bist in keinem Clan');if(m.muted)throw new Error('Du bist stummgeschaltet');
+    s.chat.push({id:'m'+Date.now().toString(36),clan_id:m.clan_id,user_id:'local',username:(AW.profile||{}).username||'Gast',tag:(AW.profile||{}).tag||'0000',body:String(b).slice(0,500),created_at:new Date().toISOString(),role:m.role});
+    if(s.chat.length>300)s.chat=s.chat.slice(-300);clSave(s)},
+  async clanJoin(id){const s=clStore();if(clMine(s))throw new Error('Du bist schon in einem Clan');const c=s.clans.find(x=>x.id===id);if(!c)throw new Error('Clan nicht gefunden');
+    if(!c.is_open)throw new Error('Clan ist geschlossen – schick eine Anfrage');
+    if((AW.profile.wins||0)<c.min_wins)throw new Error(`Noch ${c.min_wins-(AW.profile.wins||0)} Siege nötig`);
+    s.members.push({clan_id:id,user_id:'local',role:'member',muted:false,joined_at:new Date().toISOString(),last_seen:new Date().toISOString()});
+    s.invites=s.invites.filter(i=>!(i.clan_id===id&&i.user_id==='local'));clSave(s);AW.profile.clan_id=id;AW.profile.clan_tag=c.tag;Local.save()},
+  async clanApply(id){const s=clStore();if(clMine(s))throw new Error('Du bist schon in einem Clan');const c=s.clans.find(x=>x.id===id);if(!c)throw new Error('Clan nicht gefunden');
+    if(c.is_open)return Local.clanJoin(id);
+    if(!s.invites.some(i=>i.clan_id===id&&i.user_id==='local'&&i.status==='pending'))s.invites.push({id:'i'+Date.now().toString(36),clan_id:id,user_id:'local',kind:'apply',status:'pending',by:'local',created_at:new Date().toISOString()});
+    clSave(s)},
+  async clanInvite(){throw new Error('Einladungen brauchen einen Server – im Gastmodus nicht möglich')},
+  async clanInvites(){const s=clStore(),m=clMine(s);
+    return s.invites.filter(i=>i.status==='pending'&&(i.user_id==='local'||(m&&i.clan_id===m.clan_id))).map(i=>{const c=s.clans.find(x=>x.id===i.clan_id)||{};return{id:i.id,kind:i.kind,clan_id:i.clan_id,clan_name:c.name||'',clan_tag:c.tag||'',tag_color:c.tag_color||'#ffd166',username:clName(),tag:(AW.profile||{}).tag||'0000',created_at:i.created_at,outgoing:i.user_id!=='local'}})},
+  async clanRespond(id,acc){const s=clStore(),i=s.invites.find(x=>x.id===id&&x.status==='pending');if(!i)throw new Error('Einladung nicht gefunden');
+    if(i.kind==='invite'&&acc)await Local.clanJoin(i.clan_id);
+    i.status=acc?'accepted':'declined';clSave(s)},
+  async clanAct(){throw new Error('Nur mit Server-Konto möglich')},
+  async clanLeave(){const s=clStore(),m=clMine(s);if(!m)throw new Error('Du bist in keinem Clan');
+    s.members=s.members.filter(x=>x.user_id!=='local');
+    if(m.role==='owner'&&!s.members.some(x=>x.clan_id===m.clan_id))s.clans=s.clans.filter(x=>x.id!==m.clan_id);
+    clSave(s);AW.profile.clan_id=null;AW.profile.clan_tag='';Local.save()},
+  async clanStats(){const s=clStore(),m=clMine(s);if(!m)return null;const c=s.clans.find(x=>x.id===m.clan_id)||{},p=AW.profile||{};
+    const mem=s.members.filter(x=>x.clan_id===m.clan_id);
+    return{clan:{...c,members:mem.length,wins:p.wins||0,games:p.games||0,week_wins:0},rank:1,best:[{username:p.username||'Gast',tag:p.tag||'0000',wins:p.wins||0,week:(p.stats&&p.stats.weekly&&p.stats.weekly.v&&p.stats.weekly.v.wins)||0}]}},
+  async clanTouch(){},
   channel(code,h){
     const bc=new BroadcastChannel('aw-lobby-'+code),me={id:AW.user.id+'-'+Math.random().toString(36).slice(2,6),pid:PID,name:AW.name,clan:AW.profile.clan_tag||''};
     const peers=new Map([[me.id,{...me,t:Date.now()}]]);
@@ -291,7 +343,12 @@ const Local={
   }
 };
 const DEFAULT_NEWS=[
-  {id:'d19',version:'v22',title:'Öffentliche Spiele auf dem Spielserver',body:'Im Menü gibt es jetzt Öffentliche Spiele: Tritt einem Raum auf dem Spielserver bei, wähle einen Modus (Klassisch, Schnell, Chaos oder Unbegrenzt) und spiele mit bis zu acht Mitspielern. Die Liste zeigt wartende und laufende Räume mit Spielerzahl und Countdown und aktualisiert sich alle paar Sekunden. Auch anonyme Spieler können mitmachen.',created_at:'2026-11-25T12:00:00Z'},
+  {id:'d24',version:'v22',title:'Öffentliche Spiele auf dem Spielserver',body:'Im Menü gibt es jetzt Öffentliche Spiele: Tritt einem Raum auf dem Spielserver bei, wähle einen Modus (Klassisch, Schnell, Chaos oder Unbegrenzt) und spiele mit bis zu acht Mitspielern. Die Liste zeigt wartende und laufende Räume mit Spielerzahl und Countdown und aktualisiert sich alle paar Sekunden. Auch anonyme Spieler können mitmachen.',created_at:'2026-11-25T12:00:00Z'},
+  {id:'d23',version:'v21.10',title:'Mehr Platz für den neuesten Release',body:'Der neueste News-Eintrag nimmt sich jetzt deutlich mehr Raum: größere Überschrift, größerer Fließtext mit mehr Zeilenabstand, eine größere Initiale und großzügiger Innenabstand. Dadurch wirkt der aktuelle Release wie eine eigene Seite und läuft weiter nach unten aus, statt gedrängt über den älteren Einträgen zu stehen.',created_at:'2026-11-25T21:05:00Z'},
+  {id:'d22',version:'v21.9',title:'News wieder ganz aufgeklappt',body:'Der neueste News-Eintrag wird jetzt vollständig angezeigt. Bisher stauchte der Menü-Bereich seinen Inhalt auf die Bildschirmhöhe zusammen, deshalb brach der Text am unteren Rand ab, ohne dass man weiterscrollen konnte. Jetzt behalten News, Panels und Listen ihre volle Höhe und der Bereich scrollt – es gibt kein Größenlimit mehr.',created_at:'2026-11-25T20:20:00Z'},
+  {id:'d21',version:'v21.8',title:'Weniger Quests, Schwierigkeits-Regler und große News',body:'Die täglichen und wöchentlichen Quests sind aufgeräumt: fünf Aufgaben pro Tag und vier pro Woche, der Bonus zählt genau diese. Auf der Karriere-Karte ist der Abholen-Bereich jetzt immer groß, auch wenn die Stufe noch läuft. Im Hauptmenü regelt ein Schieberegler die Schwierigkeit von Leicht bis Schwer – wie viele Gegner mitspielen, gibt der Modus vor. Die Modus-Karten tragen nur noch Name und Tempo, und der neueste News-Eintrag öffnet sich groß mit eigener Schrift. Im Shop ist der lange Erklärungstext weg.',created_at:'2026-11-25T18:40:00Z'},
+  {id:'d20',version:'v21.7',title:'Große Abholen-Taste, Clan-Logos und neues Menü',body:'Die Erfolge haben jetzt den großen Abholen-Knopf: Sobald eine Stufe geschafft ist, füllt die orange Taste die ganze Karte – wie im Vorbild. Clans bekommen ein eigenes Logo: Bild wählen (nur PNG, JPG oder WebP, höchstens 4 MB), es wird quadratisch zugeschnitten und erscheint als Wappen in Clan-Karte, Chat, Statistik, Suche und Einladungen. Im Hauptmenü gibt es einen Schieberegler für die Anzahl der Gegner (1 bis 12) und die Modi sind jetzt Karten mit Namen, Tempo und Beschreibung. Die Werbefläche ist an den Glas-Hintergrund angepasst, und die Menüknöpfe stehen etwas höher, näher zur Mitte – zentriert ist nichts.',created_at:'2026-11-25T16:30:00Z'},
+  {id:'d19',version:'v21.6',title:'Clans neu, Erfolge als Karten und besseres Handy-Spiel',body:'Clans sind jetzt echte Teams: eigene Seite mit Mitgliederliste (Rollen, Siege, zuletzt online), Clan-Chat mit Beitritts-Verlauf, Statistik mit Rang, Siegquote und besten Spielern sowie eine Suche mit offenen und geschlossenen Clans. Ohne Clan gründest du für 600 Rubys einen eigenen – Name, Tag, Tagfarbe, Beschreibung mit Markdown und klickbaren Discord-Links, offen oder auf Anfrage, Mindest-Siege und Einladungen. Der Tag wird bei der Gründung vergeben und ist nicht mehr frei wählbar. Clan-Besitzer und Admins können Mitglieder befördern, stummschalten und entfernen. Außerdem: der Forum-Knopf sitzt jetzt oben neben den News (jeder darf schreiben, auch Admins), die Sprachwahl liegt in den Einstellungen, abholbereite Quests leuchten beim Abholen auf, die Karriere zeigt sich als Kartenraster mit Kategorien, Symbolen, Stufen und Fortschritt – und auf dem Handy sind Knöpfe, Leisten und das Kreismenü deutlich besser zu treffen. PC und Tablet bleiben unverändert.',created_at:'2026-11-25T10:00:00Z'},
   {id:'d18',version:'v21.5',title:'Forum für Bugs, Vorschläge und Spieler-Reports',body:'Im Menü gibt es jetzt ein Forum. Melde dort Fehler, schreibe Vorschläge oder erstatte einen Spieler-Report – mit Name#Tag, Zeit und Beschreibung. Nur das Team kann alle Meldungen lesen und Rückfragen stellen; deine eigene Meldung und die Antworten darauf siehst du weiterhin selbst, niemand sonst.',created_at:'2026-11-24T18:10:00Z'},
   {id:'d17',version:'v21.4',title:'Wege wieder auf dem kürzesten Weg',body:'Die automatischen Wege zwischen deinen Städten laufen wieder auf dem kürzesten Weg. Ein Fehler beim Glätten der Route hat jeden Weg pro Schritt um ein Drittel gestreckt, deshalb zogen sich die Verbindungen in riesigen Bögen über die Karte, statt Nachbargebiete direkt zu verbinden.',created_at:'2026-11-24T16:20:00Z'},
   {id:'d16',version:'v21.3',title:'37 Karriere-Quests',body:'Die Karriere ist noch einmal deutlich gewachsen: aus 20 sind 37 Quests geworden, jede mit vier bis fünf Stufen. Neue Linien wie Spielmarathon, Ausdauer, Champion, Feldzug, Imperium, Stadtplaner, Metropole, Admiral, Flottenherr, Botschafter, Friedensstifter, Sammler, Archäologe, Kontinent und Mythos geben auch langjährigen Spielern noch Ziele. Tages- und Wochenquests bleiben unverändert.',created_at:'2026-11-24T15:45:00Z'},
@@ -320,6 +377,9 @@ Object.assign(AW,{
   adminProfiles:q=>API.adminProfiles(q),adminUpdate:(i,p)=>API.adminUpdate(i,p),
   friends:()=>API.friends(),friendRequest:n=>API.friendRequest(n),friendRespond:(i,a)=>API.friendRespond(i,a),friendRemove:i=>API.friendRemove(i),
   lobbies:()=>API.lobbies(),lobbyCreate:l=>API.lobbyCreate(l),lobbyFind:c=>API.lobbyFind(c),lobbyUpdate:(c,p)=>API.lobbyUpdate(c,p),lobbyClose:c=>API.lobbyClose(c),channel:(c,h)=>API.channel(c,h),
-  forumThreads:()=>API.forumThreads(),forumOpen:i=>API.forumOpen(i),forumSend:(k,t,b)=>API.forumSend(k,t,b),forumReply:(i,b)=>API.forumReply(i,b),forumClose:(i,c)=>API.forumClose(i,c),forumDel:i=>API.forumDel(i)
+  forumThreads:()=>API.forumThreads(),forumOpen:i=>API.forumOpen(i),forumSend:(k,t,b)=>API.forumSend(k,t,b),forumReply:(i,b)=>API.forumReply(i,b),forumClose:(i,c)=>API.forumClose(i,c),forumDel:i=>API.forumDel(i),
+  clanMy:()=>API.clanMy(),clanFind:(q,m)=>API.clanFind(q,m),clanCreate:c=>API.clanCreate(c),clanUpdate:c=>API.clanUpdate(c),clanMembers:()=>API.clanMembers(),
+  clanChat:()=>API.clanChat(),clanSay:b=>API.clanSay(b),clanJoin:i=>API.clanJoin(i),clanApply:i=>API.clanApply(i),clanInvite:(n,t)=>API.clanInvite(n,t),
+  clanInvites:()=>API.clanInvites(),clanRespond:(i,a)=>API.clanRespond(i,a),clanAct:(u,a)=>API.clanAct(u,a),clanLeave:()=>API.clanLeave(),clanStats:()=>API.clanStats(),clanTouch:()=>API.clanTouch()
 });
 AW.init=async()=>{try{await API.init()}catch(e){console.warn('Backend nicht erreichbar, Gastmodus',e);AW.remote=false;API=Local;await Local.init();}AW.ready=true;AW.emit()};

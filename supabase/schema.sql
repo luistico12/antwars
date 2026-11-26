@@ -108,6 +108,8 @@ begin
   if auth.uid() is null or coalesce(current_setting('app.rpc', true),'') = '1' or public.is_admin() then return new; end if;
   new.rubys := old.rubys; new.wins := old.wins; new.games := old.games; new.owned := old.owned;
   new.username := old.username; new.tag := old.tag; new.quests := old.quests; new.stats := old.stats; new.is_admin := old.is_admin; new.id := old.id; new.created_at := old.created_at;
+  -- Clan-Tag und Clan-Zugehörigkeit vergibt nur noch die Clan-Logik (clan_create/clan_join/clan_leave).
+  new.clan_tag := old.clan_tag; new.clan_id := old.clan_id;
   if new.hat is not null and not ('hat:'||new.hat) = any(old.owned) then new.hat := old.hat; end if;
   if new.flag is not null and not ('flag:'||new.flag) = any(old.owned) then new.flag := old.flag; end if;
   if new.crown is not null and not ('crown:'||new.crown) = any(old.owned) then new.crown := old.crown; end if;
@@ -391,6 +393,8 @@ begin
   if auth.uid() is null or coalesce(current_setting('app.rpc', true),'') = '1' or public.is_admin() then return new; end if;
   new.rubys := old.rubys; new.wins := old.wins; new.games := old.games; new.owned := old.owned;
   new.username := old.username; new.tag := old.tag; new.quests := old.quests; new.stats := old.stats; new.is_admin := old.is_admin; new.id := old.id; new.created_at := old.created_at;
+  -- Clan-Tag und Clan-Zugehörigkeit vergibt nur noch die Clan-Logik (clan_create/clan_join/clan_leave).
+  new.clan_tag := old.clan_tag; new.clan_id := old.clan_id;
   if new.hat is not null and not ('hat:'||new.hat) = any(old.owned) then new.hat := old.hat; end if;
   if new.flag is not null and not ('flag:'||new.flag) = any(old.owned) then new.flag := old.flag; end if;
   if new.crown is not null and not ('crown:'||new.crown) = any(old.owned) then new.crown := old.crown; end if;
@@ -680,6 +684,402 @@ grant execute on function public.forum_list(), public.forum_open(uuid), public.f
 insert into public.news (version, title, body)
 select 'v21.5', 'Forum für Bugs, Vorschläge und Spieler-Reports', 'Im Menü gibt es jetzt ein Forum. Melde dort Fehler, schreibe Vorschläge oder erstatte einen Spieler-Report – mit Name#Tag, Zeit und Beschreibung. Nur das Team kann alle Meldungen lesen und Rückfragen stellen; deine eigene Meldung und die Antworten darauf siehst du weiterhin selbst, niemand sonst.'
 where not exists (select 1 from public.news where version = 'v21.5');
+-- ============ Clans (v21.6) ============
+-- Ein Clan hat Name, festen Tag, Tagfarbe, Beschreibung, offen/geschlossen und Mindest-Siege.
+create table if not exists public.clans(
+  id uuid primary key default gen_random_uuid(),
+  name text not null check (char_length(name) between 3 and 28),
+  tag text not null check (tag ~ '^[A-Z0-9]{2,5}$'),
+  tag_color text not null default '#ffd166' check (tag_color ~ '^#[0-9A-Fa-f]{6}$'),
+  descr text not null default '' check (char_length(descr) <= 600),
+  logo text check (logo is null or (length(logo) <= 40000 and logo ~ '^data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$')),
+  is_open boolean not null default true,
+  min_wins int not null default 0 check (min_wins >= 0),
+  max_members int not null default 50 check (max_members between 2 and 100),
+  owner uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+create unique index if not exists clans_tag_uq  on public.clans (upper(tag));
+create unique index if not exists clans_name_uq on public.clans (lower(name));
+
+create table if not exists public.clan_members(
+  clan_id uuid not null references public.clans(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  role text not null default 'member' check (role in ('owner','admin','member')),
+  muted boolean not null default false,
+  joined_at timestamptz not null default now(),
+  last_seen timestamptz not null default now(),
+  primary key (clan_id, user_id)
+);
+create unique index if not exists clan_members_one on public.clan_members (user_id);
+
+create table if not exists public.clan_invites(
+  id uuid primary key default gen_random_uuid(),
+  clan_id uuid not null references public.clans(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  kind text not null default 'invite' check (kind in ('invite','apply')),
+  status text not null default 'pending' check (status in ('pending','accepted','declined')),
+  by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+create unique index if not exists clan_invites_uq on public.clan_invites (clan_id, user_id, kind) where status = 'pending';
+
+create table if not exists public.clan_messages(
+  id uuid primary key default gen_random_uuid(),
+  clan_id uuid not null references public.clans(id) on delete cascade,
+  author uuid not null references auth.users(id) on delete cascade,
+  body text not null check (char_length(body) between 1 and 500),
+  created_at timestamptz not null default now()
+);
+create index if not exists clan_messages_idx on public.clan_messages (clan_id, created_at desc);
+
+alter table public.profiles add column if not exists clan_id uuid;
+-- Clan-Logo (v21.7): nur PNG/JPG/WebP als Data-URL, hoechstens 40 kB
+alter table public.clans add column if not exists logo text;
+do $$ begin alter table public.clans add constraint clans_logo_chk check (logo is null or (length(logo) <= 40000 and logo ~ '^data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$')); exception when duplicate_object then null; end $$;
+
+alter table public.clans         enable row level security;
+alter table public.clan_members  enable row level security;
+alter table public.clan_invites  enable row level security;
+alter table public.clan_messages enable row level security;
+
+drop policy if exists clans_read on public.clans;
+create policy clans_read  on public.clans for select to authenticated using (true);
+drop policy if exists clans_admin on public.clans;
+create policy clans_admin on public.clans for all    to authenticated using (public.is_admin()) with check (public.is_admin());
+drop policy if exists clan_members_read on public.clan_members;
+create policy clan_members_read on public.clan_members for select to authenticated using (true);
+drop policy if exists clan_msg_read on public.clan_messages;
+create policy clan_msg_read on public.clan_messages for select to authenticated using (exists (select 1 from public.clan_members m where m.clan_id = clan_messages.clan_id and m.user_id = auth.uid()));
+drop policy if exists clan_msg_ins on public.clan_messages;
+create policy clan_msg_ins  on public.clan_messages for insert to authenticated with check (author = auth.uid() and exists (select 1 from public.clan_members m where m.clan_id = clan_messages.clan_id and m.user_id = auth.uid() and not m.muted));
+drop policy if exists clan_inv_read on public.clan_invites;
+create policy clan_inv_read on public.clan_invites for select to authenticated using (user_id = auth.uid() or exists (select 1 from public.clan_members m where m.clan_id = clan_invites.clan_id and m.user_id = auth.uid() and m.role in ('owner','admin')));
+
+-- Mein Clan mit Rolle und Summen (null, wenn ich in keinem Clan bin)
+create or replace function public.clan_my() returns jsonb
+language plpgsql security definer set search_path=public stable as $$
+declare m public.clan_members; c public.clans; n int; w int; g int; ww int;
+begin
+  if auth.uid() is null then return null; end if;
+  select * into m from public.clan_members where user_id = auth.uid();
+  if m.clan_id is null then return null; end if;
+  select * into c from public.clans where id = m.clan_id;
+  if c.id is null then return null; end if;
+  select count(*)::int, coalesce(sum(p.wins),0)::int, coalesce(sum(p.games),0)::int,
+         coalesce(sum(coalesce((p.stats->'weekly'->'v'->>'wins')::int,0)),0)::int
+    into n,w,g,ww
+    from public.clan_members cm join public.profiles p on p.id = cm.user_id where cm.clan_id = c.id;
+  return jsonb_build_object('clan', to_jsonb(c) || jsonb_build_object('members',n,'wins',w,'games',g,'week_wins',ww), 'role', m.role, 'muted', m.muted);
+end $$;
+
+-- Suche / Rangliste: alle Clans mit Mitgliederzahl, Siegen und Siegen dieser Woche
+drop function if exists public.clan_find(text,text);
+create or replace function public.clan_find(q text default '', mode text default 'all')
+returns table(id uuid, name text, tag text, tag_color text, logo text, descr text, is_open boolean, min_wins int, max_members int, members int, wins int, games int, week_wins int, mine boolean, joined boolean, pending boolean)
+language sql security definer set search_path=public stable as $$
+  select c.id, c.name, c.tag, c.tag_color, c.logo, c.descr, c.is_open, c.min_wins, c.max_members,
+    (select count(*)::int from public.clan_members m where m.clan_id = c.id) as members,
+    coalesce((select sum(p.wins)::int from public.clan_members m join public.profiles p on p.id = m.user_id where m.clan_id = c.id),0) as wins,
+    coalesce((select sum(p.games)::int from public.clan_members m join public.profiles p on p.id = m.user_id where m.clan_id = c.id),0) as games,
+    coalesce((select sum(coalesce((p.stats->'weekly'->'v'->>'wins')::int,0))::int from public.clan_members m join public.profiles p on p.id = m.user_id where m.clan_id = c.id),0) as week_wins,
+    c.owner = auth.uid() as mine,
+    exists (select 1 from public.clan_members m where m.clan_id = c.id and m.user_id = auth.uid()) as joined,
+    exists (select 1 from public.clan_invites i where i.clan_id = c.id and i.user_id = auth.uid() and i.status = 'pending') as pending
+  from public.clans c
+  where auth.uid() is not null
+    and (coalesce(q,'') = '' or c.name ilike '%'||q||'%' or c.tag ilike '%'||q||'%')
+    and (mode <> 'open' or c.is_open) and (mode <> 'closed' or not c.is_open)
+  order by wins desc, c.created_at
+  limit 100
+$$;
+
+-- Clan gründen: kostet 600 Rubys, Tag wird hier fest vergeben (v21.7: Logo optional)
+drop function if exists public.clan_create(text,text,text,text,boolean,int);
+create or replace function public.clan_create(n text, t text, color text, d text, op boolean, mw int default 0, logo text default null) returns uuid
+language plpgsql security definer set search_path=public as $$
+declare me public.profiles; nm text; tg text; col text; newid uuid; cost int := 600; lg text;
+begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
+  if exists (select 1 from public.clan_members where user_id = auth.uid()) then raise exception 'Du bist schon in einem Clan'; end if;
+  nm := left(trim(regexp_replace(coalesce(n,''), '\s+', ' ', 'g')), 28);
+  tg := upper(regexp_replace(coalesce(t,''), '[^A-Za-z0-9]', '', 'g'));
+  col := lower(coalesce(nullif(color,''), '#ffd166'));
+  if char_length(nm) < 3 then raise exception 'Name zu kurz (3–28 Zeichen)'; end if;
+  if char_length(tg) < 2 then raise exception 'Tag zu kurz (2–5 Zeichen)'; end if;
+  if col !~ '^#[0-9a-f]{6}$' then col := '#ffd166'; end if;
+  lg := nullif(logo,'');
+  if lg is not null and (length(lg) > 40000 or lg !~ '^data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$') then raise exception 'Logo ungültig (nur PNG, JPG oder WebP bis 40 kB)'; end if;
+  if exists (select 1 from public.clans where upper(tag) = tg) then raise exception 'Tag ist schon vergeben'; end if;
+  if exists (select 1 from public.clans where lower(name) = lower(nm)) then raise exception 'Name ist schon vergeben'; end if;
+  select * into me from public.profiles where id = auth.uid() for update;
+  if me.rubys < cost then raise exception 'Nicht genug Rubys (600 nötig)'; end if;
+  insert into public.clans(name, tag, tag_color, descr, logo, is_open, min_wins, owner)
+    values (nm, tg, col, left(coalesce(d,''),600), lg, coalesce(op,true), greatest(0, coalesce(mw,0)), auth.uid())
+    returning id into newid;
+  insert into public.clan_members(clan_id, user_id, role) values (newid, auth.uid(), 'owner');
+  perform set_config('app.rpc','1',true);
+  update public.profiles set rubys = rubys - cost, clan_id = newid, clan_tag = tg where id = auth.uid();
+  return newid;
+end $$;
+
+-- Name, Beschreibung, Farbe, Logo, offen/geschlossen, Mindest-Siege ändern (Besitzer und Admins)
+drop function if exists public.clan_update(text,text,text,boolean,int);
+create or replace function public.clan_update(n text, d text, color text, op boolean, mw int default 0, logo text default null) returns void
+language plpgsql security definer set search_path=public as $$
+declare m public.clan_members; nm text; col text; lg text;
+begin
+  select * into m from public.clan_members where user_id = auth.uid();
+  if m.clan_id is null or m.role not in ('owner','admin') then raise exception 'Keine Berechtigung'; end if;
+  nm := left(trim(regexp_replace(coalesce(n,''), '\s+', ' ', 'g')), 28);
+  col := lower(coalesce(nullif(color,''), '#ffd166'));
+  if char_length(nm) < 3 then raise exception 'Name zu kurz (3–28 Zeichen)'; end if;
+  if col !~ '^#[0-9a-f]{6}$' then col := '#ffd166'; end if;
+  lg := nullif(logo,'');
+  if lg is not null and (length(lg) > 40000 or lg !~ '^data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$') then raise exception 'Logo ungültig (nur PNG, JPG oder WebP bis 40 kB)'; end if;
+  if exists (select 1 from public.clans where lower(name) = lower(nm) and id <> m.clan_id) then raise exception 'Name ist schon vergeben'; end if;
+  update public.clans set name = nm, descr = left(coalesce(d,''),600), tag_color = col, logo = lg,
+    is_open = coalesce(op, is_open), min_wins = greatest(0, coalesce(mw,0)) where id = m.clan_id;
+end $$;
+
+create or replace function public.clan_members()
+returns table(user_id uuid, username text, tag text, avatar text, role text, muted boolean, wins int, games int, joined_at timestamptz, last_seen timestamptz)
+language sql security definer set search_path=public stable as $$
+  select m.user_id, p.username, p.tag, p.avatar, m.role, m.muted, p.wins, p.games, m.joined_at, m.last_seen
+  from public.clan_members m join public.profiles p on p.id = m.user_id
+  where m.clan_id = (select clan_id from public.clan_members where user_id = auth.uid())
+  order by case m.role when 'owner' then 0 when 'admin' then 1 else 2 end, p.wins desc
+$$;
+
+create or replace function public.clan_chat()
+returns table(id uuid, user_id uuid, username text, tag text, body text, created_at timestamptz, role text)
+language sql security definer set search_path=public stable as $$
+  select m.id, m.author, p.username, p.tag, m.body, m.created_at, coalesce(cm.role,'member')
+  from public.clan_messages m
+    join public.profiles p on p.id = m.author
+    left join public.clan_members cm on cm.clan_id = m.clan_id and cm.user_id = m.author
+  where m.clan_id = (select clan_id from public.clan_members where user_id = auth.uid())
+  order by m.created_at desc limit 80
+$$;
+
+create or replace function public.clan_say(b text) returns void
+language plpgsql security definer set search_path=public as $$
+declare m public.clan_members; bb text;
+begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
+  select * into m from public.clan_members where user_id = auth.uid();
+  if m.clan_id is null then raise exception 'Du bist in keinem Clan'; end if;
+  if m.muted then raise exception 'Du bist stummgeschaltet'; end if;
+  bb := left(trim(coalesce(b,'')), 500);
+  if char_length(bb) < 1 then raise exception 'Nachricht fehlt'; end if;
+  insert into public.clan_messages(clan_id, author, body) values (m.clan_id, auth.uid(), bb);
+end $$;
+
+create or replace function public.clan_join(cid uuid) returns void
+language plpgsql security definer set search_path=public as $$
+declare c public.clans; me public.profiles; n int;
+begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
+  if exists (select 1 from public.clan_members where user_id = auth.uid()) then raise exception 'Du bist schon in einem Clan'; end if;
+  select * into c from public.clans where id = cid;
+  if c.id is null then raise exception 'Clan nicht gefunden'; end if;
+  if not c.is_open and not exists (select 1 from public.clan_invites where clan_id = cid and user_id = auth.uid() and status = 'pending') then
+    raise exception 'Clan ist geschlossen – schick eine Anfrage'; end if;
+  select count(*) into n from public.clan_members where clan_id = cid;
+  if n >= c.max_members then raise exception 'Clan ist voll'; end if;
+  select * into me from public.profiles where id = auth.uid();
+  if coalesce(me.wins,0) < c.min_wins then raise exception 'Noch % Siege nötig', c.min_wins - coalesce(me.wins,0); end if;
+  insert into public.clan_members(clan_id, user_id) values (cid, auth.uid());
+  update public.clan_invites set status = 'accepted' where clan_id = cid and user_id = auth.uid() and status = 'pending';
+  perform set_config('app.rpc','1',true);
+  update public.profiles set clan_id = cid, clan_tag = c.tag where id = auth.uid();
+end $$;
+
+create or replace function public.clan_apply(cid uuid) returns void
+language plpgsql security definer set search_path=public as $$
+declare c public.clans;
+begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
+  if exists (select 1 from public.clan_members where user_id = auth.uid()) then raise exception 'Du bist schon in einem Clan'; end if;
+  select * into c from public.clans where id = cid;
+  if c.id is null then raise exception 'Clan nicht gefunden'; end if;
+  if c.is_open then perform public.clan_join(cid); return; end if;
+  if not exists (select 1 from public.clan_invites where clan_id = cid and user_id = auth.uid() and status = 'pending') then
+    insert into public.clan_invites(clan_id, user_id, kind, by) values (cid, auth.uid(), 'apply', auth.uid());
+  end if;
+end $$;
+
+create or replace function public.clan_invite(n text, tg text) returns void
+language plpgsql security definer set search_path=public as $$
+declare m public.clan_members; c public.clans; tgt public.profiles; cnt int;
+begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
+  select * into m from public.clan_members where user_id = auth.uid();
+  if m.clan_id is null or m.role not in ('owner','admin') then raise exception 'Keine Berechtigung'; end if;
+  select * into c from public.clans where id = m.clan_id;
+  select * into tgt from public.profiles where lower(username) = lower(trim(coalesce(n,''))) and tag = coalesce(tg,'');
+  if tgt.id is null then raise exception 'Spieler nicht gefunden (Name#1234)'; end if;
+  if exists (select 1 from public.clan_members where user_id = tgt.id) then raise exception 'Spieler ist schon in einem Clan'; end if;
+  select count(*) into cnt from public.clan_members where clan_id = c.id;
+  if cnt >= c.max_members then raise exception 'Clan ist voll'; end if;
+  if not exists (select 1 from public.clan_invites where clan_id = c.id and user_id = tgt.id and status = 'pending') then
+    insert into public.clan_invites(clan_id, user_id, kind, by) values (c.id, tgt.id, 'invite', auth.uid());
+  end if;
+end $$;
+
+drop function if exists public.clan_invites();
+create or replace function public.clan_invites()
+returns table(id uuid, kind text, clan_id uuid, clan_name text, clan_tag text, tag_color text, logo text, username text, tag text, created_at timestamptz, outgoing boolean)
+language sql security definer set search_path=public stable as $$
+  select i.id, i.kind, c.id, c.name, c.tag, c.tag_color, c.logo, p.username, p.tag, i.created_at, (i.user_id <> auth.uid())
+  from public.clan_invites i
+    join public.clans c on c.id = i.clan_id
+    join public.profiles p on p.id = i.user_id
+  where i.status = 'pending' and auth.uid() is not null
+    and (i.user_id = auth.uid() or i.by = auth.uid()
+      or exists (select 1 from public.clan_members m where m.clan_id = i.clan_id and m.user_id = auth.uid() and m.role in ('owner','admin')))
+  order by i.created_at desc limit 60
+$$;
+
+create or replace function public.clan_invite_respond(iid uuid, acc boolean) returns void
+language plpgsql security definer set search_path=public as $$
+declare i public.clan_invites; m public.clan_members; c public.clans; n int;
+begin
+  select * into i from public.clan_invites where id = iid and status = 'pending';
+  if i.id is null then raise exception 'Einladung nicht gefunden'; end if;
+  if i.kind = 'invite' then
+    if i.user_id <> auth.uid() then raise exception 'Keine Berechtigung'; end if;
+    if acc then perform public.clan_join(i.clan_id); end if;
+  else
+    select * into m from public.clan_members where clan_id = i.clan_id and user_id = auth.uid();
+    if m.clan_id is null or m.role not in ('owner','admin') then raise exception 'Keine Berechtigung'; end if;
+    if acc then
+      select * into c from public.clans where id = i.clan_id;
+      select count(*) into n from public.clan_members where clan_id = c.id;
+      if n >= c.max_members then raise exception 'Clan ist voll'; end if;
+      if exists (select 1 from public.clan_members where user_id = i.user_id) then raise exception 'Spieler ist schon in einem Clan'; end if;
+      insert into public.clan_members(clan_id, user_id) values (c.id, i.user_id);
+      perform set_config('app.rpc','1',true);
+      update public.profiles set clan_id = c.id, clan_tag = c.tag where id = i.user_id;
+    end if;
+  end if;
+  update public.clan_invites set status = case when acc then 'accepted' else 'declined' end where id = i.id;
+end $$;
+
+-- Mitglied verwalten: mute, unmute, kick, admin, member, owner
+create or replace function public.clan_member_act(uid uuid, act text) returns void
+language plpgsql security definer set search_path=public as $$
+declare m public.clan_members; t public.clan_members;
+begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
+  select * into m from public.clan_members where user_id = auth.uid();
+  if m.clan_id is null or m.role not in ('owner','admin') then raise exception 'Keine Berechtigung'; end if;
+  if uid = auth.uid() then raise exception 'Das geht nicht mit dir selbst'; end if;
+  select * into t from public.clan_members where clan_id = m.clan_id and user_id = uid;
+  if t.user_id is null then raise exception 'Mitglied nicht gefunden'; end if;
+  if t.role = 'owner' then raise exception 'Der Besitzer kann nicht geändert werden'; end if;
+  if m.role = 'admin' and t.role = 'admin' then raise exception 'Nur der Besitzer verwaltet Admins'; end if;
+  if act = 'mute' then update public.clan_members set muted = true  where clan_id = m.clan_id and user_id = uid;
+  elsif act = 'unmute' then update public.clan_members set muted = false where clan_id = m.clan_id and user_id = uid;
+  elsif act = 'kick' then
+    delete from public.clan_members where clan_id = m.clan_id and user_id = uid;
+    perform set_config('app.rpc','1',true);
+    update public.profiles set clan_id = null, clan_tag = '' where id = uid;
+  elsif act = 'admin' and m.role = 'owner' then update public.clan_members set role = 'admin'  where clan_id = m.clan_id and user_id = uid;
+  elsif act = 'member' and m.role = 'owner' then update public.clan_members set role = 'member' where clan_id = m.clan_id and user_id = uid;
+  elsif act = 'owner' and m.role = 'owner' then
+    update public.clan_members set role = 'owner' where clan_id = m.clan_id and user_id = uid;
+    update public.clan_members set role = 'admin' where clan_id = m.clan_id and user_id = auth.uid();
+    update public.clans set owner = uid where id = m.clan_id;
+  else raise exception 'Unbekannte Aktion'; end if;
+end $$;
+
+create or replace function public.clan_leave() returns void
+language plpgsql security definer set search_path=public as $$
+declare m public.clan_members; n int; nx uuid;
+begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
+  select * into m from public.clan_members where user_id = auth.uid();
+  if m.clan_id is null then raise exception 'Du bist in keinem Clan'; end if;
+  perform set_config('app.rpc','1',true);
+  if m.role = 'owner' then
+    select count(*) into n from public.clan_members where clan_id = m.clan_id;
+    if n <= 1 then
+      delete from public.clans where id = m.clan_id;
+    else
+      select user_id into nx from public.clan_members
+        where clan_id = m.clan_id and user_id <> auth.uid()
+        order by case role when 'admin' then 0 else 1 end, joined_at limit 1;
+      update public.clan_members set role = 'owner' where clan_id = m.clan_id and user_id = nx;
+      update public.clans set owner = nx where id = m.clan_id;
+      delete from public.clan_members where clan_id = m.clan_id and user_id = auth.uid();
+    end if;
+  else
+    delete from public.clan_members where clan_id = m.clan_id and user_id = auth.uid();
+  end if;
+  update public.profiles set clan_id = null, clan_tag = '' where id = auth.uid();
+end $$;
+
+create or replace function public.clan_stats() returns jsonb
+language plpgsql security definer set search_path=public stable as $$
+declare m public.clan_members; c public.clans; n int; w int; g int; ww int; rk int; best jsonb; wr int;
+begin
+  if auth.uid() is null then return null; end if;
+  select * into m from public.clan_members where user_id = auth.uid();
+  if m.clan_id is null then return null; end if;
+  select * into c from public.clans where id = m.clan_id;
+  if c.id is null then return null; end if;
+  select count(*)::int, coalesce(sum(p.wins),0)::int, coalesce(sum(p.games),0)::int,
+         coalesce(sum(coalesce((p.stats->'weekly'->'v'->>'wins')::int,0)),0)::int,
+         coalesce(jsonb_agg(jsonb_build_object('username',p.username,'tag',p.tag,'wins',p.wins,'week',coalesce((p.stats->'weekly'->'v'->>'wins')::int,0)) order by p.wins desc),'[]'::jsonb)
+    into n,w,g,ww,best
+    from public.clan_members cm join public.profiles p on p.id = cm.user_id where cm.clan_id = c.id;
+  wr := case when g > 0 then round(100.0 * w / g) else 0 end;
+  select count(*) + 1 into rk from (
+    select c2.id, coalesce(sum(p2.wins),0) as w from public.clans c2
+      left join public.clan_members m2 on m2.clan_id = c2.id
+      left join public.profiles p2 on p2.id = m2.user_id
+    group by c2.id) s where s.w > w;
+  return jsonb_build_object('clan', to_jsonb(c) || jsonb_build_object('members',n,'wins',w,'games',g,'week_wins',ww,'winrate',wr),
+    'rank', rk, 'best', best, 'role', m.role, 'muted', m.muted);
+end $$;
+
+create or replace function public.clan_touch() returns void
+language sql security definer set search_path=public as $$
+  update public.clan_members set last_seen = now() where user_id = auth.uid()
+$$;
+
+revoke all on function public.clan_my(), public.clan_find(text,text), public.clan_create(text,text,text,text,boolean,int,text), public.clan_update(text,text,text,boolean,int,text),
+  public.clan_members(), public.clan_chat(), public.clan_say(text), public.clan_join(uuid), public.clan_apply(uuid), public.clan_invite(text,text),
+  public.clan_invites(), public.clan_invite_respond(uuid,boolean), public.clan_member_act(uuid,text), public.clan_leave(), public.clan_stats(), public.clan_touch() from public, anon;
+grant execute on function public.clan_my(), public.clan_find(text,text), public.clan_create(text,text,text,text,boolean,int,text), public.clan_update(text,text,text,boolean,int,text),
+  public.clan_members(), public.clan_chat(), public.clan_say(text), public.clan_join(uuid), public.clan_apply(uuid), public.clan_invite(text,text),
+  public.clan_invites(), public.clan_invite_respond(uuid,boolean), public.clan_member_act(uuid,text), public.clan_leave(), public.clan_stats(), public.clan_touch() to authenticated;
+
+-- News v21.6
+insert into public.news (version, title, body)
+select 'v21.6', 'Clans neu, Erfolge als Karten und besseres Handy-Spiel', 'Clans sind jetzt echte Teams: eigene Seite mit Mitgliederliste (Rollen, Siege, zuletzt online), Clan-Chat mit Beitritts-Verlauf, Statistik mit Rang, Siegquote und besten Spielern sowie eine Suche mit offenen und geschlossenen Clans. Ohne Clan gründest du für 600 Rubys einen eigenen – Name, Tag, Tagfarbe, Beschreibung mit Markdown und klickbaren Discord-Links, offen oder auf Anfrage, Mindest-Siege und Einladungen. Der Tag wird bei der Gründung vergeben und ist nicht mehr frei wählbar. Clan-Besitzer und Admins können Mitglieder befördern, stummschalten und entfernen. Außerdem: der Forum-Knopf sitzt jetzt oben neben den News (jeder darf schreiben, auch Admins), die Sprachwahl liegt in den Einstellungen, abholbereite Quests leuchten beim Abholen auf, die Karriere zeigt sich als Kartenraster mit Kategorien, Symbolen, Stufen und Fortschritt – und auf dem Handy sind Knöpfe, Leisten und das Kreismenü deutlich besser zu treffen. PC und Tablet bleiben unverändert.'
+where not exists (select 1 from public.news where version = 'v21.6');
+
+-- News v21.7
+insert into public.news (version, title, body)
+select 'v21.7', 'Große Abholen-Taste, Clan-Logos und neues Menü', 'Die Erfolge haben jetzt den großen Abholen-Knopf: Sobald eine Stufe geschafft ist, füllt die orange Taste die ganze Karte – wie im Vorbild. Clans bekommen ein eigenes Logo: Bild wählen (nur PNG, JPG oder WebP, höchstens 4 MB), es wird quadratisch zugeschnitten und erscheint als Wappen in Clan-Karte, Chat, Statistik, Suche und Einladungen. Im Hauptmenü gibt es einen Schieberegler für die Anzahl der Gegner (1 bis 12) und die Modi sind jetzt Karten mit Namen, Tempo und Beschreibung. Die Werbefläche ist an den Glas-Hintergrund angepasst, und die Menüknöpfe stehen etwas höher, näher zur Mitte – zentriert ist nichts.'
+where not exists (select 1 from public.news where version = 'v21.7');
+
+-- News v21.8
+insert into public.news (version, title, body)
+select 'v21.8', 'Weniger Quests, Schwierigkeits-Regler und große News', 'Die täglichen und wöchentlichen Quests sind aufgeräumt: fünf Aufgaben pro Tag und vier pro Woche, der Bonus zählt genau diese. Auf der Karriere-Karte ist der Abholen-Bereich jetzt immer groß, auch wenn die Stufe noch läuft. Im Hauptmenü regelt ein Schieberegler die Schwierigkeit von Leicht bis Schwer – wie viele Gegner mitspielen, gibt der Modus vor. Die Modus-Karten tragen nur noch Name und Tempo, und der neueste News-Eintrag öffnet sich groß mit eigener Schrift. Im Shop ist der lange Erklärungstext weg.'
+where not exists (select 1 from public.news where version = 'v21.8');
+
+-- News v21.9
+insert into public.news (version, title, body)
+select 'v21.9', 'News wieder ganz aufgeklappt', 'Der neueste News-Eintrag wird jetzt vollständig angezeigt. Bisher stauchte der Menü-Bereich seinen Inhalt auf die Bildschirmhöhe zusammen, deshalb brach der Text am unteren Rand ab, ohne dass man weiterscrollen konnte. Jetzt behalten News, Panels und Listen ihre volle Höhe und der Bereich scrollt – es gibt kein Größenlimit mehr.'
+where not exists (select 1 from public.news where version = 'v21.9');
+
+-- News v21.10
+insert into public.news (version, title, body)
+select 'v21.10', 'Mehr Platz für den neuesten Release', 'Der neueste News-Eintrag nimmt sich jetzt deutlich mehr Raum: größere Überschrift, größerer Fließtext mit mehr Zeilenabstand, eine größere Initiale und großzügiger Innenabstand. Dadurch wirkt der aktuelle Release wie eine eigene Seite und läuft weiter nach unten aus, statt gedrängt über den älteren Einträgen zu stehen.'
+where not exists (select 1 from public.news where version = 'v21.10');
 
 -- News v22
 insert into public.news (version, title, body)

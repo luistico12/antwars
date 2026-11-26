@@ -38,7 +38,7 @@ let setTab='kb',kbWait=null;
 function renderSet(){
   const box=$('#setBox');
   let h=`<div style="display:flex;align-items:center;gap:8px"><h2 style="flex:1">Einstellungen</h2><button class="btn sm" id="setClose" type="button">Schließen</button></div>
-  <div class="opt"><button class="btn sm${setTab==='kb'?' on':''}" data-st="kb" type="button">Steuerung</button><button class="btn sm${setTab==='gfx'?' on':''}" data-st="gfx" type="button">Grafik</button><button class="btn sm${setTab==='game'?' on':''}" data-st="game" type="button">Spiel</button></div>`;
+  <div class="opt"><button class="btn sm${setTab==='kb'?' on':''}" data-st="kb" type="button">Steuerung</button><button class="btn sm${setTab==='gfx'?' on':''}" data-st="gfx" type="button">Grafik</button><button class="btn sm${setTab==='game'?' on':''}" data-st="game" type="button">Spiel</button><button class="btn sm${setTab==='lang'?' on':''}" data-st="lang" type="button">${t('Sprache')}</button></div>`;
   if(setTab==='kb'){
     h+='<p class="note">Klicke auf eine Taste und drücke die neue. Die Pfeiltasten bewegen immer zusätzlich. Esc pausiert und bricht ab. Entf/Rücktaste löscht die Belegung.</p>';
     h+=Object.keys(KB_DEF).map(a=>`<div class="kbrow"><span>${KB_NAME[a]}</span><button class="btn sm${kbWait===a?' wait':''}" data-kb="${a}" type="button">${kbWait===a?'Taste drücken …':esc(keyLabel(ST.kb[a]))}</button></div>`).join('');
@@ -47,6 +47,8 @@ function renderSet(){
     h+=`<div><b>Standard-Truppenanteil</b><p class="note">Anteil der Truppen, der bei einem Angriff gesendet wird. Gilt zu Spielbeginn: <span id="pctV">${ST.pct}%</span></p><input type="range" id="pctSet" min="10" max="100" step="10" value="${ST.pct}" style="width:100%"></div>
     <label class="ck"><input type="checkbox" id="hideCk" ${ST.hideCosm?'checked':''}> Kosmetik anderer Spieler ausblenden</label>
     <div><b>Interface-Größe</b><p class="note">Skaliert Leiste, Seitenmenü und Anzeigen. Aktuell: ${ST.ui}%</p><div class="opt">${[80,90,100,115,130].map(d=>`<button class="btn sm${ST.ui===d?' on':''}" data-ui="${d}" type="button">${d}%</button>`).join('')}</div></div>`;
+  }else if(setTab==='lang'){
+    h+=`<p class="note">${t('Sprache der Oberfläche')}</p><div class="opt" id="setLang">${LANGS.map(l=>`<button class="btn sm${l[0]===LANG?' on':''}" data-l="${l[0]}" type="button">${flagSVG(l[3])} ${l[1]}</button>`).join('')}</div>`;
   }else{
     h+=`<label class="ck"><input type="checkbox" id="fpsCk" ${ST.fps?'checked':''}> FPS anzeigen</label>
     <label class="ck"><input type="checkbox" id="lbCk" ${ST.hideLb?'':'checked'}> Bestenliste anzeigen</label>
@@ -68,6 +70,7 @@ $('#set').addEventListener('click',e=>{
     else if(b.dataset.q){ST.q=b.dataset.q;ST.density=QUAL[ST.q].d;applyDensity();saveST();renderSet()}
     else if(b.dataset.fm!==undefined){ST.fpsMax=+b.dataset.fm;saveST();renderSet()}
     else if(b.dataset.ui){ST.ui=+b.dataset.ui;applyUI();saveST();renderSet()}
+    else if(b.dataset.l){setLang(b.dataset.l);document.documentElement.lang=LANG;if(typeof homeFill==='function')homeFill();renderHeader();renderSet()}
   }
   if(e.target.id==='lbCk'){ST.hideLb=!e.target.checked;saveST();if(typeof updateHud==='function')updateHud()}
   if(e.target.id==='vsCk'){ST.vsync=e.target.checked;saveST()}
