@@ -42,3 +42,5 @@ Lokal: `./scripts/gen-config.sh && python3 -m http.server 8000`. Automatisiert m
 
 ## Bekannte Grenzen
 Client meldet Statistik (serverseitig gedeckelt), Lobby-Chat über öffentliche Realtime-Kanäle, UI nur Deutsch/Englisch übersetzt, Werbefläche ist Platzhalter bis `img/ad.png` existiert.
+
+Beim Release außerdem in `index.html` die Versionsparameter (`css/ui.css?v=…`, alle `js/*.js?v=…`) auf die neue Version setzen – GitHub Pages liefert Dateien zehn Minuten aus dem Browser-Cache, sonst sehen Spieler weiter die alte Oberfläche.
