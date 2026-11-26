@@ -52,16 +52,15 @@ function homeBuild(){
   $('#hTut').onclick=()=>openScreen('tutorial',undefined,false);
 }
 function renderHomeOpts(){
-  $('#hSp').innerHTML=['ground','leaf','termite'].map(id=>`<button class="spc" data-sp="${id}" type="button"><canvas width="96" height="64"></canvas><span><b>${SP[id].name}</b></span></button>`).join('');
-  $$('#hSp canvas').forEach(c=>drawAntIcon(c,c.parentElement.dataset.sp));
-  $('#hSp').onclick=e=>{const b=e.target.closest('[data-sp]');if(!b)return;setupSp=b.dataset.sp;
+  $('#hSp').innerHTML=spSeg(setupSp);
+$('#hSp').onclick=e=>{const b=e.target.closest('[data-sp]');if(!b)return;setupSp=b.dataset.sp;
     if(setupStart!=null&&T[setupStart].terrain!==SP[setupSp].terr){T[setupStart].owner=-1;setupStart=null;ownDirty=true}
     F[0].species=setupSp;renderSetup();homeFill()};
   $('#hMode').innerHTML=Object.keys(MODES).map(m=>{const x=MODES[m];return `<button data-m="${m}" type="button" class="mode-card"><span class="mc-t"><b>${x.n}</b><em>${x.spd}x</em></span></button>`}).join('');
   const ds=$('#hDiff');if(ds)ds.oninput=()=>{diffKey=DIFF_ORDER[Math.max(0,Math.min(2,(+ds.value||2)-1))];homeFill()};
   $('#hMode').onclick=e=>{const b=e.target.closest('[data-m]');if(!b||modeKey===b.dataset.m)return;modeKey=b.dataset.m;newMap((Math.random()*1e6)|0);renderSetup();homeDraw();homeFill()};
 }
-function homeShow(){closeScreens();document.body.classList.remove('navopen');$('#home').hidden=false;homeDraw();homeFill();renderHeader()}
+function homeShow(){closeScreens();document.body.classList.remove('navopen','picking');$('#home').hidden=false;homeDraw();homeFill();renderHeader()}
 function homeHide(){$('#home').hidden=true;renderHeader()}
 /* Hintergrund des Hauptmenüs: nur die Landschaft, keine Gebietsgrenzen (die dunklen Linien passten nicht zum Bild) */
 function homeDraw(){const c=$('#homeBg'),g=c.getContext('2d');g.imageSmoothingEnabled=false;g.clearRect(0,0,c.width,c.height);
@@ -117,7 +116,7 @@ const PICK_SECS=15;let pick15=null;
 document.body.insertAdjacentHTML('beforeend','<div id="pickBar" hidden><b id="pickTxt"></b><i><u id="pickFill"></u></i></div>');
 function pickStart(){
   pickStop();setupStart!=null&&(T[setupStart].owner=-1);setupStart=null;ownDirty=true;
-  $('#setupPanel').hidden=true;
+  $('#setupPanel').hidden=true;document.body.classList.add('picking');
   pick15={t:PICK_SECS,iv:setInterval(()=>{
     if(!pick15)return;pick15.t-=0.1;
     const sp=SP[setupSp];$('#pickTxt').textContent=`${t('Wähle dein Startgebiet')} (${TERR[sp.terr].name}) · ${Math.max(0,Math.ceil(pick15.t))}s`;
@@ -127,34 +126,22 @@ function pickStart(){
   $('#pickBar').hidden=false;
   if(MODES[modeKey].rnd){const sp=SP[setupSp],opts=T.filter(x=>x.terrain===sp.terr);mapClick((opts[Math.floor(Math.random()*opts.length)]||T[0]).id)}
 }
-function pickStop(){if(pick15){clearInterval(pick15.iv);pick15=null}$('#pickBar').hidden=true}
+function pickStop(){if(pick15){clearInterval(pick15.iv);pick15=null}$('#pickBar').hidden=true;document.body.classList.remove('picking')}
 (function(){const mc=mapClick;mapClick=function(id){const before=setupStart;mc(id);if(!started&&pick15&&setupStart!=null&&setupStart!==before){pickStop();$('#btnStart').onclick()}}})();
 
-/* ---------- Erfolge und Quests live im Spiel ---------- */
-document.body.insertAdjacentHTML('beforeend','<div id="qLive" hidden></div>');
-let qOpen=false,qSeen=new Set(),qInit=false;
+/* ---------- Erfolge: kein Knopf im Spiel, nur die Meldung ---------- */
+let qSeen=new Set();
 function qCheck(){
   if(!started||!AW.profile)return;
   let ready=false;
   for(const q of activeQuests()){const g=qProg(q);
     if(g.done&&!g.claimed&&!qSeen.has(q[0])){qSeen.add(q[0]);ready=true}}
-  qInit=true;
-  /* Quests sind nicht mehr abholbar: erreichte Stufen werden automatisch gutgeschrieben */
+  /* Erreichte Stufen werden automatisch gutgeschrieben und kurz eingeblendet */
   if(ready&&typeof autoClaim==='function')autoClaim();
 }
-function qLiveRender(){
-  const el=$('#qLive');
-  if(!started||!AW.profile||over){el.hidden=true;return}
-  const L=activeQuests().filter(q=>!qProg(q).claimed).sort((a,b)=>qProg(b).done-qProg(a).done||qProg(b).v/b[3]-qProg(a).v/a[3]).slice(0,7),ready=L.filter(q=>qProg(q).done).length;
-  el.hidden=false;
-  setHTML(el,`<button type="button" class="qpill${ready?' rdy':''}" id="qTog">${ico('trophy')} ${ready?`${ready} ${t('GESCHAFFT')}`:t('Quests')}</button>`+(qOpen?`<div class="qbox">${L.map(q=>{const g=qProg(q);return `<div class="qrow${g.done?' done':''}"><span>${t(q[5])}</span><div class="bar"><i style="width:${Math.round(100*g.v/q[3])}%"></i></div>${g.done?`<b class="qok">${ico('check')} +${q[4]}</b>`:`<small>${g.v}/${q[3]}</small>`}</div>`}).join('')||`<div class="mini">${t('Alles erledigt')}</div>`}</div>`:''));
-}
-$('#qLive').addEventListener('click',e=>{
-  if(e.target.closest('#qTog')){qOpen=!qOpen;$('#qLive')._h=null;qLiveRender()}
-});
-AW.on(()=>{qCheck();qLiveRender()});
-setInterval(()=>{qCheck();qLiveRender()},3000);
-(function(){const sg=startGame;startGame=function(){sg();applyPct();qSeen=new Set();qInit=false;qCheck();qLiveRender()}})();
+AW.on(qCheck);
+setInterval(qCheck,3000);
+(function(){const sg=startGame;startGame=function(){sg();applyPct();qSeen=new Set();qCheck()}})();
 
 /* ---------- Start ---------- */
 AW.on(()=>{syncCosmetics();if(!$('#home').hidden)homeFill()});

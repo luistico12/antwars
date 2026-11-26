@@ -49,14 +49,21 @@ const rewardPill=(q,g)=>g.claimed||g.done
   :`<span class="qx-rw">+${q[4]} ${ico('ruby')}</span>`;
 /* Automatisch abholen: jede fertige Quest wird sofort gutgeschrieben (mit Animation) */
 let qAutoBusy=false;
+let qAchN=0;
 function achieveAnim(q){
-  if(!document.body||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
-  const d=document.createElement('div');d.className='qAch';
+  if(!document.body)return;
+  const d=document.createElement('div');d.className='qAch';d.setAttribute('role','status');d.title='Klicken zum Schließen';
+  d.style.top=`calc(22% + ${qAchN*76}px)`;qAchN++;
   d.innerHTML=`<span class="qa-i">${ico('trophy')}</span><span class="qa-t"><b>${t('GESCHAFFT')}</b><small>${t(q[5])}</small></span><span class="qa-r">+${q[4]} ${ico('ruby')}</span>`;
   document.body.appendChild(d);
-  d.animate([{transform:'translate(-50%,-16px) scale(.86)',opacity:0},{transform:'translate(-50%,0) scale(1.04)',opacity:1,offset:.18},{transform:'translate(-50%,0) scale(1)',opacity:1,offset:.8},{transform:'translate(-50%,-10px) scale(.98)',opacity:0}],{duration:2200,easing:'cubic-bezier(.2,.9,.3,1.3)',fill:'both'}).onfinish=()=>d.remove();
-  setTimeout(()=>d.remove(),2600);
+  let done=false;
+  const kill=()=>{if(done)return;done=true;clearTimeout(timer);d.remove();qAchN=Math.max(0,qAchN-1)};
+  const timer=setTimeout(kill,5000);
+  d.addEventListener('click',kill);
+  if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+    d.animate([{transform:'translate(-50%,-14px) scale(.86)',opacity:0},{transform:'translate(-50%,0) scale(1)',opacity:1}],{duration:300,easing:'cubic-bezier(.2,.9,.3,1.3)'});
 }
+
 async function autoClaim(){
   if(qAutoBusy||!AW.profile)return;
   qAutoBusy=true;

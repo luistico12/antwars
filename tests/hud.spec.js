@@ -10,7 +10,7 @@ let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++};
   await pg.waitForTimeout(500);await pg.evaluate(()=>{setSpeedUI(0);setView('map');G.mat=G.matCap=400;G.food=G.foodCap=400;updateSide()});
   ok(await pg.evaluate(()=>!$('#wmHud').hidden&&getComputedStyle($('#side')).display==='none'),'HUD sichtbar, Seitenpanel weg');
   ok(await pg.evaluate(()=>$$('#wmLb tbody tr').length>=4&&$('#wmLb tr.me')!==null),'Bestenliste mit eigener Zeile');
-  ok(await pg.evaluate(()=>$('#wmSlots .slot').length===5),'Bauleiste mit 5 Plätzen (Wälle, Außenposten, Floß, Kriegsschiff, Schiff)');
+  ok(await pg.evaluate(()=>$$('#wmSlots .slot').length===5),'Bauleiste mit 5 Plätzen (Wälle, Außenposten, Floß, Kriegsschiff, Schiff)');
   /* Taste 1 ohne Auswahl: vormerken, Klick aufs eigene Gebiet setzt den Wall direkt an die Stelle */
   await pg.evaluate(()=>{selT=null;updateHud()});
   await pg.keyboard.press('1');

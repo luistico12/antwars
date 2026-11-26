@@ -21,10 +21,11 @@ function fitStage(c,st){
   c.style.width=Math.round(w)+'px';c.style.height=Math.round(h)+'px';
 }
 function fitStages(){fitStage(cv,cv&&cv.parentElement);fitStage(mv,mv&&mv.parentElement)}
-addEventListener('resize',()=>{if(started)fitStages()});
+addEventListener('resize',()=>{if(!over)fitStages()});
 function setView(v){
   view=v;$('#viewColony').hidden=v!=='colony';$('#viewMap').hidden=v!=='map';
-  $('#tabColony').classList.toggle('on',v==='colony');$('#tabMap').classList.toggle('on',v==='map');hideTip();
+  $('#tabColony').classList.toggle('on',v==='colony');$('#tabMap').classList.toggle('on',v==='map');
+  {const gc=$('#gColony'),gm=$('#gMap');if(gc&&gm){gc.classList.toggle('on',v==='colony');gm.classList.toggle('on',v==='map')}}hideTip();
   document.body.classList.toggle('ingame',!!(started&&!over&&(v==='colony'||v==='map')));
   if(typeof mctlSync==='function')mctlSync();
 }
@@ -458,42 +459,28 @@ $$('#dock .tab').forEach(b=>b.onclick=()=>{dockTab=b.dataset.tab;renderDock()});
 $('#tabColony').onclick=()=>{if(col)setView('colony')};$('#tabMap').onclick=()=>setView('map');
 $$('#diffSeg [data-d]').forEach(b=>b.onclick=()=>{diffKey=b.dataset.d;$$('#diffSeg [data-d]').forEach(x=>x.classList.toggle('on',x===b))});
 $('#btnReroll').onclick=()=>{newMap((Math.random()*1e6)|0);renderSetup()};
-/* Pixel-Vorschau für die Ameisenart: kleiner Ausschnitt aus der Kolonie */
-function drawAntIcon(c,id){
-  const g=c.getContext('2d'),W=96,H=64;c.width=W;c.height=H;g.imageSmoothingEnabled=false;
-  const terr=SP[id].terr;
-  const sky=terr===2?['#1d3320','#3d5f2c','#6f9a4a']:terr===0?['#4a3a1e','#8a6c38','#c2a260']:['#243a2a','#4a6a3e','#86a862'];
-  for(let i=0;i<3;i++){g.fillStyle=sky[i];g.fillRect(0,i*14,W,15)}
-  /* ferne Bäume */
-  for(let i=0;i<9;i++){const x=i*11-2,h=6+((i*7)%9);g.fillStyle='#2f4a26';g.fillRect(x,34-h,3,h);g.fillStyle='#3c5f30';g.fillRect(x-2,34-h-3,7,4)}
-  /* Boden */
-  g.fillStyle='#6b4523';g.fillRect(0,34,W,H-34);g.fillStyle='#54351a';g.fillRect(0,34,W,3);
-  for(let i=0;i<70;i++){g.fillStyle=((i*13)%5)?'rgba(30,16,6,.25)':'rgba(214,170,110,.18)';g.fillRect((i*37)%W,38+((i*29)%22),2,2)}
-  /* Hügel */
-  for(let i=0;i<16;i++){const w=5+i*1.9,h=14-i*0.7;g.fillStyle=i%3?'#7a4f28':'#8e5d30';g.fillRect(48-w,34-h+6,w*2,h)}
-  g.fillStyle='#22140a';g.fillRect(45,34,7,4);g.fillStyle='#0f0803';g.fillRect(46,35,5,3);
-  /* Ameisen: eine große, eine kleine */
-  drawAnt(g,24,48,1,0,0.6,'w',id,id==='leaf'?'leaf':null,1.15);
-  drawAnt(g,72,52,-1,0,1.2,'s',id,null,0.85);
-}
 /* Werte der Art als kleine Pixelbalken */
 function spTraits(id){
   const s=SP[id],row=(lbl,v)=>`<span>${lbl}</span>${Array.from({length:5},(_,i)=>`<i class="${v*5>i+0.35?'on':''}"></i>`).join('')}`;
   return row('Grab',s.dig/1.35)+row('Sammeln',s.forage/1.45)+row('Eier',s.egg/1.25)+row('Wehr',s.def/1.3);
 }
 function renderSetup(){
-  const box=$('#spcList');box.innerHTML='';
-  for(const id of['ground','leaf','termite']){
-    const s=SP[id],b=document.createElement('button');b.type='button';b.className='spc'+(setupSp===id?' on':'');
-    b.innerHTML=`<canvas></canvas><span><b>${s.name}</b><small>${s.blurb}</small><div class="tr">${spTraits(id)}</div></span>`;
-    drawAntIcon(b.querySelector('canvas'),id);
-    b.onclick=()=>{setupSp=id;if(setupStart!=null&&T[setupStart].terrain!==s.terr){T[setupStart].owner=-1;setupStart=null;ownDirty=true}F[0].species=id;renderSetup()};
-    box.appendChild(b);
-  }
+  const box=$('#spcList');
+  box.innerHTML=spSeg(setupSp)+`<p class="mini spinfo" id="spcInfo"></p><div class="tr sptr">${spTraits(setupSp)}</div>`;
+  box.querySelectorAll('[data-sp]').forEach(b=>b.onclick=()=>pickSpecies(b.dataset.sp));
   updateSetupPanel();
 }
+function pickSpecies(id){
+  setupSp=id;
+  if(setupStart!=null&&T[setupStart].terrain!==SP[id].terr){T[setupStart].owner=-1;setupStart=null;ownDirty=true}
+  F[0].species=id;renderSetup();
+}
+/* Ameisenart als Umschalter: nur Namen in einer Segmentleiste, keine Bilder */
+function spSeg(sel){
+  return '<div class="spseg">'+['ground','leaf','termite'].map(id=>`<button type="button" data-sp="${id}" class="${id===sel?'on':''}"><b>${SP[id].name}</b></button>`).join('')+'</div>';
+}
 function updateSetupPanel(){
-  const s=SP[setupSp];
+  const s=SP[setupSp],info=$('#spcInfo');if(info)info.textContent=s.blurb;
   $('#setupStart').textContent=setupStart==null?`${TERR[s.terr].name}-Gebiet wählen`:`${T[setupStart].name} (${TERR[T[setupStart].terrain].name})`;
   $('#btnStart').disabled=setupStart==null;
 }
@@ -526,7 +513,7 @@ function frame(now){
   /* FPS unten links (Weltkarte) und Vollbild-Klasse */
   fpsAcc+=rdt;fpsCnt++;
   if(fpsAcc>=0.5){fpsVal=Math.round(fpsCnt/fpsAcc);fpsAcc=0;fpsCnt=0;const fe=$('#wmFps');if(fe)fe.textContent=fpsVal+' FPS'}
-  acc5+=rdt;if(acc5>=0.2){acc5=0;document.body.classList.toggle('ingame',!!(started&&!over));if(started&&!over)fitStages();if(started){refreshLive();updateSide()}}
+  acc5+=rdt;if(acc5>=0.2){acc5=0;document.body.classList.toggle('ingame',!!(started&&!over)||document.body.classList.contains('picking'));if(!over)fitStages();if(started){refreshLive();updateSide()}}
   if(started&&dockDirty)renderDock();
   if(started&&view==='colony'&&col)drawColony(cg,now,ccam);
   if(view==='map')drawMap(mg,now);

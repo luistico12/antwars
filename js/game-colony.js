@@ -565,7 +565,16 @@ function drawColony(g,now,cam){
     g.setLineDash([])}
   const mine=COSM.hat&&T[C.tid]&&T[C.tid].owner===0;
   /* einzelne Ameisen deutlich kleiner als die Räume */
-  for(const a of C.ants){drawAnt(g,a.x,a.y,a.hx,a.hy,a.ph,a.role,C.sp,a.carry,a.role==='s'?0.72:0.6);if(mine)drawHat(g,COSM.hat,a.x+(a.hx<0?-1:1)*4,a.y-3,1.2)}
+  for(const a of C.ants){
+    drawAnt(g,a.x,a.y,a.hx,a.hy,a.ph,a.role,C.sp,a.carry,a.role==='s'?0.72:0.6);
+    if(mine){
+      /* Hut sitzt auf dem Kopf und dreht sich mit der Laufrichtung */
+      const ln=Math.hypot(a.hx,a.hy)||1,ux=a.hx/ln,uy=a.hy/ln;
+      g.save();g.translate(Math.round(a.x+ux*4),Math.round(a.y+uy*2.6));
+      g.rotate(Math.atan2(a.hy,Math.abs(a.hx)||1e-4)*0.7);
+      drawHat(g,COSM.hat,0,-2,1.2);g.restore();
+    }
+  }
   for(const p of C.parts){g.fillStyle=p.c;g.fillRect(p.x|0,p.y|0,3,3)}
   if(C.buildSel==='tunnel'){
     /* Tunnelansicht: grün = schon gegraben oder in Arbeit, rot = unbebaubar (Fels, Wasser) */

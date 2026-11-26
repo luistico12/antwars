@@ -23,8 +23,10 @@ let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++};
   ok(await pg.evaluate(()=>$('#hitFrame').classList.contains('on')),'roter Rahmen blitzt');
   const f0=await pg.evaluate(()=>new Promise(r=>{let n=0;const t=performance.now();const f=()=>{n++;performance.now()-t<1000?nextFrame(f):r(n)};nextFrame(f)}));
   ok(f0>5,`Ohne VSync läuft die Schleife (${f0} Aufrufe/s)`);
-  await pg.evaluate(()=>{AW.profile&&AW.profile.stats;qLiveRender()});
-  ok(await pg.evaluate(()=>!$('#qLive').hidden),'Quest-Pille im Spiel sichtbar');
+  await pg.evaluate(()=>{achieveAnim(['q','daily','x',5,10,'Testquest','desc','trophy'])});
+  ok(await pg.evaluate(()=>!document.querySelector('#qLive')&&$$('.qAch').length>0),'Kein Quest-Knopf im Spiel, Erfolgsmeldung erscheint');
+  await pg.evaluate(()=>document.querySelector('.qAch').click());
+  ok(await pg.evaluate(()=>$$('.qAch').length===0),'Erfolgsmeldung lässt sich wegklicken');
   /* Unlimited: große Kolonie */
   await pg.evaluate(()=>{modeKey='unlimited';started=false;over=false;newMap(5)});
   await pg.evaluate(()=>{const sp=SP[setupSp];mapClick(T.find(t=>t.terrain===sp.terr).id);startGame()});

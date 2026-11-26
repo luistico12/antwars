@@ -171,3 +171,12 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
     - Bauen: Außenposten bis 3 je Gebiet, frei per Klick (`t.outs`, `startOutpost/placeOutpost`), Hafen an gewählter Küste (`startPort/placePortAt`), Verteidigungslinien komplett entfernt (`renderStructures`, Ringmenü, Bauleiste, Infotexte). Bauen ohne vorherige Gebietsauswahl.
     - Quests: `autoClaim()` + `achieveAnim()`, kein Abholen-Knopf mehr. Clan-Logos: RPC-Parameter `logo` statt `l` (Serverfehler-Toast weg).
     - Kolonie: Himmel mit Dithering/Wolken/Waldkette, Erdrillen und Kiesel am Hügel, neue Kartenbilder (`roleIcon` 108x72), Ameisen kleiner (0.6/0.72) und Blickrichtung folgt jedem Wegpunkt (`faceNext`), Artenwahl als Karten mit Pixelvorschau und Werten, Menühintergrund ohne Grenzlinien.
+
+35. Update v21.14 (Artwahl als Umschalter, Vollbild-Startauswahl, gemeinsame Spiel-Leiste, Erfolge 5 s) – `node --check`, `tests/solo.spec.js`, `tests/hud.spec.js`, `tests/radial.spec.js` grün, zusätzlich per Playwright geprüft (Segmentleisten ohne Bilder, Vollbild-Auswahl 1500×850, `#gTop` in der Kolonie, Erfolgsmeldung per Klick und nach 5 s weg, keine Seitefehler):
+    - Artwahl: `spSeg()`/`pickSpecies()` in `js/game-ui.js` (Setup-Panel `#spcList`) und `#hSp` im Hauptmenü – nur noch die drei Namen in einer Segmentleiste, Pixelvorschau entfernt (`drawAntIcon` gelöscht).
+    - Startgebiet-Auswahl im Vollbild: `pickStart()` setzt `body.picking`, `frame()` hält `body.ingame` auch während der Auswahl, `fitStages()` läuft ohne laufende Partie; Messung: Canvas 1360×850 bei 1500×850.
+    - Spiel-Leiste `#gTop`: Kolonie/Weltkarte als Segmentwahl oben in der Mitte, rechts Uhrzeit, Schutzzeit, Einstellungen und Verlassen – auch im Kolonie-Tab. `#wmTop` aus dem Karten-HUD entfernt, IDs `#wmTime/#wmProt/#wmPing/#wmSet/#wmExit` bleiben; der Bestenlisten-Knopf trägt jetzt das Symbol der Bestenliste selbst.
+    - Erfolge: `#qLive`-Knopf im Spiel entfernt (nur noch Auto-Claim); `achieveAnim()` zeigt die Meldung 5 s und lässt sie per Klick sofort schließen.
+    - Hüte sitzen auf dem Kopf und drehen sich mit der Laufrichtung der Ameisen (`drawColony`).
+    - `tests/hud.spec.js`: Tippfehler `$(` auf `$$(` bei der Bauleisten-Prüfung korrigiert (prüfte vorher nur ein einzelnes Element).
+    - News v21.14 in `DEFAULT_NEWS`, `supabase/schema.sql` und live in Supabase eingespielt.

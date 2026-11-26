@@ -52,7 +52,6 @@ function hudKey(k){const i=k==='0'?9:+k-1;if(i<HSLOTS.length)hudSlot(i)}
 $('#viewMap .stage').insertAdjacentHTML('beforeend',`<div id="wmHud" hidden>
  <div id="wmTopLeft"><button class="wmb" id="wmLbT" type="button" aria-label="Bestenliste ein-/ausblenden" title="Bestenliste ein-/ausblenden">${ico('board')}</button></div>
  <div id="wmLb" class="wmp"></div>
- <div id="wmTop"><div class="wmtimewrap"><div class="wmc" id="wmTime"></div><div id="wmProt" title="Schutzzeit">${ico('shield')}<b id="wmProtT"></b></div></div><div class="wmc" id="wmPing" hidden></div><button class="wmb" id="wmSet" type="button" aria-label="Einstellungen">${ico('gear')}</button><button class="wmb" id="wmExit" type="button" aria-label="Pause">${ico('logout')}</button></div>
  <div id="wmFps">– FPS</div>
  <div id="wmBar">
   <div id="wmSlots"></div>
@@ -69,6 +68,18 @@ $('#viewMap .stage').insertAdjacentHTML('beforeend',`<div id="wmHud" hidden>
  </div>
  <div id="wmEv" class="wmp"><div class="wmtabs"><button type="button" data-t="ev">${ico('bell')} <span>Ereignisse</span></button><button type="button" data-t="team">${ico('users')} <span>Team</span></button><button type="button" id="wmEvTog" aria-label="Ein- oder ausklappen">${ico('down')}</button></div><div id="wmEvBody"></div></div>
 </div>`);
+/* Spiel-Leiste über Kolonie und Weltkarte: Ansicht mittig, Zeit, Schutz, Einstellungen und Verlassen rechts */
+document.body.insertAdjacentHTML('beforeend',`<div id="gTop" hidden>
+ <div id="gSeg" role="tablist"><button type="button" id="gColony">Kolonie</button><button type="button" id="gMap">Weltkarte</button></div>
+ <div id="gRight">
+  <div class="wmc" id="wmTime"></div>
+  <div class="wmc" id="wmPing" hidden></div>
+  <div id="wmProt" title="Schutzzeit">${ico('shield')}<b id="wmProtT"></b></div>
+  <button class="wmb" id="wmSet" type="button" aria-label="Einstellungen">${ico('gear')}</button>
+  <button class="wmb" id="wmExit" type="button" aria-label="Pause">${ico('logout')}</button>
+ </div></div>`);
+$('#gColony').onclick=()=>{if(col)setView('colony')};
+$('#gMap').onclick=()=>setView('map');
 $('#wmSlots').innerHTML=HSLOTS.map((s,i)=>`<button type="button" class="slot" data-i="${i}"><i class="no">${i+1}</i><span class="ic" style="color:${RCOL[s.k]||'#fff'}">${ric(s.k)}</span><small class="cost"></small></button>`).join('');
 $('#wmSlots').addEventListener('click',e=>{const b=e.target.closest('.slot');if(b)hudSlot(+b.dataset.i)});
 $('#wmSet').onclick=()=>openSet();
@@ -111,7 +122,20 @@ function hudEvents(){
   setHTML($('#wmEvBody'),h);
 }
 function updateHud(){
-  const on=started&&view==='map',hud=$('#wmHud');
+  const on=started&&view==='map',hud=$('#wmHud'),live=!!(started&&!over),gt=$('#gTop');
+  if(gt){
+    gt.hidden=!live;
+    if(live){
+      $('#gColony').classList.toggle('on',view==='colony');
+      $('#gMap').classList.toggle('on',view==='map');
+      $('#wmTime').textContent=clockT(rtime());
+      const pl=protLeft(),pw=$('#wmProt');
+      pw.classList.toggle('on',pl>0);
+      $('#wmProtT').textContent=pl>0?`Schutz ${mmss(pl)}`:'';
+      const pg=$('#wmPing');
+      if(typeof NET!=='undefined'&&NET.role&&NET.role!=='solo'&&NET.ping!=null){pg.hidden=false;pg.textContent=Math.round(NET.ping)+' ms'}else pg.hidden=true;
+    }
+  }
   $('#viewMap').classList.toggle('wm',started);document.body.classList.toggle('wmv',on);
   hud.hidden=!on;if(!on||!G)return;
   $('#viewMap .stage').style.setProperty('--ar',(MW/MH).toFixed(3));
@@ -132,10 +156,6 @@ function updateHud(){
   $('#wmDtFill').style.width=donT+'%';$('#wmDmFill').style.width=donM+'%';
   $('#wmDtV').textContent=`${donT}% · ${fk(big*donT/100)}`;$('#wmDmV').textContent=`${donM}% · ${fk(G.mat*donM/100)}`;
   if(document.activeElement!==$('#wmDt'))$('#wmDt').value=donT;if(document.activeElement!==$('#wmDm'))$('#wmDm').value=donM;
-  $('#wmTime').textContent=clockT(rtime());
-  const pl=protLeft(),pw=$('#wmProt');
-  if(pw){pw.classList.toggle('on',pl>0);if(pl>0)$('#wmProtT').textContent=`Schutz ${mmss(pl)}`}
-  const pg=$('#wmPing');if(typeof NET!=='undefined'&&NET.role&&NET.role!=='solo'&&NET.ping!=null){pg.hidden=false;pg.textContent=Math.round(NET.ping)+' ms'}else pg.hidden=true;
   hudEvents();
 }
 const _us=updateSide;updateSide=function(){_us();updateHud()};
