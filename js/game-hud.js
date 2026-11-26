@@ -3,21 +3,21 @@ let donT=30,donM=30,hudArm=null,lbAll=false,evTab='ev',evOpen=true;const evs=[];
 const fk=v=>{v=Math.floor(v);return v>=1e6?(v/1e6).toFixed(2)+'M':v>=1e4?(v/1e3).toFixed(1)+'K':v>=1e3?(v/1e3).toFixed(2)+'K':String(v)};
 const ric=k=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${RIC[k]||''}</svg>`;
 /* Bauleiste: Taste 1 bis 6 */
+/* Bauleiste: alles außer Wall/Schiffen wird an einem selbst gewählten Ort platziert.
+   Man muss kein Gebiet vorher auswählen – einfach die Bauart wählen und dorthin klicken. */
 const HSLOTS=[
-  {k:'wall',n:'Verteidigungswall',c:()=>WALL_COST,need:'t'},
-  {k:'out',n:'Außenposten',c:t=>STR_COST.out[Math.min(t?t.str.out:0,1)],need:'t'},
-  {k:'line',n:'Verteidigungslinie',c:t=>STR_COST.line[0],need:'t'},
-  {k:'port',n:'Hafen',c:()=>PORT_COST,need:'t'},
-  {k:'raft',n:'Transportschiff (im Hafen)',c:()=>RAFT_COST,need:'t'},
-  {k:'war',n:'Kriegsschiff (im Hafen, frei platzierbar)',c:()=>WAR_COST,need:'t'}
+  {k:'wall',n:'Verteidigungswall',c:()=>WALL_COST},
+  {k:'out',n:'Außenposten (bis 3 je Gebiet)',c:t=>STR_COST.out[Math.min(t?t.str.out:0,2)]},
+  {k:'port',n:'Hafen',c:()=>PORT_COST},
+  {k:'raft',n:'Transportschiff (im Hafen)',c:()=>RAFT_COST},
+  {k:'war',n:'Kriegsschiff (im Hafen)',c:()=>WAR_COST}
 ];
 function hudTarget(){const t=selT!=null?T[selT]:null;return t&&t.owner===0?t:null}
 function hudDo(k,t){
   if(!t||t.owner!==0)return toast('Wähle ein eigenes Gebiet','bad');
   if(k==='wall')startWall(t);
-  else if(k==='out')buildStr(t,'out');
-  else if(k==='line'){const foes=t.adj.filter(i=>T[i].owner!==0);if(!foes.length)toast('Alle Nachbarn gehören dir, hier ist keine Linie nötig','bad');else if(foes.length>1)toast('Mehrere Grenzen: Rechtsklick auf das Gebiet, Bauen, Linie','good');else buildStr(t,'line',foes[0])}
-  else if(k==='port')buildPort(t);
+  else if(k==='out')startOutpost(t);
+  else if(k==='port')startPort(t);
   else if(k==='raft')buildRaft(t);
   else if(k==='war')buildWar(t);
   updateSide();
@@ -26,21 +26,34 @@ function hudSlot(i){
   const s=HSLOTS[i];if(!s||!started||over)return;
   const t=hudTarget();
   if(t){hudArm=null;hudDo(s.k,t)}
-  else{hudArm=hudArm===s.k?null:s.k;if(hudArm)toast(`${s.n}: klicke ein eigenes Gebiet`,'good')}
+  else{hudArm=hudArm===s.k?null:s.k;if(hudArm)toast(`${s.n}: klicke auf ein eigenes Gebiet, um es dort zu bauen`,'good')}
   updateHud();
 }
+/* Letzter Kartenklick (Weltkoordinaten), damit an der geklickten Stelle gebaut wird */
+let lastMapPt=null;
+mv.addEventListener('pointerdown',e=>{if(e.button===0)lastMapPt=mapWorld(e)},true);
 function hudKey(k){const i=k==='0'?9:+k-1;if(i<HSLOTS.length)hudSlot(i)}
-/* Klick auf ein eigenes Gebiet führt die vorgemerkte Bauaktion aus */
+/* Klick auf ein eigenes Gebiet führt die vorgemerkte Bauaktion an dieser Stelle aus */
 (function(){const mc=mapClick;mapClick=function(id){
-  if(hudArm&&started&&!over&&id!=null&&T[id].owner===0){const k=hudArm;hudArm=null;selT=id;hudDo(k,T[id]);updateHud();return}
+  if(hudArm&&started&&!over&&id!=null&&T[id].owner===0){
+    const k=hudArm,t=T[id],pt=lastMapPt||[t.lx*CS+5,t.ly*CS+5];
+    hudArm=null;selT=id;
+    if(k==='wall'){placing={kind:'wall',tid:t.id};placeWall(pt[0],pt[1])}
+    else if(k==='out')placeOutpost(t,pt[0],pt[1]);
+    else if(k==='port')placePortAt(t,pt[0],pt[1]);
+    else hudDo(k,t);
+    updateHud();return;
+  }
   mc(id);updateHud()}})();
 /* Ereignisse sammeln: jede Meldung landet auch im Ereignis-Fenster */
 (function(){const t0=toast;toast=function(msg,kind){t0(msg,kind);if(!started)return;const l=evs[0];if(l&&l.m===msg&&gtime-l.t<2)return;evs.unshift({t:gtime,m:msg,k:kind||''});if(evs.length>60)evs.pop()}})();
 (function(){const sv=setView;setView=function(v){sv(v);updateHud()}})();
 
 $('#viewMap .stage').insertAdjacentHTML('beforeend',`<div id="wmHud" hidden>
+ <div id="wmTopLeft"><button class="wmb" id="wmLbT" type="button" aria-label="Bestenliste ein-/ausblenden" title="Bestenliste ein-/ausblenden">${ico('board')}</button></div>
  <div id="wmLb" class="wmp"></div>
- <div id="wmTop"><button class="wmb" id="wmSet" type="button" aria-label="Einstellungen">${ico('gear')}</button><button class="wmb" id="wmLbT" type="button" aria-label="Bestenliste ein-/ausblenden" title="Bestenliste ein-/ausblenden">${ico('board')}</button><button class="wmb" id="wmExit" type="button" aria-label="Pause">${ico('logout')}</button><div class="wmc" id="wmTime"></div><div class="wmc" id="wmPing" hidden></div></div>
+ <div id="wmTop"><div class="wmtimewrap"><div class="wmc" id="wmTime"></div><div id="wmProt" title="Schutzzeit">${ico('shield')}<b id="wmProtT"></b></div></div><div class="wmc" id="wmPing" hidden></div><button class="wmb" id="wmSet" type="button" aria-label="Einstellungen">${ico('gear')}</button><button class="wmb" id="wmExit" type="button" aria-label="Pause">${ico('logout')}</button></div>
+ <div id="wmFps">– FPS</div>
  <div id="wmBar">
   <div id="wmSlots"></div>
   <div id="wmRes">
@@ -103,12 +116,13 @@ function updateHud(){
   hud.hidden=!on;if(!on||!G)return;
   $('#viewMap .stage').style.setProperty('--ar',(MW/MH).toFixed(3));
   $('#wmLb').hidden=!!ST.hideLb;if(!ST.hideLb)setHTML($('#wmLb'),hudBoard());
+  $('#wmLbT').classList.toggle('on',!ST.hideLb);
   const tg=hudTarget();
   $$('#wmSlots .slot').forEach((el,i)=>{const s=HSLOTS[i],c=s.c?s.c(tg):null;
-    const poor=c?poorFor(c):false,bad=s.need==='t'&&tg&&((s.k==='port'&&(tg.port||!tg.coast||!tg.coast.length))||(s.k==='raft'&&(!tg.port||tg.port.rafts>=tg.port.max))||(s.k==='war'&&(!tg.port||warsOf(tg)>=WAR_MAX))||(s.k==='wall'&&tg.walls.length>=WALL_MAX)||(s.k==='out'&&tg.str.out>=2));
+    const poor=c?poorFor(c):false,bad=tg&&((s.k==='port'&&(tg.port||!tg.coast||!tg.coast.length))||(s.k==='raft'&&(!tg.port||tg.port.rafts>=tg.port.max))||(s.k==='war'&&(!tg.port||warsOf(tg)>=WAR_MAX))||(s.k==='wall'&&tg.walls.length>=WALL_MAX)||(s.k==='out'&&tg.str.out>=OUT_MAX));
     el.classList.toggle('poor',poor||!!bad);el.classList.toggle('arm',hudArm===s.k);
     el.querySelector('.cost').textContent=c?String(c.mat):'';
-    el.title=`${i+1}: ${s.n}${c?` (${costLbl(c)})`:''}`+(tg?'':s.need?' · erst ein eigenes Gebiet wählen':'')});
+    el.title=`${i+1}: ${s.n}${c?` (${costLbl(c)})`:''}`});
   $('#wmMat').textContent=fk(G.mat);$('#wmFood').textContent=fk(G.food);
   const tot=sumTroops(0),src=tg&&tg.troops>=2?tg:null,send=Math.floor(((src?src.troops-1:tot))*pct/100);
   $('#wmTr').textContent=fk(tot);$('#wmTrR').textContent=src?`· ${src.name}`:'';
@@ -119,6 +133,8 @@ function updateHud(){
   $('#wmDtV').textContent=`${donT}% · ${fk(big*donT/100)}`;$('#wmDmV').textContent=`${donM}% · ${fk(G.mat*donM/100)}`;
   if(document.activeElement!==$('#wmDt'))$('#wmDt').value=donT;if(document.activeElement!==$('#wmDm'))$('#wmDm').value=donM;
   $('#wmTime').textContent=clockT(rtime());
+  const pl=protLeft(),pw=$('#wmProt');
+  if(pw){pw.classList.toggle('on',pl>0);if(pl>0)$('#wmProtT').textContent=`Schutz ${mmss(pl)}`}
   const pg=$('#wmPing');if(typeof NET!=='undefined'&&NET.role&&NET.role!=='solo'&&NET.ping!=null){pg.hidden=false;pg.textContent=Math.round(NET.ping)+' ms'}else pg.hidden=true;
   hudEvents();
 }

@@ -1,5 +1,5 @@
 /* ===== Weltkarte: Verteidigungswälle, Häfen, Wege, Schiffe und Seeangriff ===== */
-const WALL_R=70,WALL_MAX=3,WALL_COST={mat:50,food:25},PORT_COST={mat:60,food:30},RAFT_COST={mat:25,food:10};
+const WALL_R=70,WALL_MAX=3,OUT_MAX=3,OUT_R=34,WALL_COST={mat:50,food:25},PORT_COST={mat:60,food:30},RAFT_COST={mat:25,food:10};
 /* placing: aktueller Platzier-Modus {kind:'wall'|'war'|'land'} */
 let placing=null;
 const mapEl=document.getElementById('mv');
@@ -54,6 +54,32 @@ function placeWall(x,y){
   t.walls.push({x,y});qStat('built');placing=null;fxs.push({k:'ripple',x,y,t:0,dur:1,c:[200,205,215]});
   toast(`Verteidigungswall in ${t.name} gebaut (${costLbl(WALL_COST)})`,'good');return true;
 }
+
+/* ----- Außenposten: bis zu drei je Gebiet, frei platziert ----- */
+function startOutpost(t){
+  if(t.str.out>=OUT_MAX)return toast(`In diesem Gebiet stehen schon ${OUT_MAX} Außenposten`,'bad');
+  placing={kind:'out',tid:t.id};
+  toast(`Außenposten ${t.str.out+1}/${OUT_MAX}: Klicke eine Stelle in ${t.name}. Esc bricht ab`,'good');
+}
+function placeOutpost(t,x,y){
+  const i=cellOf(x,y);if(i<0||M.tid[i]<0)return false;
+  if(M.tid[i]!==t.id){toast(`Der Außenposten muss in ${t.name} stehen`,'bad');return false}
+  if(t.str.out>=OUT_MAX){toast(`In diesem Gebiet stehen schon ${OUT_MAX} Außenposten`,'bad');return false}
+  const c=STR_COST.out[Math.min(t.str.out,OUT_MAX-1)];
+  if(!payCost(c))return false;
+  t.outs=t.outs||[];t.outs.push({x,y});t.str.out=t.outs.length;t.outp=null;
+  qStat('built');strDirty=true;roadsChanged();
+  fxs.push({k:'ripple',x,y,t:0,dur:1,c:[240,200,110]});
+  toast(`Außenposten in ${t.name} gebaut (${t.str.out}/${OUT_MAX}, ${costLbl(c)})`,'good');return true;
+}
+/* ----- Hafen: an der selbst gewählten Küste ----- */
+function startPort(t){
+  if(t.port)return toast('Hier gibt es schon einen Hafen','bad');
+  if(!t.coast||!t.coast.length)return toast(`${t.name} hat keine Küste. Häfen brauchen Wasser`,'bad');
+  placing={kind:'port',tid:t.id};
+  toast(`Hafen: Klicke an die Küste von ${t.name}. Esc bricht ab`,'good');
+}
+function placePortAt(t,x,y){buildPort(t,x,y);placing=null;return true}
 
 /* ----- Hafen und Schiffe ----- */
 function buildPort(t,wx,wy){
@@ -125,6 +151,8 @@ function seaClick(e){
   if(!placing)return false;
   const[x,y]=mapWorld(e);
   if(placing.kind==='wall'){placeWall(x,y);return true}
+  if(placing.kind==='out'){const t=T[placing.tid];if(placeOutpost(t,x,y))placing=null;return true}
+  if(placing.kind==='port'){const t=T[placing.tid];placePortAt(t,x,y);return true}
   if(placing.kind==='war'){placeWar(x,y);return true}
   if(placing.kind==='land'){
     const t=T[placing.tid],src=T[placing.src];
@@ -168,9 +196,14 @@ function drawSeaLayer(g,now){
       if(showR.has(t.id)){g.fillStyle=`rgba(210,215,225,.10)`;g.beginPath();g.arc(w.x,w.y,WALL_R,0,6.283);g.fill();g.strokeStyle='rgba(220,225,235,.6)';g.setLineDash([5,4]);g.lineWidth=1.5;g.beginPath();g.arc(w.x,w.y,WALL_R,0,6.283);g.stroke();g.setLineDash([])}
       drawWall(g,w.x,w.y,sk,pc);
     }
-    if(t.str.out>0&&started){const[ox,oy]=cellPos(outpostCell(t));
-      if(!svDraw(g,'tower',sk,pc,ox,oy+8,0.72,t.str.out))drawTower(g,ox,oy,t.str.out,F[t.owner].rgb);
-      if(showR.has(t.id)){g.font='700 10px '+PX;g.textAlign='center';g.textBaseline='middle';g.lineWidth=3;g.strokeStyle='rgba(20,12,4,.9)';const lb='Außenposten '+['','I','II'][t.str.out];g.strokeText(lb,ox,oy+14);g.fillStyle='#fff';g.fillText(lb,ox,oy+14)}}
+    if(t.str.out>0&&started){
+      const list=(t.outs&&t.outs.length)?t.outs:[(()=>{const[ox,oy]=cellPos(outpostCell(t));return{x:ox,y:oy}})()];
+      list.forEach((o,idx)=>{
+        const ox=o.x,oy=o.y;
+        if(!svDraw(g,'tower',sk,pc,ox,oy+8,0.72,t.str.out))drawTower(g,ox,oy,t.str.out,F[t.owner].rgb);
+        if(showR.has(t.id)){g.font='700 10px '+PX;g.textAlign='center';g.textBaseline='middle';g.lineWidth=3;g.strokeStyle='rgba(20,12,4,.9)';const lb=`Außenposten ${idx+1}/${OUT_MAX}`;g.strokeText(lb,ox,oy+14);g.fillStyle='#fff';g.fillText(lb,ox,oy+14)}
+      });
+    }
     if(t.port)drawDock(g,t,now);
   }
   drawWarships(g,now);
@@ -198,6 +231,16 @@ function drawSeaTop(g,now){
     g.fillStyle=ok?'rgba(120,230,140,.14)':'rgba(235,70,60,.14)';g.beginPath();g.arc(mw[0],mw[1],WALL_R,0,6.283);g.fill();
     g.strokeStyle=ok?'rgba(150,240,170,.9)':'rgba(255,110,100,.9)';g.setLineDash([5,4]);g.lineWidth=1.5;g.beginPath();g.arc(mw[0],mw[1],WALL_R,0,6.283);g.stroke();g.setLineDash([]);
     g.globalAlpha=0.8;drawWall(g,mw[0],mw[1]);g.globalAlpha=1;
+  }else if(placing.kind==='out'&&mw){
+    const t=T[placing.tid],ci=cellOf(mw[0],mw[1]),ok=ci>=0&&M.tid[ci]===t.id,full=t.str.out>=OUT_MAX;
+    g.strokeStyle=(ok&&!full)?'rgba(150,240,170,.9)':'rgba(255,110,100,.9)';g.setLineDash([4,4]);g.lineWidth=2;
+    g.beginPath();g.arc(mw[0],mw[1],OUT_R,0,6.283);g.stroke();g.setLineDash([]);
+    g.globalAlpha=.85;drawTower(g,mw[0],mw[1],t.str.out+1,F[0].rgb);g.globalAlpha=1;
+  }else if(placing.kind==='port'&&mw){
+    const t=T[placing.tid],cell=landingCell(t,mw[0],mw[1]),ok=cell>=0;
+    g.fillStyle=ok?'rgba(120,210,255,.8)':'rgba(255,110,100,.8)';
+    for(const i of(t.coast||[])){const[cx,cy]=cellPos(i);if(i===cell||!ok)g.fillRect(cx-1,cy-1,3,3)}
+    if(ok){const[cx,cy]=cellPos(cell);g.strokeStyle='rgba(150,220,255,.95)';g.lineWidth=2;g.beginPath();g.arc(cx,cy,OUT_R,0,6.283);g.stroke();g.globalAlpha=.9;g.fillStyle='#8a5a30';g.fillRect(cx-9,cy-2,18,6);g.fillStyle='#d9d0b8';g.fillRect(cx-1,cy-14,2,12);g.globalAlpha=1}
   }else if(placing.kind==='war'&&mw){
     const t=T[placing.tid],[px,py]=cellPos(t.port.idx),ci=cellOf(mw[0],mw[1]),ok=ci>=0&&!M.land[ci]&&Math.hypot(mw[0]-px,mw[1]-py)<=WAR_PLACE;
     g.strokeStyle='rgba(150,200,255,.55)';g.setLineDash([6,5]);g.lineWidth=1.5;g.beginPath();g.arc(px,py,WAR_PLACE,0,6.283);g.stroke();g.setLineDash([]);

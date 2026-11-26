@@ -1013,3 +1013,142 @@ body.wmv #chips{display:none}
 .ruby.hit,.qx-ruby.hit{animation:rubyhit .8s cubic-bezier(.2,.9,.3,1.5)}
 @keyframes rubyhit{0%{transform:scale(1)}30%{transform:scale(1.32)}60%{transform:scale(.95)}100%{transform:scale(1)}}
 @media (prefers-reduced-motion:reduce){.flygem{display:none}.ruby.hit,.qx-ruby.hit{animation:none}}
+
+/* ===== v21.13: Vollbild, Werbung schwebt, Liquid Glass, Pixel-Rahmen ===== */
+/* Werbespalte: kein eigener dunkler Streifen mehr – die Fläche schwebt als Glasplatte über dem Hintergrundbild */
+#adrail{background:transparent!important;border:0!important;box-shadow:none!important;padding:14px 12px;pointer-events:none}
+#adrail .ad{pointer-events:auto;border-radius:20px;border:1px solid rgba(255,255,255,.24);
+  background:linear-gradient(152deg,rgba(255,255,255,.22),rgba(255,255,255,.06) 42%,rgba(10,16,26,.28)),rgba(12,17,28,.18);
+  backdrop-filter:blur(26px) saturate(1.9);-webkit-backdrop-filter:blur(26px) saturate(1.9);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4),inset 0 -1px 0 rgba(0,0,0,.35),0 26px 60px -28px #000;color:#e3eaf6;letter-spacing:.02em}
+#adrail .ad img{border-radius:18px}
+#adrail .ad:has(img):after{border-radius:18px}
+@media (max-width:899px){#adrail{padding:6px 10px}#adrail .ad{border-radius:16px}}
+
+/* Mehr Liquid Glass im ganzen Interface */
+#side,.chip,#dock,#statp,.toast,.card,.panel,.stat,.li,.shopit,.lobcard,.pf-card,.pf-box,.cl-card,.cl-tile,.cl-table,.cl-chatbox,.cl-act,.nitem,.chatbox{
+  backdrop-filter:blur(22px) saturate(1.75);-webkit-backdrop-filter:blur(22px) saturate(1.75)}
+.chip{background:linear-gradient(152deg,rgba(255,255,255,.18),rgba(255,255,255,.04) 55%,rgba(10,16,26,.36)),rgba(12,17,28,.3);
+  border-color:rgba(255,255,255,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.26),0 10px 26px -18px #000}
+.chip:hover{background:linear-gradient(152deg,rgba(255,255,255,.26),rgba(255,255,255,.06) 55%,rgba(10,16,26,.4)),rgba(12,17,28,.36)}
+.chip.sel{border-color:rgba(255,120,120,.6);background:linear-gradient(152deg,rgba(255,120,120,.3),rgba(255,87,87,.12) 60%,rgba(10,16,26,.38)),rgba(12,17,28,.3)}
+#side,#dock{background:linear-gradient(158deg,rgba(255,255,255,.14),rgba(255,255,255,.035) 44%,rgba(9,14,24,.5)),rgba(12,17,28,.42);
+  border-color:rgba(255,255,255,.17);box-shadow:inset 0 1px 0 rgba(255,255,255,.26),inset 0 -1px 0 rgba(0,0,0,.4),0 24px 60px -34px #000}
+.card,.panel,.stat,.li,.shopit{background:linear-gradient(155deg,rgba(255,255,255,.14),rgba(255,255,255,.03) 50%,rgba(10,16,26,.42)),rgba(12,17,28,.32);
+  border-color:rgba(255,255,255,.16);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 16px 36px -28px #000}
+.toast{background:linear-gradient(150deg,rgba(255,255,255,.18),rgba(10,16,26,.42)),rgba(12,17,28,.4);border-color:rgba(255,255,255,.2)}
+#statp{background:linear-gradient(158deg,rgba(255,255,255,.16),rgba(9,14,24,.55)),rgba(12,17,28,.5);border-color:rgba(255,255,255,.18)}
+
+/* ---- Vollbild im Spiel: Kopfzeile und Werbung weg, Fläche füllt den Bildschirm ---- */
+body.ingame{--hh:0px;--adw:0px;--adh:0px;padding:0;overflow:hidden}
+body.ingame #top,body.ingame #adrail,body.ingame #colSwitch,body.ingame #hint,body.ingame .mini#ctlHint,body.ingame #potd{display:none!important}
+body.ingame #app{max-width:none;width:100%;margin:0;height:100dvh;gap:0}
+body.ingame main{flex:1;min-height:0;display:flex}
+body.ingame section{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column}
+body.ingame .stage{flex:1;min-height:0;max-width:none!important;min-width:0!important;width:100%;display:flex;align-items:center;justify-content:center;background:#060a11}
+body.ingame .stage canvas{width:auto;height:auto;max-width:100%;max-height:100%;border:0;border-radius:0;background:#000;image-rendering:pixelated}
+body.ingame #viewMap .mapwrap{display:flex!important;flex-direction:column;flex:1;min-height:0}
+body.ingame #viewMap #side{display:none}
+body.ingame #dock{flex:none;border-radius:14px 14px 0 0;border-width:2px 0 0;margin-top:0}
+body.ingame #chipwrap{position:fixed;left:8px;top:8px;z-index:60;max-width:calc(100% - 130px)}
+body.ingame #chips{gap:4px}
+body.ingame #mctl{bottom:14px;right:14px}
+body.ingame #qLive{top:8px}
+body.ingame #toasts{bottom:14px}
+
+/* ---- Kolonie-Optik: Pixel-Rahmen für Dock und Karten ---- */
+#viewColony #dock{background:linear-gradient(180deg,rgba(82,56,32,.55),rgba(26,17,10,.78));border:2px solid rgba(255,214,150,.26);
+  box-shadow:inset 0 0 0 2px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,236,196,.22),0 22px 50px -28px #000;border-radius:12px}
+#viewColony #dock .tabs{gap:6px;padding:9px 9px 0}
+#viewColony #dock .tab{border-radius:7px;border-width:2px;border-color:rgba(255,220,170,.18);background:rgba(0,0,0,.34);font-weight:800;letter-spacing:.02em}
+#viewColony #dock .tab.on{background:linear-gradient(180deg,#a1703f,#6a4523 62%,#54351a);border-color:#f0d0a0;color:#fff6e2;
+  box-shadow:inset 0 1px 0 rgba(255,240,210,.6),0 8px 18px -10px #000}
+#viewColony #dock .card{border-radius:10px;border:2px solid rgba(255,220,170,.16);background:rgba(16,11,7,.55);
+  box-shadow:inset 0 1px 0 rgba(255,226,180,.14),0 10px 22px -18px #000}
+#viewColony #dock .card:hover{background:rgba(34,23,13,.62);border-color:rgba(255,220,170,.3)}
+#viewColony #dock .card .pic{background:linear-gradient(180deg,#2c1c0e,#150d06);border-bottom:2px solid rgba(255,220,170,.14);height:74px}
+#viewColony #dock .card .pic canvas{width:108px;height:72px;image-rendering:pixelated}
+#viewColony #dock .card h3{font-size:14px;text-shadow:0 1px 0 rgba(0,0,0,.7)}
+#viewColony #dock .card .body{gap:5px}
+#viewColony #dock .stepper .btn{background:rgba(255,236,200,.1);border-color:rgba(255,220,170,.28);font-weight:800}
+
+/* ---- Ameisenart wählen: Karten mit Pixel-Vorschau und Werten ---- */
+.spc{padding:8px;border-radius:14px;gap:12px;align-items:stretch;
+  background:linear-gradient(152deg,rgba(255,255,255,.13),rgba(255,255,255,.03) 55%,rgba(10,16,26,.4)),rgba(12,17,28,.32);
+  border:1px solid rgba(255,255,255,.16);box-shadow:inset 0 1px 0 rgba(255,255,255,.18);transition:border-color .15s,background .15s,transform .12s}
+.spc:hover{transform:translateY(-1px);border-color:rgba(255,180,140,.45)}
+.spc.on{border-color:var(--ac);background:linear-gradient(152deg,rgba(255,120,110,.22),rgba(10,16,26,.42)),rgba(16,20,30,.4);
+  box-shadow:inset 0 1px 0 rgba(255,220,210,.3),0 0 0 1px rgba(255,87,87,.45),0 16px 34px -24px #000}
+.spc canvas{width:96px;height:64px;border-radius:9px;background:#120b06;border:1px solid rgba(255,255,255,.1);flex:none}
+.spc>span{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.spc b{font-size:14.5px}
+.spc small{color:#a9b4c6;font-size:12px;line-height:1.3;display:block}
+.spc .tr{display:flex;align-items:center;gap:5px;margin-top:2px;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#8b96ad;font-weight:800}
+.spc .tr i{width:16px;height:6px;border-radius:2px;background:rgba(255,255,255,.14);display:block;flex:none}
+.spc .tr i.on{background:linear-gradient(90deg,#ffb36b,#ff7a5c);box-shadow:0 0 8px -2px rgba(255,140,90,.9)}
+.spc .tr span{margin-right:4px}
+/* Im Hauptmenü stehen die drei Arten nebeneinander */
+#hSp{gap:8px}
+#hSp .spc{flex:1 1 150px;align-items:center;padding:7px 9px;gap:9px}
+#hSp .spc canvas{width:64px;height:44px}
+#hSp .spc small{display:none}
+#hSp .spc b{font-size:13px}
+#hSp .spc .tr{display:none}
+@media (max-width:640px){#hSp .spc{flex:1 1 100%}}
+
+/* ---- Weltkarte: Bestenliste oben links, FPS unten links, Schutzzeit ---- */
+#wmTopLeft{position:absolute;left:10px;top:10px;display:flex;gap:6px;align-items:center}
+#wmTopLeft .wmb{display:inline-flex;gap:8px;background:rgba(10,14,22,.82);border:1px solid var(--ln);border-radius:10px;padding:7px;width:34px;height:34px;align-items:center;justify-content:center;backdrop-filter:blur(18px) saturate(1.6)}
+#wmTopLeft .wmb .svg{width:20px;height:20px}
+#wmTopLeft .wmb:hover,#wmTopLeft .wmb.on{background:var(--ac-soft);border-color:var(--ac-line)}
+#wmLb{top:52px}
+#wmFps{position:absolute;left:10px;bottom:10px;z-index:2;padding:5px 9px;border-radius:9px;font:700 11.5px/1 var(--mono);
+  color:#9df0d2;background:rgba(10,14,22,.78);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(12px);letter-spacing:.03em}
+#wmProt{display:none;align-items:center;gap:6px;padding:0 12px;height:30px;border-radius:9px;font-weight:800;font-size:12.5px;
+  color:#ffe2b0;background:rgba(255,170,60,.16);border:1px solid rgba(255,170,60,.45);white-space:nowrap}
+#wmProt.on{display:inline-flex}
+#wmProt svg{width:15px;height:15px}
+
+#wmTop .wmtimewrap{display:flex;align-items:center;gap:6px}
+
+/* ---- Quests: „geschafft" statt Abholen ---- */
+.qAch{position:fixed;left:50%;top:24%;z-index:9500;pointer-events:none;display:flex;align-items:center;gap:12px;
+  padding:12px 18px 12px 14px;border-radius:16px;border:1px solid rgba(255,210,140,.55);
+  background:linear-gradient(150deg,rgba(255,220,150,.22),rgba(10,16,26,.55)),rgba(12,17,28,.6);
+  backdrop-filter:blur(22px) saturate(1.8);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 24px 60px -24px #000;color:#fff}
+.qAch .qa-i{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:rgba(255,190,90,.22)}
+.qAch .qa-i .svg{width:22px;height:22px;stroke:#ffcf7a}
+.qAch .qa-t{display:flex;flex-direction:column;line-height:1.15}
+.qAch .qa-t b{font:900 13px/1.2 var(--ui);letter-spacing:.12em;text-transform:uppercase;color:#ffd89a}
+.qAch .qa-t small{color:#dfe6f3;font-size:13px;font-weight:600;max-width:240px}
+.qAch .qa-r{display:inline-flex;align-items:center;gap:5px;font:900 14px/1 var(--ui);color:#fff;background:var(--ac);border-radius:10px;padding:7px 11px}
+.qAch .qa-r .svg{width:15px;height:15px}
+#qLive .qrow .qok{display:inline-flex;align-items:center;gap:4px;color:#4ade9d;font-weight:800;font-size:12.5px}
+#qLive .qrow .qok .svg{width:14px;height:14px;stroke:#4ade9d}
+@media (max-width:640px){.qAch{top:auto;bottom:calc(var(--adh) + 16px);left:8px;right:8px}.qAch .qa-t small{max-width:none}}
+
+/* ---- Menühintergrund bis unter die Werbefläche, damit die Werbung darüber schwebt ---- */
+#home{right:0!important;bottom:0!important}
+@media (min-width:900px){.hmain{padding-right:calc(var(--adw) + 16px)}#home .hact,#home .hhero{max-width:calc(760px - var(--adw))}}
+
+/* ---- Vollbild: Canvas füllt die Fläche seitenverhältnistreu (Fit per JS) ---- */
+body.ingame .stage{background:#0b1017}
+body.ingame .stage canvas{max-width:none!important;max-height:none!important;background:transparent;box-shadow:none}
+/* Ressourcenleisten im Vollbild lesbar halten */
+body.ingame #chips .chip{background:linear-gradient(152deg,rgba(255,255,255,.16),rgba(10,16,26,.66) 60%),rgba(10,16,26,.62);border-color:rgba(255,255,255,.16);color:#eaf0fa}
+body.ingame #chips .chip b{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.55)}
+body.ingame #chips .chip small{color:#bcc7d8}
+body.ingame #chips .chip:hover{background:linear-gradient(152deg,rgba(255,255,255,.22),rgba(10,16,26,.72) 60%),rgba(10,16,26,.68)}
+
+/* ---- Kolonie: Spielfläche wirklich voll, Dock schwebt als Glasleiste darüber ---- */
+body.ingame #viewColony{position:relative;overflow:hidden;display:block}
+body.ingame #viewColony .stage{position:absolute;inset:0;height:auto;background:#0b1017}
+body.ingame #viewColony #dock{position:absolute;left:10px;right:10px;bottom:10px;z-index:45;
+  max-height:min(44vh,320px);overflow:auto;border-radius:14px;margin:0;
+  background:linear-gradient(180deg,rgba(74,50,28,.62),rgba(20,13,8,.86));backdrop-filter:blur(24px) saturate(1.6)}
+body.ingame #viewColony #dock::-webkit-scrollbar{height:8px}
+@media (max-width:820px){body.ingame #viewColony #dock{max-height:48vh;left:6px;right:6px;bottom:6px}}
+
+/* Toasts im Spiel über dem schwebenden Dock, damit nichts verdeckt wird */
+body.ingame #toasts{bottom:calc(min(44vh,320px) + 18px);left:10px}
+@media (max-width:820px){body.ingame #toasts{bottom:calc(48vh + 14px)}}

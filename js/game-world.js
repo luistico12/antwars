@@ -2,14 +2,15 @@
 const FCOL=[[74,163,255],[224,82,61],[179,107,224],[230,194,60],[80,200,140],[240,140,60],[230,120,190],[140,200,230]];
 const FNAME=['Du','Rote Kolonie','Violette Kolonie','Gelbe Kolonie','Grüne Kolonie','Orange Kolonie','Rosa Kolonie','Hellblaue Kolonie'];
 const DIFFS={easy:{regen:0.8,think:7,atk:1,ratio:1.5},normal:{regen:1,think:5,atk:1.05,ratio:1.25},hard:{regen:1.3,think:3.2,atk:1.15,ratio:1.1}};
-const STR_COST={out:[{mat:40,food:20},{mat:80,food:40}],line:[{mat:25,food:10},{mat:45,food:20}]};
+/* Außenposten: bis zu drei je Gebiet, frei platziert. Verteidigungslinien gibt es nicht mehr. */
+const STR_COST={out:[{mat:40,food:20},{mat:70,food:35},{mat:110,food:55}],line:[{mat:25,food:10},{mat:45,food:20}]};
 let MW=GW*CS,MH=GH*CS,modeKey='classic';
 let contWin=false,M=null,F=[],T=[],marches=[],fxs=[],started=false,over=false,speed=1,gtime=0,selT=null,hovT=null,pct=50;
 let setupSp='ground',setupStart=null,diffKey='normal',baseCanvas=null,ownCanvas=null,strCanvas=null,ownDirty=true,strDirty=true,dockDirty=true;
 const mcam={x:0,y:0,z:1};
 const H={v:0,recent:{}};
 const PX="'Chakra Petch',system-ui,sans-serif";
-const newStr=()=>({out:0,lines:{}});
+const newStr=()=>({out:0,lines:{},outs:[]});
 const heatStage=()=>Math.min(5,Math.floor(H.v/20));
 function addHeat(fid){H.recent[fid]=gtime;const k=Object.values(H.recent).filter(t=>gtime-t<150).length;H.v=Math.min(100,H.v+8+7*(k-1))}
 const isFriend=(a,b)=>a===b||(a===0&&b>0&&F[b].allied)||(b===0&&a>0&&F[a].allied);
@@ -17,7 +18,7 @@ const isFriend=(a,b)=>a===b||(a===0&&b>0&&F[b].allied)||(b===0&&a>0&&F[a].allied
 function newMap(seed){
   setMapDims(MODES[modeKey].scale);MW=GW*CS;MH=GH*CS;if(typeof applyDensity==='function')applyDensity();
   M=buildMap(seed);T=M.terrs;baseCanvas=renderBase(M);
-  for(const t of T){t.str=newStr();t.col=null;t.item=null;t.walls=[];t.port=null}
+  for(const t of T){t.str=newStr();t.col=null;t.item=null;t.walls=[];t.outs=[];t.outp=null;t.port=null}
   F=[{id:0,isPlayer:true,name:'Du',species:setupSp,rgb:FCOL[0],alive:true,capital:-1}];
   if(typeof seaReset==='function')seaReset();
   setupStart=null;selT=null;hovT=null;ownDirty=true;strDirty=true;mcam.x=0;mcam.y=0;mcam.z=1;
@@ -39,7 +40,7 @@ function collectItem(t){
 function startGame(){
   setColonyDims(modeKey==='unlimited'?2:1);
   const D=DIFFS[diffKey],st=T[setupStart],hum=(typeof NET!=='undefined'&&NET.role==='host')?NET.humans:[];
-  for(const t of T){t.owner=-1;t.isCap=false;t.troops=6+Math.floor(Math.random()*12);t.str=newStr();t.col=null;t.item=null;t.walls=[];t.port=null}
+  for(const t of T){t.owner=-1;t.isCap=false;t.troops=6+Math.floor(Math.random()*12);t.str=newStr();t.col=null;t.item=null;t.walls=[];t.outs=[];t.outp=null;t.port=null}
   if(typeof seaReset==='function')seaReset();
   F=[{id:0,isPlayer:true,name:'Du',species:setupSp,rgb:FCOL[0],alive:true,capital:setupStart}];
   st.owner=0;st.isCap=true;st.troops=3;
@@ -63,7 +64,7 @@ function startGame(){
 }
 function atkMul(f){return SP[f.species].atk*(f.isPlayer?(1+0.2*G.upg.atk)*pwMul('atk'):DIFFS[diffKey].atk)}
 function defMul(f){return SP[f.species].def*(f.isPlayer?(1+0.2*G.upg.def)*pwMul('def'):1)}
-function strMul(t,fromId){const s=t.str;if(!s)return 1;let m=1+0.4*s.out;const l=fromId==null?0:(s.lines[fromId]||0);return m*(1+0.6*l)}
+function strMul(t){const s=t.str;if(!s)return 1;return 1+0.4*Math.min(3,s.out||0)}
 function defMulT(t,fromId,pt){if(t.owner<0)return 1;const f=F[t.owner];return defMul(f)*(t.isCap?1.25:1)*(SP[f.species].terr===t.terrain?1.15:1)*strMul(t,fromId)*(typeof wallMul==='function'?wallMul(t,fromId,pt):1)}
 function defPower(t,fromId,pt){return t.troops*defMulT(t,fromId,pt)}
 
@@ -131,7 +132,7 @@ function resolve(m){
 }
 function setOwner(t,nw,troops){
   const old=t.owner,wasCap=t.isCap;
-  t.owner=nw;t.troops=troops;t.isCap=false;t.str=newStr();ownDirty=true;strDirty=true;t.walls=[];t.port=null;if(typeof roadsChanged==='function')roadsChanged();
+  t.owner=nw;t.troops=troops;t.isCap=false;t.str=newStr();t.outs=[];t.outp=null;ownDirty=true;strDirty=true;t.walls=[];t.port=null;if(typeof roadsChanged==='function')roadsChanged();
   if(old===0){t.col=null;renderColSwitch()}
   if(nw===0)t.col=null;
   if(nw===0)collectItem(t);
@@ -194,8 +195,13 @@ function botBuild(f){
   if(!mine.length)return false;const t=pick(mine);
   const foes=t.adj.filter(i=>T[i].owner!==f.id&&T[i].owner!==-1);
   if(foes.length&&t.walls&&t.walls.length<2&&Math.random()<0.3&&M.bp){const pts=M.bp.get(t.id+'-'+pick(foes));if(pts&&pts.length){const q=pick(pts);t.walls.push({x:q[0],y:q[1]});t.troops-=5;return true}}
-  if(foes.length&&Math.random()<0.6){const n=pick(foes);if((t.str.lines[n]||0)<2){t.str.lines[n]=(t.str.lines[n]||0)+1;t.troops-=4;strDirty=true;return true}}
-  if(t.str.out<2){t.str.out++;t.troops-=5;strDirty=true;return true}return false;
+  if(t.str.out<3){
+    t.outs=t.outs||[];let q=null;
+    if(M.bp&&foes.length){const pts=M.bp.get(t.id+'-'+pick(foes))||[];if(pts.length)q=pick(pts)}
+    t.outs.push(q?{x:q[0],y:q[1]}:{x:t.lx*CS+5+(Math.random()-.5)*18,y:t.ly*CS+5});
+    t.str.out=t.outs.length;t.outp=null;t.troops-=5;strDirty=true;return true
+  }
+  return false;
 }
 function botThink(f){
   const D=DIFFS[diffKey],hs=heatStage();let best=null,bs=-1e9;
@@ -218,34 +224,13 @@ function botThink(f){
     if(nb.length){const dst=nb.reduce((p,q)=>q.troops<p.troops?q:p);launch(t,dst,Math.floor(t.troops*0.7),f.id);return}
   }
 }
-function buildStr(t,kind,nid){
-  if(t.owner!==0)return;
-  const lv=kind==='out'?t.str.out:(t.str.lines[nid]||0);
-  if(lv>=2)return toast('Schon auf höchster Stufe','bad');
-  const c=STR_COST[kind][lv];
-  if(G.mat<c.mat)return toast('Zu wenig Material','bad');if(G.food<c.food)return toast('Zu wenig Blätter','bad');
-  G.mat-=c.mat;G.food-=c.food;
-  if(kind==='out')t.str.out++;else t.str.lines[nid]=lv+1;
-  qStat('built');
-  strDirty=true;const[px,py]=wpos(t);fxs.push({k:'ripple',x:px,y:py,t:0,dur:1,c:[240,200,110]});
-  toast(kind==='out'?`Außenposten in ${t.name} (Stufe ${lv+1})`:`Verteidigungslinie gegen ${T[nid].name} (Stufe ${lv+1})`,'good');
-}
+/* Außenposten werden an einer selbst gewählten Stelle platziert (startOutpost in game-sea.js) */
+function buildStr(t,kind){if(kind==='out')startOutpost(t)}
 
 /* ===== Weltkarte: Zeichnen ===== */
+/* Verteidigungslinien sind entfernt – es gibt nur noch Wälle und Außenposten */
 function renderStructures(){
-  const c=makeCanvas(MW,MH),g=c.getContext('2d');
-  const draw=(x,y,dx,dy,t,lv,mine)=>{
-    for(let l=0;l<lv;l++){const off=3+l*3;
-      for(let k=0;k<CS;k+=5){g.fillStyle=((k/5)|0)%2?'#2a1a0c':rgb(mixc(F[t.owner].rgb,[255,255,255],0.2));
-        if(dx!==0)g.fillRect(mine?x*CS+CS-off-2:x*CS+off-1,y*CS+k,3,5);else g.fillRect(x*CS+k,mine?y*CS+CS-off-2:y*CS+off-1,5,3)}}
-  };
-  for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
-    const a=M.tid[y*GW+x];if(a<0)continue;
-    for(const[dx,dy]of[[1,0],[0,1]]){const nx=x+dx,ny=y+dy;if(nx>=GW||ny>=GH)continue;const b=M.tid[ny*GW+nx];if(b<0||b===a)continue;
-      const la=T[a].owner>=0?T[a].str.lines[b]||0:0,lb=T[b].owner>=0?T[b].str.lines[a]||0:0;
-      if(la)draw(x,y,dx,dy,T[a],la,true);
-      if(lb)draw(nx,ny,dx,dy,T[b],lb,false)}
-  }
+  const c=makeCanvas(MW,MH);
   return c;
 }
 /* Verschmolzene Gebiete: Fläche des zusammenhängenden Reichs, die Hauptstadt wird damit größer, Städte bleiben klein */

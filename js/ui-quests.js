@@ -42,11 +42,35 @@ const qTile=(ic,c)=>{const k=c||qColor(ic);return `<span class="qx-i" style="--c
 const pctOf=g=>g.goal>0?Math.max(0,Math.min(100,Math.round(100*g.v/g.goal))):100;
 /* Karriere-Prozent: abgeholte Stufen plus der Anteil der laufenden Stufe */
 const careerPct=(ts,g)=>ts.length?Math.min(100,Math.round(100*(ts.filter(y=>qProg(y).claimed).length+g.v/g.goal)/ts.length)):0;
-const rewardPill=(q,g)=>g.claimed
-  ?`<span class="qx-done">${ico('check')} ${t('ABGEHOLT')}</span>`
-  :g.done
-    ?`<button class="qx-claim" data-claim="${q[0]}" type="button"><i></i><span>${t('ABHOLEN')}</span><b>+${q[4]} ${ico('ruby')}</b></button>`
-    :`<span class="qx-rw">+${q[4]} ${ico('ruby')}</span>`;
+/* Quests werden nicht mehr eingefordert: erreichte Stufen vergibt das Spiel selbst.
+   In der Liste steht nur noch der Zustand (geschafft) bzw. die Belohnung als Aussicht. */
+const rewardPill=(q,g)=>g.claimed||g.done
+  ?`<span class="qx-done">${ico('check')} ${t('GESCHAFFT')}</span>`
+  :`<span class="qx-rw">+${q[4]} ${ico('ruby')}</span>`;
+/* Automatisch abholen: jede fertige Quest wird sofort gutgeschrieben (mit Animation) */
+let qAutoBusy=false;
+function achieveAnim(q){
+  if(!document.body||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const d=document.createElement('div');d.className='qAch';
+  d.innerHTML=`<span class="qa-i">${ico('trophy')}</span><span class="qa-t"><b>${t('GESCHAFFT')}</b><small>${t(q[5])}</small></span><span class="qa-r">+${q[4]} ${ico('ruby')}</span>`;
+  document.body.appendChild(d);
+  d.animate([{transform:'translate(-50%,-16px) scale(.86)',opacity:0},{transform:'translate(-50%,0) scale(1.04)',opacity:1,offset:.18},{transform:'translate(-50%,0) scale(1)',opacity:1,offset:.8},{transform:'translate(-50%,-10px) scale(.98)',opacity:0}],{duration:2200,easing:'cubic-bezier(.2,.9,.3,1.3)',fill:'both'}).onfinish=()=>d.remove();
+  setTimeout(()=>d.remove(),2600);
+}
+async function autoClaim(){
+  if(qAutoBusy||!AW.profile)return;
+  qAutoBusy=true;
+  try{
+    for(let i=0;i<6;i++){
+      const q=QUESTS.find(x=>{const g=qProg(x);return g.done&&!g.claimed});
+      if(!q)break;
+      try{await AW.claim(q[0])}catch(e){break}
+      achieveAnim(q);
+      toast(`${t('GESCHAFFT')}: ${t(q[5])} +${q[4]} Rubys`,'good');
+    }
+  }catch(e){}
+  qAutoBusy=false;
+}
 function qxRow(q){
   const g=qProg(q),c=qColor(q[7]),pct=pctOf(g),ready=g.done&&!g.claimed,bonus=q[2]==='bonus';
   const bar=bonus
@@ -77,7 +101,7 @@ function careerHead(){
       <div class="qx-pills"><span class="qx-pill">${ico('trophy')} <b>${done} / ${all.length}</b> ${t('Stufen')}</span>
         <span class="qx-pill">${ico('board')} <b>${keys.length}</b> ${t('Quests')}</span>
         <span class="qx-pill">${ico('ruby')} <b>${num(earned)}</b> ${t('gesammelt')}</span></div>
-      <p class="qx-note">${ico('info')} ${t('Jede Karriere-Quest hat vier bis fünf Stufen – hol Stufe für Stufe ab.')}</p></div>
+      <p class="qx-note">${ico('info')} ${t('Jede Karriere-Quest hat vier bis fünf Stufen – erreichte Stufen werden automatisch gutgeschrieben.')}</p></div>
     <div class="qx-gauge" style="--p:${pct}%"><span>${pct}%</span></div></div>`;
 }
 const CAREER_CATS=['Matches','Sieg','Kriegsführung','Bauen','Seekrieg','Diplomatie','Sammlung','Meisterleistungen'];
@@ -91,8 +115,8 @@ function careerCard(key){
     <div class="cc-pg"><label>${t('FORTSCHRITT')}</label><em>${num(g.v)} / ${num(g.goal)}</em></div>
     <div class="cc-bar"><i style="width:${bp}%"></i></div>
     ${full?`<div class="cc-rw"><span class="cc-rl">${t('ALLE STUFEN')}</span><b class="cc-rd">${ico('check')}</b></div>`
-      :ready?`<button class="qx-claim cc-claim" data-claim="${q[0]}" type="button"><i></i><span>${t('ABHOLEN')}</span><b>+${q[4]} ${ico('ruby')}</b></button>`
-      :`<div class="cc-claim cc-lock" aria-disabled="true"><span>${t('ABHOLEN')}</span><b>+${q[4]} ${ico('ruby')}</b></div>`}
+      :ready?`<div class="cc-rw go"><span class="cc-rl">${t('STUFE GESCHAFFT')}</span><b class="cc-rd">${ico('check')}</b></div>`
+      :`<div class="cc-rw cc-lock" aria-disabled="true"><span class="cc-rl">${t('BELOHNUNG')}</span><b class="qx-rw">+${q[4]} ${ico('ruby')}</b></div>`}
   </div>`;
 }
 
@@ -113,7 +137,7 @@ S.achievements=()=>{
 S.achievements.bind=p=>{
   p.querySelectorAll('.qx-tabs [data-k]').forEach(b=>b.onclick=()=>{UI.achTab=b.dataset.k;render()});
   p.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{UI.achCat=b.dataset.cat;render()});
-  bindClaims(p);
+  autoClaim();
   const iv=setInterval(()=>{if(!document.body.contains(p)){clearInterval(iv);return}p.querySelectorAll('[data-reset]').forEach(e=>e.textContent=resetLeft(e.dataset.reset))},30000);
 };
 

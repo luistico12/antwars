@@ -13,6 +13,7 @@ const cityPt=t=>[t.lx*CS+5,t.ly*CS+5+30];
 const cityCell=t=>t.ly*GW+t.lx;
 /* Außenposten stehen an der Grenze, in Richtung des nächsten Nachbarn, der nicht dir gehört */
 function outpostCell(t){
+  if(t.outs&&t.outs.length){const i=cellOf(t.outs[0].x,t.outs[0].y);if(i>=0&&M.tid[i]===t.id){t.outp=i;return i}}
   if(t.outp!=null&&M.tid[t.outp]===t.id)return t.outp;
   let tx=1,ty=0,bd=1e9;
   for(const j of t.adj){const u=T[j];if(u.owner===0)continue;const d=Math.hypot(u.cx-t.cx,u.cy-t.cy);if(d<bd){bd=d;tx=(u.cx-t.cx)/d;ty=(u.cy-t.cy)/d}}

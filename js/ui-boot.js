@@ -52,7 +52,8 @@ function homeBuild(){
   $('#hTut').onclick=()=>openScreen('tutorial',undefined,false);
 }
 function renderHomeOpts(){
-  $('#hSp').innerHTML=['ground','leaf','termite'].map(id=>`<button class="btn" data-sp="${id}" type="button">${SP[id].name}</button>`).join('');
+  $('#hSp').innerHTML=['ground','leaf','termite'].map(id=>`<button class="spc" data-sp="${id}" type="button"><canvas width="96" height="64"></canvas><span><b>${SP[id].name}</b></span></button>`).join('');
+  $$('#hSp canvas').forEach(c=>drawAntIcon(c,c.parentElement.dataset.sp));
   $('#hSp').onclick=e=>{const b=e.target.closest('[data-sp]');if(!b)return;setupSp=b.dataset.sp;
     if(setupStart!=null&&T[setupStart].terrain!==SP[setupSp].terr){T[setupStart].owner=-1;setupStart=null;ownDirty=true}
     F[0].species=setupSp;renderSetup();homeFill()};
@@ -62,7 +63,13 @@ function renderHomeOpts(){
 }
 function homeShow(){closeScreens();document.body.classList.remove('navopen');$('#home').hidden=false;homeDraw();homeFill();renderHeader()}
 function homeHide(){$('#home').hidden=true;renderHeader()}
-function homeDraw(){const c=$('#homeBg'),g=c.getContext('2d');g.imageSmoothingEnabled=false;g.clearRect(0,0,c.width,c.height);if(baseCanvas){g.drawImage(baseCanvas,0,0,c.width,c.height);if(ownCanvas)g.drawImage(ownCanvas,0,0,c.width,c.height)}}
+/* Hintergrund des Hauptmenüs: nur die Landschaft, keine Gebietsgrenzen (die dunklen Linien passten nicht zum Bild) */
+function homeDraw(){const c=$('#homeBg'),g=c.getContext('2d');g.imageSmoothingEnabled=false;g.clearRect(0,0,c.width,c.height);
+  if(baseCanvas){
+    const k=Math.max(c.width/baseCanvas.width,c.height/baseCanvas.height),w=baseCanvas.width*k,h=baseCanvas.height*k;
+    g.drawImage(baseCanvas,(c.width-w)/2,(c.height-h)/2,w,h);
+    g.fillStyle='rgba(8,12,20,.25)';g.fillRect(0,0,c.width,c.height)
+  }}
 function homeFill(){
   $('#hMapName').textContent=mapTitle();
   const bots=MODES[modeKey].bots,ds=$('#hDiff');
@@ -128,20 +135,22 @@ document.body.insertAdjacentHTML('beforeend','<div id="qLive" hidden></div>');
 let qOpen=false,qSeen=new Set(),qInit=false;
 function qCheck(){
   if(!started||!AW.profile)return;
+  let ready=false;
   for(const q of activeQuests()){const g=qProg(q);
-    if(g.done&&!g.claimed&&!qSeen.has(q[0])){qSeen.add(q[0]);if(qInit)toast(`${LANG==='de'?'Erfolg':'Achievement'}: ${t(q[5])} (+${q[4]} Rubys)`,'good')}}
+    if(g.done&&!g.claimed&&!qSeen.has(q[0])){qSeen.add(q[0]);ready=true}}
   qInit=true;
+  /* Quests sind nicht mehr abholbar: erreichte Stufen werden automatisch gutgeschrieben */
+  if(ready&&typeof autoClaim==='function')autoClaim();
 }
 function qLiveRender(){
   const el=$('#qLive');
   if(!started||!AW.profile||over){el.hidden=true;return}
   const L=activeQuests().filter(q=>!qProg(q).claimed).sort((a,b)=>qProg(b).done-qProg(a).done||qProg(b).v/b[3]-qProg(a).v/a[3]).slice(0,7),ready=L.filter(q=>qProg(q).done).length;
   el.hidden=false;
-  setHTML(el,`<button type="button" class="qpill${ready?' rdy':''}" id="qTog">${ico('trophy')} ${ready?`${ready} ${t('abholbar')}`:t('Quests')}</button>`+(qOpen?`<div class="qbox">${L.map(q=>{const g=qProg(q);return `<div class="qrow${g.done?' done':''}"><span>${t(q[5])}</span><div class="bar"><i style="width:${Math.round(100*g.v/q[3])}%"></i></div>${g.done?`<button class="btn sm pri" data-qc="${q[0]}" type="button">+${q[4]}</button>`:`<small>${g.v}/${q[3]}</small>`}</div>`}).join('')||`<div class="mini">${t('Alles abgeholt')}</div>`}</div>`:''));
+  setHTML(el,`<button type="button" class="qpill${ready?' rdy':''}" id="qTog">${ico('trophy')} ${ready?`${ready} ${t('GESCHAFFT')}`:t('Quests')}</button>`+(qOpen?`<div class="qbox">${L.map(q=>{const g=qProg(q);return `<div class="qrow${g.done?' done':''}"><span>${t(q[5])}</span><div class="bar"><i style="width:${Math.round(100*g.v/q[3])}%"></i></div>${g.done?`<b class="qok">${ico('check')} +${q[4]}</b>`:`<small>${g.v}/${q[3]}</small>`}</div>`}).join('')||`<div class="mini">${t('Alles erledigt')}</div>`}</div>`:''));
 }
 $('#qLive').addEventListener('click',e=>{
-  if(e.target.closest('#qTog')){qOpen=!qOpen;$('#qLive')._h=null;qLiveRender();return}
-  const c=e.target.closest('[data-qc]');if(c)AW.claim(c.dataset.qc).then(()=>toast('+ Rubys','good')).catch(toastErr);
+  if(e.target.closest('#qTog')){qOpen=!qOpen;$('#qLive')._h=null;qLiveRender()}
 });
 AW.on(()=>{qCheck();qLiveRender()});
 setInterval(()=>{qCheck();qLiveRender()},3000);

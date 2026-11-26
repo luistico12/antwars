@@ -260,6 +260,14 @@ function pickExit(a){
   for(let i=0;i<4;i++){const ex=pick(L),up=underPath(a,ex[0],ex[1]);if(up)return{ex,up}}
   return null;
 }
+/* Blickrichtung immer zum nächsten Wegpunkt – auch nach dem Erreichen einer Zelle.
+   Vorher blieb die alte Richtung stehen, wenn eine Ameise genau auf einem Zellenmittelpunkt ankam;
+   dadurch drehten sich die Ameisen an Ecken und im Gang nicht mit. */
+function faceNext(a){
+  const n=a.path[0];if(!n)return;
+  const dx=n[0]-a.x,dy=n[1]-a.y,d=Math.hypot(dx,dy);
+  if(d>0.001){a.hx=dx/d;a.hy=dy/d}
+}
 function stepAnt(a,dt){
   if(a.wait>0){a.wait-=dt;return}
   if(!a.path.length){chooseJob(a);return}
@@ -267,6 +275,7 @@ function stepAnt(a,dt){
   a.ph+=dt*14;
   if(d<=sp){a.x=tx;a.y=ty;a.path.shift();
     if(!a.surf){a.c=clamp(Math.floor(a.x/CELLW),0,COLS-1);a.r=clamp(Math.floor(a.y/CELLH),0,ROWS-1)}
+    faceNext(a);
     if(!a.path.length)arrive(a)}
   else{a.x+=dx/d*sp;a.y+=dy/d*sp;a.hx=dx/d;a.hy=dy/d}
 }
@@ -291,6 +300,7 @@ function chooseJob(a){
     if(!isOpen(c,r)){const n=N4.map(([dx,dy])=>[c+dx,r+dy]).filter(([x,y])=>isOpen(x,y));if(!n.length){a.wait=1;return}[c,r]=pick(n)}
     const p=underPath(a,c,r);if(p)a.path=p;a.state='go';
   }
+  faceNext(a);
   if(!a.path.length)a.wait=0.5;
 }
 function arrive(a){
@@ -299,7 +309,7 @@ function arrive(a){
       const back=[...exitPts(a.ex,a.off)].reverse();
       a.path=[...(a.y<GY-6&&col.sp==='leaf'&&a.role==='f'?[[a.x,GY-3]]:[]),...back];a.state='home'}
     else if(a.state==='home'){a.surf=false;const[x,y]=cellCenter(a.ex[0],a.ex[1]);a.x=x;a.y=y;a.c=a.ex[0];a.r=a.ex[1];a.state='store';
-      const sk=a.role==='w'?'pit':'leaf',cells=openCells(sk);const t=cells.length?pick(cells):[ENT_C,MR+1];const p=underPath(a,t[0],t[1]);a.path=p||[]}
+      const sk=a.role==='w'?'pit':'leaf',cells=openCells(sk);const t=cells.length?pick(cells):[ENT_C,MR+1];const p=underPath(a,t[0],t[1]);a.path=p||[];faceNext(a)}
     else if(a.state==='store'){a.carry=null;a.state='in';a.wait=0.3}
   }else{
     if(a.role==='d'){const k=cellAt(a.c,a.r);if(k&&k.build&&Math.random()<0.7){col.parts.push({x:a.x,y:a.y,vx:(Math.random()-0.5)*40,vy:-30,life:0.5,c:'#a0663a'});a.carry='dirt'}else a.carry=null}
@@ -398,20 +408,50 @@ function buildHill(C){
   }
   g.putImageData(img,0,0);
   if(term){g.fillStyle='rgba(60,30,10,.5)';for(let i=0;i<30;i++){const yh=20+hash2(i,4,sd)*(HH-30),hw=hwAt(C,yh),x=ENT_X+(hash2(i,5,sd)-0.5)*hw*1.6;g.fillRect(x|0,GY-yh|0,4,2)}}
+  /* Pixelstruktur: Erdrillen, Kiesel und Eingang am Fuß */
+  for(let i=0;i<80;i++){
+    const yh=6+hash2(i,7,sd)*(HH-12),hw=hwAt(C,yh);if(hw<=6)continue;
+    const x=ENT_X+(hash2(i,8,sd)-0.5)*hw*1.6;
+    g.fillStyle=hash2(i,9,sd)<0.5?'rgba(46,26,10,.26)':'rgba(255,226,176,.14)';
+    g.fillRect(x|0,(GY-yh)|0,3+((hash2(i,10,sd)*4)|0),2)
+  }
+  g.fillStyle='rgba(255,232,190,.18)';g.fillRect(ENT_X-Math.round(hwAt(C,2))+2,GY-4,Math.round(hwAt(C,2))*2-4,2);
+  g.fillStyle='rgba(24,12,4,.9)';g.fillRect(ENT_X-10,GY-9,20,8);g.fillStyle='rgba(255,220,160,.22)';g.fillRect(ENT_X-10,GY-10,20,2);
   C.hill=cv;C.hillKey=C.sp+moundH(C);
 }
 
 /* ===== Kolonie: Zeichnen ===== */
+/* Himmel als Pixelverlauf mit Dithering und ferner Hügelkette (einmal je Tagesphase vorgerendert) */
 function sky(g){
-  const ph=(G.time/DAYLEN)%1,ang=ph*Math.PI*2,sn=Math.sin(ang),day=clamp(0.5+sn*0.9,0,1);
-  const top=mixc([12,20,44],[104,164,214],day),bot=mixc([36,48,84],[196,224,236],day);
-  for(let i=0;i<16;i++){g.fillStyle=rgb(mixc(top,bot,i/15));g.fillRect(0,i*(GY/16),CW,GY/16+1)}
+  const C=col,ph=(G.time/DAYLEN)%1,ang=ph*Math.PI*2,sn=Math.sin(ang),day=clamp(0.5+sn*0.9,0,1),key=Math.round(day*64);
+  if(!C.skyC||C.skyK!==key){
+    const cv=makeCanvas(CW,GY),s=cv.getContext('2d');
+    const top=mixc([10,16,38],[96,158,212],day),bot=mixc([44,42,84],[236,206,182],day),N=26;
+    for(let i=0;i<N;i++){
+      const t=i/(N-1);s.fillStyle=rgb(mixc(top,bot,t));s.fillRect(0,Math.floor(i*GY/N),CW,Math.ceil(GY/N)+1);
+      const y=Math.floor((i+1)*GY/N);s.fillStyle=rgb(mixc(top,bot,Math.min(1,t+1/(N-1))));
+      for(let x=(i&1)*2;x<CW;x+=6)if(hash2(x,y,i)<0.55)s.fillRect(x,y-1,2,1)
+    }
+    for(let pass=0;pass<2;pass++){
+      const base=GY-46+pass*14,colr=pass?[44,64,50]:[60,84,64];
+      for(let x=0;x<CW;x+=4){const h=16+Math.sin(x*0.006+pass*1.7)*10+Math.sin(x*0.019+pass)*6;
+        s.fillStyle=rgb(mixc(colr,[20,28,26],0.12+pass*0.22));s.fillRect(x,Math.round(base-h),4,Math.ceil(h+34))}
+    }
+    s.fillStyle='rgba(255,214,150,.10)';s.fillRect(0,GY-64,CW,64);
+    C.skyC=cv;C.skyK=key;
+  }
+  g.drawImage(C.skyC,0,0);
   if(day<0.9){g.fillStyle='#fff';g.globalAlpha=(1-day)*0.9;for(let i=0;i<130;i++)g.fillRect((hash2(i,1,3)*CW)|0,(hash2(i,2,3)*(GY-90))|0,2,2);g.globalAlpha=1}
   const sx=CW/2-Math.cos(ang)*(CW*0.46),sy=GY-40-sn*260;
-  g.globalAlpha=0.25;ell(g,sx,sy,40,40,sn>=-0.05?'#ffe9a0':'#cfd8ee');g.globalAlpha=1;
+  g.globalAlpha=0.22;ell(g,sx,sy,44,44,sn>=-0.05?'#ffe9a0':'#cfd8ee');g.globalAlpha=1;
   ell(g,sx,sy,22,22,sn>=-0.05?'#ffe9a0':'#e8ecf5');ell(g,sx,sy,16,16,sn>=-0.05?'#fff6cf':'#f6f8ff');
+  /* Wolken: helle Oberkante, bläulicher Schatten unten */
   const cl=(G.time*5)%(CW+300);
-  for(let i=0;i<8;i++){const x=((cl+i*300)%(CW+300))-150,y=30+(i%4)*36;g.globalAlpha=0.4+day*0.5;ell(g,x,y,50,11,'#fff');ell(g,x-16,y-9,26,11,'#fff');ell(g,x+18,y-7,30,10,'#f4f7fb');g.globalAlpha=1}
+  for(let i=0;i<8;i++){
+    const x=((cl+i*300)%(CW+300))-150,y=26+(i%4)*34;g.globalAlpha=0.42+day*0.5;
+    ell(g,x,y+5,52,9,'#a9b8d4');ell(g,x,y,50,11,'#fff');ell(g,x-16,y-9,26,11,'#fff');
+    ell(g,x+18,y-7,30,10,'#f2f6fc');ell(g,x-4,y-4,22,7,'#ffffff');g.globalAlpha=1
+  }
   return day;
 }
 function drawTree(g,C){
@@ -524,7 +564,8 @@ function drawColony(g,now,cam){
     for(let r=0;r<MR;r++)for(let c=0;c<COLS;c++)if(inMound(C,c,r)&&!canPlace(C.buildSel,c,r))g.strokeRect(c*CELLW+3.5,r*CELLH+3.5,CELLW-7,CELLH-7);
     g.setLineDash([])}
   const mine=COSM.hat&&T[C.tid]&&T[C.tid].owner===0;
-  for(const a of C.ants){drawAnt(g,a.x,a.y,a.hx,a.hy,a.ph,a.role,C.sp,a.carry,a.role==='s'?0.9:0.78);if(mine)drawHat(g,COSM.hat,a.x+(a.hx<0?-1:1)*5,a.y-4,1.5)}
+  /* einzelne Ameisen deutlich kleiner als die Räume */
+  for(const a of C.ants){drawAnt(g,a.x,a.y,a.hx,a.hy,a.ph,a.role,C.sp,a.carry,a.role==='s'?0.72:0.6);if(mine)drawHat(g,COSM.hat,a.x+(a.hx<0?-1:1)*4,a.y-3,1.2)}
   for(const p of C.parts){g.fillStyle=p.c;g.fillRect(p.x|0,p.y|0,3,3)}
   if(C.buildSel==='tunnel'){
     /* Tunnelansicht: grün = schon gegraben oder in Arbeit, rot = unbebaubar (Fels, Wasser) */

@@ -61,31 +61,27 @@ function showRing(segs,atk,cx,cy,title,meta){
 function ownRing(t,mode,cx,cy,wx,wy){
   const owned=T.filter(x=>x.owner===0),cap=t.isCap?' · Hauptstadt':'';
   const info=`${t.name}${cap}: ${Math.floor(t.troops)} Soldaten`+(t.regArea?`, Reich mit ${owned.length} Gebieten`:'')
-    +(t.str.out?`, Außenposten ${t.str.out}`:'')+(t.walls&&t.walls.length?`, ${t.walls.length} Wälle`:'')+(t.port?', Hafen':'');
-  const foes=t.adj.filter(i=>T[i].owner!==0);
+    +(t.str.out?`, ${t.str.out}/${OUT_MAX} Außenposten`:'')+(t.walls&&t.walls.length?`, ${t.walls.length} Wälle`:'')+(t.port?', Hafen':'');
   let segs,atk,title=`${t.name} · Dein Gebiet`;
   if(mode==='main'){
     segs=[{k:'info',l:'Info',why:info,info}];
-    segs.push({k:'build',l:'Bauen',why:'Strukturen bauen: Außenposten, Hafen, Weg, Verteidigungslinie'});
+    segs.push({k:'build',l:'Bauen',why:'Strukturen bauen: Außenposten, Hafen, Schiffe'});
     segs.push({k:'x',l:'Schließen',why:'Menü schließen'});
     const wd=t.walls.length>=WALL_MAX?'Hier stehen schon 3 Wälle':poorFor(WALL_COST)?`Zu wenig Material (${costLbl(WALL_COST)} nötig)`:'';
     atk={ic:'wall',dis:!!wd,why:wd||`Verteidigungswall frei platzieren (${costLbl(WALL_COST)}). Verstärkt die Grenzen im Umkreis um +50%`,n:t.walls.length?`${t.walls.length}/${WALL_MAX}`:0};
   }else if(mode==='build'){
-    const lv=t.str.out,cOut=STR_COST.out[Math.min(lv,1)],cLn=STR_COST.line[0];
+    const lv=t.str.out,cOut=STR_COST.out[Math.min(lv,2)];
     const wPort=t.port?'Hier gibt es schon einen Hafen':!t.coast||!t.coast.length?'Keine Küste: Häfen brauchen Wasser':poorFor(PORT_COST)?`Zu wenig Material (${costLbl(PORT_COST)} nötig)`:'';
     segs=[{k:'back',l:'Zurück',why:'Zurück zum Hauptmenü'},
-      {k:'out',l:'Außenposten',dis:lv>=2||poorFor(cOut),why:lv>=2?'Außenposten ist maximal ausgebaut':`Außenposten Stufe ${lv+1}: +40% Verteidigung (${costLbl(cOut)})`},
-      {k:'line',l:'Linie',dis:!foes.length,why:foes.length?`Verteidigungslinie gegen eine Grenze: +60% je Stufe (ab ${costLbl(cLn)})`:'Alle Nachbarn gehören dir, hier ist keine Linie nötig'},
-      {k:'port',l:'Hafen',dis:!!wPort,why:wPort||`Hafen bauen (${costLbl(PORT_COST)}). Schiffe und Seewege`}];
+      {k:'out',l:'Außenposten',n:`${lv}/${OUT_MAX}`,dis:lv>=OUT_MAX||poorFor(cOut),why:lv>=OUT_MAX?`Hier stehen schon ${OUT_MAX} Außenposten`:`Außenposten ${lv+1}/${OUT_MAX}: +40% Verteidigung. Du wählst die Stelle danach auf der Karte (${costLbl(cOut)})`},
+      {k:'port',l:'Hafen',dis:!!wPort,why:wPort||`Hafen bauen (${costLbl(PORT_COST)}) und die Küstenstelle wählen. Schiffe und Seewege`}];
     if(t.port)segs.push({k:'raft',l:'Schiff',n:`${t.port.rafts}/${t.port.max}`,dis:t.port.rafts>=t.port.max||poorFor(RAFT_COST),why:t.port.rafts>=t.port.max?'Alle Schiffe dieses Hafens sind gebaut':`Schiff bauen (${costLbl(RAFT_COST)}). Damit greifst du über Wasser an`});
     if(t.port){const wm=warsOf(t)>=WAR_MAX?`Dieser Hafen hat schon ${WAR_MAX} Kriegsschiffe`:poorFor(WAR_COST)?`Zu wenig Material (${costLbl(WAR_COST)} nötig)`:'';segs.push({k:'war',l:'Kriegsschiff',n:`${warsOf(t)}/${WAR_MAX}`,dis:!!wm,why:wm||`Kriegsschiff bauen (${costLbl(WAR_COST)}) und frei aufs Wasser stellen. Es greift gegnerische Schiffe in Reichweite an`})}
     if(t.coast&&t.coast.length){const[ra,rm]=raftTotals(),src=seaSourceFor(t),sw=rm===0?'Du brauchst einen Hafen mit Schiff':ra===0?'Alle Schiffe sind unterwegs oder noch nicht gebaut':!src?'Zu wenige Soldaten in deinen Häfen':'';segs.push({k:'ship',l:'Verschiffen',n:`${ra}/${rm}`,dis:!!sw,why:sw||`Soldaten aus ${src.name} per Schiff hierher bringen, danach den Landepunkt an der Küste wählen`})}
     atk={ic:'build',dis:true,why:`Bauen in ${t.name}`};
   }else{
     segs=[{k:'back',l:'Zurück',why:'Zurück zum Bauen-Menü'}];
-    foes.forEach((fi,idx)=>{const n=T[fi],l=t.str.lines[fi]||0;
-      segs.push({k:'ln'+fi,ic:'line',col:'#4a7ab8',l:n.name,dis:l>=2||poorFor(STR_COST.line[Math.min(l,1)]),why:l>=2?`Linie gegen ${n.name} ist maximal ausgebaut`:`Linie gegen ${n.name}, Stufe ${l+1} (${costLbl(STR_COST.line[l])})`})});
-    atk={ic:'line',dis:true,why:'Verteidigungslinie: wähle die Grenze'};
+    atk={ic:'build',dis:true,why:'Bauen'};
   }
   showRing(segs,atk,cx,cy,title,{t:t.id,own:1,wx,wy,mode});
 }
@@ -128,17 +124,13 @@ function openRadial(e){
 /* Klicks im eigenen Ring: Untermenüs bleiben offen, Aktionen schließen */
 function ownRingClick(k,t,ring){
   const cx=+ring.dataset.cx,cy=+ring.dataset.cy,wx=+ring.dataset.wx,wy=+ring.dataset.wy,mode=ring.dataset.mode,re=m=>ownRing(t,m,cx,cy,wx,wy);
-  const foes=t.adj.filter(i=>T[i].owner!==0);
   if(k==='build')return re('build');
-  if(k==='back')return re(mode==='lines'?'build':'main');
-  if(k==='line'&&foes.length>1)return re('lines');
+  if(k==='back')return re('main');
   closeRadial();
   if(k==='x')return;
   if(k==='atk')startWall(t);
-  else if(k==='out')buildStr(t,'out');
-  else if(k==='line')buildStr(t,'line',foes[0]);
-  else if(k.startsWith('ln'))buildStr(t,'line',+k.slice(2));
-  else if(k==='port')buildPort(t,wx,wy);
+  else if(k==='out')startOutpost(t);
+  else if(k==='port')startPort(t);
   else if(k==='raft')buildRaft(t);
   else if(k==='war')buildWar(t);
   else if(k==='ship'){const src=seaSourceFor(t);if(src)startLanding(t,src)}

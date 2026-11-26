@@ -13,9 +13,19 @@ function toast(msg,kind){
   const d=document.createElement('div');d.className='toast '+(kind||'');d.textContent=msg;
   const box=$('#toasts');box.appendChild(d);while(box.children.length>4)box.firstChild.remove();setTimeout(()=>d.remove(),4200);
 }
+/* Canvas im Vollbild an die Fläche anpassen (Seitenverhältnis bleibt) */
+function fitStage(c,st){
+  if(!c||!st)return;const r=st.getBoundingClientRect();if(r.width<2||r.height<2)return;
+  const ar=c.width/c.height;let w=r.width,h=w/ar;
+  if(h>r.height){h=r.height;w=h*ar}
+  c.style.width=Math.round(w)+'px';c.style.height=Math.round(h)+'px';
+}
+function fitStages(){fitStage(cv,cv&&cv.parentElement);fitStage(mv,mv&&mv.parentElement)}
+addEventListener('resize',()=>{if(started)fitStages()});
 function setView(v){
   view=v;$('#viewColony').hidden=v!=='colony';$('#viewMap').hidden=v!=='map';
   $('#tabColony').classList.toggle('on',v==='colony');$('#tabMap').classList.toggle('on',v==='map');hideTip();
+  document.body.classList.toggle('ingame',!!(started&&!over&&(v==='colony'||v==='map')));
   if(typeof mctlSync==='function')mctlSync();
 }
 
@@ -73,10 +83,9 @@ function terrTip(t){
     if(t.owner>0&&F[t.owner].allied)h+=' · Verbündet';
     if(own&&t.col)h+=`<br>Arbeiterinnen: ${t.col.w} · Eier: ${t.col.eggAges.length}<br>Hügelhöhe: ${moundH(t.col)}/${MR} · Wasser: ${WATER_N[t.col.water.size]}`;
     if(own&&!t.isCap&&!t.col)h+='<br>Wartet auf deine Entscheidung';
-    if(t.str.out)h+=`<br>Außenposten Stufe ${t.str.out}`;
+    if(t.str.out)h+=`<br>Außenposten: ${t.str.out}/3`;
     if(t.walls&&t.walls.length)h+=`<br>Verteidigungswälle: ${t.walls.length}`;
     if(t.port)h+=`<br>Hafen · Schiffe ${t.port.rafts}/${t.port.max}`;
-    for(const k of Object.keys(t.str.lines))if(t.str.lines[k])h+=`<br>Verteidigungslinie gegen ${T[k].name}: Stufe ${t.str.lines[k]}`;
     if(own&&!t.isCap)h+=`<br>Ertrag: ${q.food?'+'+fmt(q.food*60)+' Blätter/Min ':''}${q.mat?'+'+fmt(q.mat*60)+' Erde/Min':''}`;
     if(t.item)h+=`<br><b style="color:#7fe6f2">Powerup:</b> ${PW[t.item.type]} +${t.item.pct}% <span class="dim">(Rechtsklick: Spähtrupp bergen oder Gebiet erobern)</span>`;
   }
@@ -113,12 +122,22 @@ function renderDock(){
   if(dockTab==='ants')renderAnts(body);else if(dockTab==='rooms')renderRooms(body);else renderUpg(body);
   refreshLive();
 }
+/* Kartenbild im Kolonie-Dock: kleiner Kammer-Ausschnitt im Pixelstil */
 function roleIcon(role){
-  const c=document.createElement('canvas');c.width=48;c.height=32;const g=c.getContext('2d'),sp=col.sp;
-  g.fillStyle='#8a5a30';g.fillRect(0,0,48,32);g.fillStyle='#6a4220';g.fillRect(0,22,48,10);
-  if(role==='m'){ell(g,24,26,20,6,'#5a4a32');ell(g,10,22,4,3,'#f4ead0');ell(g,38,22,4,3,'#f4ead0');g.fillStyle='#e8dfc4';g.fillRect(9,22,3,4);g.fillRect(37,22,3,4)}
-  if(role==='w'){ell(g,34,27,12,4,'#2f7fb8');ell(g,34,26,8,2,'#58b0e8')}
-  drawAnt(g,20,18,1,0,1.2,role,sp,role==='f'?'leaf':role==='d'?'dirt':role==='m'?'fungus':role==='w'?'water':null,role==='s'?1.6:1.4);
+  const c=document.createElement('canvas');c.width=108;c.height=72;const g=c.getContext('2d'),sp=col.sp;
+  g.imageSmoothingEnabled=false;
+  g.fillStyle='#3b2514';g.fillRect(0,0,108,72);
+  g.fillStyle='#2a1a0c';g.fillRect(0,34,108,38);
+  for(let i=0;i<40;i++){g.fillStyle=((i*7)%3)?'rgba(255,222,170,.10)':'rgba(20,10,4,.22)';g.fillRect((i*29)%108,38+((i*17)%30),3,2)}
+  g.fillStyle='#5a3a1c';g.fillRect(10,22,88,34);
+  g.fillStyle='#1a0e06';g.fillRect(14,26,80,26);
+  g.fillStyle='#3a2413';g.fillRect(14,50,80,4);
+  if(role==='f'){for(let i=0;i<5;i++){g.fillStyle=['#3f8a30','#4f9d3a','#6fc24c'][i%3];g.fillRect(18+i*4,42-(i%2)*4,10,4);g.fillStyle='#a6ee80';g.fillRect(19+i*4,42-(i%2)*4,5,1)}}
+  else if(role==='d'){ell(g,24,52,16,5,'#8a5a30');ell(g,24,50,13,4,'#a8764a');g.fillStyle='#c08a52';g.fillRect(18,48,4,2)}
+  else if(role==='m'){for(let i=0;i<3;i++){const x=20+i*9,h=8+i*2;g.fillStyle='#e8dfc4';g.fillRect(x,52-h,3,h);ell(g,x+2,52-h,6,4,'#f4ead0');g.fillStyle='#cdbf98';g.fillRect(x-2,52-h+2,9,1)}}
+  else if(role==='s'){g.fillStyle='#6a1d10';g.fillRect(84,30,3,26);g.fillStyle='#c0452e';g.fillRect(80,28,11,5);g.fillStyle='#ffb0a0';g.fillRect(82,29,7,1)}
+  else if(role==='w'){ell(g,24,52,16,5,'#2f7fb8');ell(g,24,51,13,3,'#58b0e8');g.fillStyle='#cdeaff';g.fillRect(18,50,6,1)}
+  drawAnt(g,58,50,role==='s'?-1:1,0,1.1,role,sp,role==='f'?'leaf':role==='d'?'dirt':role==='m'?'fungus':role==='w'?'water':null,role==='s'?1.25:1.05);
   return c;
 }
 function antCard(role,title,txt,ctl){
@@ -279,14 +298,7 @@ function buildHTML(){
   if(t.owner!==0)return`<p class="mini"><b>${t.name}</b> gehört nicht dir. Gebaut wird nur in eigenen Gebieten.</p>`;
   const lv=t.str.out;
   let h=`<h2>${t.name}</h2>`;
-  h+=`<div class="brow"><b>${ih('flag')}Außenposten (Stufe ${lv}/2)</b><small>+40% Verteidigung je Stufe und die Garnison erholt sich langsam.</small><span class="cost">${lv<2?costTxt(STR_COST.out[lv]):'Maximal ausgebaut'}</span><button class="btn sm" type="button" data-b="out"${lv>=2?' disabled':''}>${lv?'Ausbauen':'Bauen'}</button></div>`;
-  const foes=t.adj.filter(i=>T[i].owner!==0);
-  h+='<h2 style="margin-top:4px;font-size:14px">Verteidigungslinien</h2><p class="mini">Gegen Angriffe, die von dieser Grenze kommen: +60% Verteidigung je Stufe.</p>';
-  if(!foes.length)h+='<p class="mini">Alle Nachbarn gehören dir. Hier ist keine Linie nötig.</p>';
-  for(const ai of foes){
-    const n=T[ai],l=t.str.lines[ai]||0,o=n.owner>=0?F[n.owner].name:'Wilde Ameisen';
-    h+=`<div class="brow"><b>${ih('shield')}Gegen ${n.name} (Stufe ${l}/2)</b><small>${o}</small><span class="cost">${l<2?costTxt(STR_COST.line[l]):'Maximal ausgebaut'}</span><button class="btn sm" type="button" data-b="line" data-n="${ai}"${l>=2?' disabled':''}>${l?'Ausbauen':'Bauen'}</button></div>`;
-  }
+  h+=`<div class="brow"><b>${ih('flag')}Außenposten (${lv}/3)</b><small>+40% Verteidigung je Außenposten, frei platzierbar. Die Garnison erholt sich langsam.</small><span class="cost">${lv<3?costTxt(STR_COST.out[lv]):'Alle drei gebaut'}</span><button class="btn sm" type="button" data-b="out"${lv>=3?' disabled':''}>${lv?'Noch einen':'Bauen'}</button></div>`;
   return h;
 }
 function setSideTab(v){sideTab='info';updateSide()}
@@ -312,7 +324,7 @@ function updateSide(){
   if(selT==null){info.innerHTML='';send.hidden=true;setHTML($('#openBox'),'');hint.textContent='Linksklick: eigenes Gebiet wählen (Verstärkung). Rechtsklick auf ein Gebiet: Angriff, Bündnis, Spenden oder Bauen.'}
   else{
     const t=T[selT],q=TERR[t.terrain],own=t.owner===0,cmd=own;
-    const stt=(t.str.out?`Außenposten ${t.str.out}`:'')+Object.keys(t.str.lines).filter(k=>t.str.lines[k]).map(k=>` · Linie ${T[k].name} ${t.str.lines[k]}`).join('');
+    const stt=(t.str.out?`Außenposten ${t.str.out}/3`:'')+(t.walls&&t.walls.length?` · Wälle ${t.walls.length}`:'');
     info.innerHTML=`<dt>Name</dt><dd>${t.name}</dd><dt>Gelände</dt><dd>${q.name}</dd><dt>Besitzer</dt><dd>${t.owner<0?'Wilde Ameisen':F[t.owner].name}</dd><dt>Soldaten</dt><dd>${Math.floor(t.troops)}</dd>`
       +(t.isCap?'<dt>Status</dt><dd>Hauptstadt</dd>':'')+(own&&!t.isCap?`<dt>Ertrag</dt><dd>${q.food?'+'+fmt(q.food*60)+' Blätter/Min ':''}${q.mat?'+'+fmt(q.mat*60)+' Erde/Min':''}</dd>`:'')+(stt?`<dt>Bauten</dt><dd>${stt}</dd>`:'')+(t.item?`<dt>Powerup</dt><dd>${PW[t.item.type]} +${t.item.pct}%</dd>`:'');
     setHTML($('#openBox'),own&&t.col?`<button class="btn primary" type="button" data-open="${t.id}">Kolonie öffnen</button>`:'');
@@ -446,17 +458,34 @@ $$('#dock .tab').forEach(b=>b.onclick=()=>{dockTab=b.dataset.tab;renderDock()});
 $('#tabColony').onclick=()=>{if(col)setView('colony')};$('#tabMap').onclick=()=>setView('map');
 $$('#diffSeg [data-d]').forEach(b=>b.onclick=()=>{diffKey=b.dataset.d;$$('#diffSeg [data-d]').forEach(x=>x.classList.toggle('on',x===b))});
 $('#btnReroll').onclick=()=>{newMap((Math.random()*1e6)|0);renderSetup()};
+/* Pixel-Vorschau für die Ameisenart: kleiner Ausschnitt aus der Kolonie */
 function drawAntIcon(c,id){
-  const g=c.getContext('2d');c.width=48;c.height=32;
-  g.fillStyle=id==='leaf'?'#5d8a52':id==='termite'?'#b69560':'#8a6a44';g.fillRect(0,0,48,32);
-  g.fillStyle='rgba(0,0,0,.18)';g.fillRect(0,24,48,8);
-  drawAnt(g,22,18,1,0,1.2,'w',id,id==='leaf'?'leaf':null,1.5);
+  const g=c.getContext('2d'),W=96,H=64;c.width=W;c.height=H;g.imageSmoothingEnabled=false;
+  const terr=SP[id].terr;
+  const sky=terr===2?['#1d3320','#3d5f2c','#6f9a4a']:terr===0?['#4a3a1e','#8a6c38','#c2a260']:['#243a2a','#4a6a3e','#86a862'];
+  for(let i=0;i<3;i++){g.fillStyle=sky[i];g.fillRect(0,i*14,W,15)}
+  /* ferne Bäume */
+  for(let i=0;i<9;i++){const x=i*11-2,h=6+((i*7)%9);g.fillStyle='#2f4a26';g.fillRect(x,34-h,3,h);g.fillStyle='#3c5f30';g.fillRect(x-2,34-h-3,7,4)}
+  /* Boden */
+  g.fillStyle='#6b4523';g.fillRect(0,34,W,H-34);g.fillStyle='#54351a';g.fillRect(0,34,W,3);
+  for(let i=0;i<70;i++){g.fillStyle=((i*13)%5)?'rgba(30,16,6,.25)':'rgba(214,170,110,.18)';g.fillRect((i*37)%W,38+((i*29)%22),2,2)}
+  /* Hügel */
+  for(let i=0;i<16;i++){const w=5+i*1.9,h=14-i*0.7;g.fillStyle=i%3?'#7a4f28':'#8e5d30';g.fillRect(48-w,34-h+6,w*2,h)}
+  g.fillStyle='#22140a';g.fillRect(45,34,7,4);g.fillStyle='#0f0803';g.fillRect(46,35,5,3);
+  /* Ameisen: eine große, eine kleine */
+  drawAnt(g,24,48,1,0,0.6,'w',id,id==='leaf'?'leaf':null,1.15);
+  drawAnt(g,72,52,-1,0,1.2,'s',id,null,0.85);
+}
+/* Werte der Art als kleine Pixelbalken */
+function spTraits(id){
+  const s=SP[id],row=(lbl,v)=>`<span>${lbl}</span>${Array.from({length:5},(_,i)=>`<i class="${v*5>i+0.35?'on':''}"></i>`).join('')}`;
+  return row('Grab',s.dig/1.35)+row('Sammeln',s.forage/1.45)+row('Eier',s.egg/1.25)+row('Wehr',s.def/1.3);
 }
 function renderSetup(){
   const box=$('#spcList');box.innerHTML='';
   for(const id of['ground','leaf','termite']){
     const s=SP[id],b=document.createElement('button');b.type='button';b.className='spc'+(setupSp===id?' on':'');
-    b.innerHTML=`<canvas width="48" height="32"></canvas><span><b>${s.name}</b><small>${s.blurb}</small></span>`;
+    b.innerHTML=`<canvas></canvas><span><b>${s.name}</b><small>${s.blurb}</small><div class="tr">${spTraits(id)}</div></span>`;
     drawAntIcon(b.querySelector('canvas'),id);
     b.onclick=()=>{setupSp=id;if(setupStart!=null&&T[setupStart].terrain!==s.terr){T[setupStart].owner=-1;setupStart=null;ownDirty=true}F[0].species=id;renderSetup()};
     box.appendChild(b);
@@ -484,7 +513,7 @@ $('#endBtn').onclick=()=>{
 };
 
 /* ----- Hauptschleife ----- */
-let last=performance.now(),acc5=0;
+let last=performance.now(),acc5=0,fpsAcc=0,fpsCnt=0,fpsVal=0;
 function frame(now){
   if(typeof ST!=='undefined'&&ST.fpsMax&&now-(frame.t||0)<1000/ST.fpsMax-1.5){nextFrame(frame);return}
   frame.t=now;
@@ -494,7 +523,10 @@ function frame(now){
     for(let i=0;i<n;i++){updateColonies(h);updateWorld(h);if(over)break}
   }
   panKeys(rdt);
-  acc5+=rdt;if(acc5>=0.2){acc5=0;if(started){refreshLive();updateSide()}}
+  /* FPS unten links (Weltkarte) und Vollbild-Klasse */
+  fpsAcc+=rdt;fpsCnt++;
+  if(fpsAcc>=0.5){fpsVal=Math.round(fpsCnt/fpsAcc);fpsAcc=0;fpsCnt=0;const fe=$('#wmFps');if(fe)fe.textContent=fpsVal+' FPS'}
+  acc5+=rdt;if(acc5>=0.2){acc5=0;document.body.classList.toggle('ingame',!!(started&&!over));if(started&&!over)fitStages();if(started){refreshLive();updateSide()}}
   if(started&&dockDirty)renderDock();
   if(started&&view==='colony'&&col)drawColony(cg,now,ccam);
   if(view==='map')drawMap(mg,now);
