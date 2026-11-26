@@ -159,3 +159,9 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
     - Scroll-Fortschrittsbalken `#pbar` oben, misst Fenster-Scroll und den Inhaltsbereich der Screens (`pbarUpdate()` in `js/ui-core.js`).
     - Passwort-Auge im Anmeldeformular (`#lgPv`, schaltet zwischen password/text).
     - News v21.11 in `DEFAULT_NEWS` und `supabase/schema.sql`.
+
+33. Update v21.12 – Karriere-Karten ohne Stufenzahlen, Rubys fliegen zur Anzeige (getestet: `node --check`, Playwright im Gastmodus):
+    - `js/ui-quests.js` `careerCard`: nummerierte Stufenleiste `.cc-steps` entfernt (CSS-Block in `css/ui.css` mit); „Stufe X von Y“, Prozent, Fortschrittsbalken und Abholen-Bereich bleiben.
+    - `js/ui-screens.js`: `rubyDisplay()`/`flyBits(rect,html,n,size)` – Symbol fliegt mit der Web Animations API vom Startpunkt (vor dem Neuzeichnen gemessen) zur Rubys-Anzeige des Screens bzw. der Kopfzeile, Ziel poppt auf. Genutzt von `bindClaims` (Rubys aus dem Abholen-Knopf, Anzahl nach Belohnung) und vom Shop-Kauf (`[data-buy]`, fliegendes Vorschau-Symbol). Bei `prefers-reduced-motion` keine Animation.
+    - CSS `.flygem`/`@keyframes rubyhit`; News v21.12 in `DEFAULT_NEWS` und `supabase/schema.sql`.
+    - Offen: SQL v21.12 im Supabase-SQL-Editor ausführen.

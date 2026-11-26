@@ -73,11 +73,42 @@ function questRow(q,compact){
   ${compact?'':(g.claimed?`<span class="tag">${ico('check')} ${t('Abgeholt')}</span>`:`<button class="btn sm ${g.done?'pri':''}" data-claim="${q[0]}" ${g.done?'':'disabled'} type="button">${t('Abholen')}</button>`)}</div>
   <div class="bar"><i style="width:${Math.round(100*g.v/q[3])}%"></i></div><div class="mini">${t('Fortschritt')}: ${g.v} / ${q[3]}</div></div>`;
 }
+/* ---------- Rubys fliegen zur Anzeige (Abholen, Shop) ---------- */
+/* Ziel: die komplette Rubys-Anzeige im offenen Screen, sonst die Kopfzeile */
+function rubyDisplay(){
+  const q=s=>[...document.querySelectorAll(s)].filter(e=>e.getClientRects().length);
+  return q('#scrP .sh .qx-ruby')[0]||q('#scrP .sh .ruby')[0]||q('#hdrProf .ruby')[0]||q('#hdrProf')[0];
+}
+/* rect = Startposition (vor dem Neuzeichnen gemessen), html = fliegendes Symbol */
+function flyBits(rect,html,n,size){
+  const to=rubyDisplay();
+  if(!rect||!to||!rect.width||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const b=to.getBoundingClientRect(),N=Math.max(1,Math.min(8,n||3)),S=size||22;
+  const x0=rect.left+rect.width/2,y0=rect.top+rect.height/2,x1=b.left+b.width/2,y1=b.top+b.height/2;
+  for(let i=0;i<N;i++){
+    const el=document.createElement('div');
+    el.className='flygem';el.style.width=el.style.height=S+'px';el.innerHTML=html;
+    el.style.left=(x0-S/2+(Math.random()-.5)*Math.min(rect.width,140)*.45)+'px';
+    el.style.top=(y0-S/2+(Math.random()-.5)*Math.min(rect.height,110)*.45)+'px';
+    document.body.appendChild(el);
+    const lx=parseFloat(el.style.left),ly=parseFloat(el.style.top),dx=x1-lx-S/2,dy=y1-ly-S/2;
+    const an=el.animate([
+      {transform:'translate(0,0) scale(.4)',opacity:0,offset:0},
+      {transform:'translate(0,0) scale(1)',opacity:1,offset:.16},
+      {transform:`translate(${dx*.5}px,${dy*.5-64}px) scale(1.06)`,opacity:1,offset:.64},
+      {transform:`translate(${dx}px,${dy}px) scale(.3)`,opacity:.1,offset:1}
+    ],{duration:640+Math.random()*220,delay:i*70,easing:'cubic-bezier(.3,.02,.4,1)',fill:'both'});
+    an.onfinish=()=>el.remove();
+    setTimeout(()=>el.remove(),2400);
+  }
+  setTimeout(()=>{if(!document.body.contains(to))return;to.classList.add('hit');setTimeout(()=>to.classList.remove('hit'),820)},680+N*70);
+}
 /* Abholen mit Aufleuchten: der Knopf pulsiert kurz, dann wird abgeholt */
 function bindClaims(p){p.querySelectorAll('[data-claim]').forEach(b=>b.onclick=async()=>{
   if(b.classList.contains('pop'))return;
   p.querySelectorAll(`[data-claim="${b.dataset.claim}"]`).forEach(x=>x.classList.add('pop'));
-  try{await new Promise(r=>setTimeout(r,430));await AW.claim(b.dataset.claim);toast('+ Rubys','good')}
+  const rc=b.getBoundingClientRect(),rq=QUESTS.find(x=>x[0]===b.dataset.claim)||[],rw=rq[4]||3;
+  try{await new Promise(r=>setTimeout(r,430));await AW.claim(b.dataset.claim);toast('+ Rubys','good');flyBits(rc,ico('ruby'),Math.max(2,Math.min(8,Math.round(rw/15))))}
   catch(e){p.querySelectorAll('.pop').forEach(x=>x.classList.remove('pop'));toastErr(e)}})}
 UI.achTab='daily';
 S.achievements=()=>shell(t('Erfolge'),{right:`<div class="pills" id="achT">${[['daily','Täglich'],['weekly','Wöchentlich'],['career','Karriere']].map(([k,n])=>`<button data-k="${k}" class="${UI.achTab===k?'on':''}" type="button">${t(n)}</button>`).join('')}</div>`},
@@ -111,7 +142,9 @@ S.shop=()=>{
 S.shop.bind=p=>{
   p.querySelectorAll('#shopT [data-k]').forEach(b=>b.onclick=()=>{UI.shopTab=b.dataset.k;render()});
   cosBind(p);
-  p.querySelectorAll('[data-buy]').forEach(b=>b.onclick=async()=>{try{await AW.buy(b.dataset.buy)}catch(e){toastErr(e)}});
+  p.querySelectorAll('[data-buy]').forEach(b=>b.onclick=async()=>{
+    const card=b.closest('.shopit'),pv=card&&card.querySelector('.pv'),rc=card?card.getBoundingClientRect():null,pic=pv?pv.innerHTML:'';
+    try{await AW.buy(b.dataset.buy);if(rc)flyBits(rc,pic||ico('ruby'),1,52)}catch(e){toastErr(e)}});
   p.querySelectorAll('[data-eq]').forEach(b=>b.onclick=async()=>{const it=SHOP_BY_ID[b.dataset.eq],pr=AW.profile,cur=pr[it.kind];
     try{await AW.update({[it.kind]:cur===it.key?null:it.key})}catch(e){toastErr(e)}});
 };

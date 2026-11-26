@@ -85,11 +85,9 @@ const CAT_ICO={Alle:'box',Matches:'gamepad',Sieg:'trophy',Kriegsführung:'swords
 function careerCard(key){
   const ts=careerTiers(key),q=careerCur(key),g=qProg(q),c=qColor(q[7]),x=q[9],ndone=ts.filter(y=>qProg(y).claimed).length;
   const full=ndone===ts.length,pct=full?100:careerPct(ts,g),bp=pctOf(g),ready=g.done&&!g.claimed;
-  const steps=ts.map((y,i)=>`<i class="${i<ndone?'on':i===ndone?'cur':''}">${i+1}</i>`).join('');
   return `<div class="qx-cc ${full?'full':''} ${ready?'rdy':''}" style="--c1:${c[0]};--c2:${c[1]}">
     <div class="cc-h">${qTile(q[7],c)}<div class="cc-t"><b>${t(q[5])}</b><span class="tiers">${t('Stufe')} ${x.tier} ${t('von')} ${ts.length}</span></div>${full?`<span class="cc-p ok">${ico('check')}</span>`:`<span class="cc-p">${pct}%</span>`}</div>
     <div class="cc-d"><span>${t(q[6])}</span><em>${t(x.sub)}</em></div>
-    <div class="cc-steps">${steps}</div>
     <div class="cc-pg"><label>${t('FORTSCHRITT')}</label><em>${num(g.v)} / ${num(g.goal)}</em></div>
     <div class="cc-bar"><i style="width:${bp}%"></i></div>
     ${full?`<div class="cc-rw"><span class="cc-rl">${t('ALLE STUFEN')}</span><b class="cc-rd">${ico('check')}</b></div>`

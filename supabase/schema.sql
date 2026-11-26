@@ -1085,3 +1085,8 @@ where not exists (select 1 from public.news where version = 'v21.10');
 insert into public.news (version, title, body)
 select 'v21.11', 'Polierte Oberfläche: 404-Seite, Ladeanimation und Handy-Menü', 'Wer eine falsche Adresse aufruft, landet jetzt auf einer eigenen 404-Seite mit Ameisenrennen und einem Weg zurück ins Spiel. Beim Laden und beim Aufbau einer Kolonie läuft eine eigene Ladeanimation. Der Cookie-Hinweis ist auf das Nötigste geschrumpft – Akzeptieren, nur Nötiges oder Einstellungen – und lässt sich in den Einstellungen jederzeit wieder öffnen. Auf dem Handy klappt ein Menüknopf die Navigation als Schublade mit Beschriftungen auf, und eine neue Steuerleiste bietet Ansicht wechseln, Tunnelansicht und Zoom ohne Tastatur. Oben zeigt ein schmaler Balken den Scroll-Fortschritt, und im Anmeldeformular lässt sich das Passwort per Auge ein- und ausblenden.'
 where not exists (select 1 from public.news where version = 'v21.11');
+
+-- News v21.12
+insert into public.news (version, title, body)
+select 'v21.12', 'Rubys fliegen zur Anzeige', 'Beim Abholen einer Quest lösen sich die Rubys aus dem Abholen-Knopf und fliegen in einer kleinen Animation quer über den Bildschirm zur Rubys-Anzeige, die beim Ankommen kurz aufpoppt – bei Tages-, Wochen- und Karriere-Quests gleichermaßen. Im Shop funktioniert es genauso: Nach dem Kauf fliegt das gekaufte Symbol zur Anzeige. Die Karriere-Karten sind außerdem aufgeräumt: Die nummerierten Stufen 1 bis 5 sind weg, „Stufe 4 von 5“, der Prozentwert, der Fortschritt und der Abholen-Bereich bleiben.'
+where not exists (select 1 from public.news where version = 'v21.12');
