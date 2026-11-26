@@ -25,7 +25,7 @@ const EN={
 'Regeln & Optionen':'Rules & options','Schwierigkeit':'Difficulty','Leicht':'Easy','Normal':'Normal','Schwer':'Hard','Max. Spieler':'Max players','Öffentlich':'Public','Privat':'Private',
 'Warten auf Spieler …':'Waiting for players …','Spiel starten':'Start game','Lobby verlassen':'Leave lobby','Chat':'Chat','Nachricht an die Lobby':'Message the lobby','Noch keine Nachrichten':'No messages yet',
 'Zurück':'Back','Schließen':'Close','Weiter spielen':'Resume','Spiel beenden':'End game','Pause':'Pause',
-'Cookies & Datenschutz':'Cookies & privacy','Akzeptieren':'Accept','Nur notwendige':'Necessary only','Auswahl speichern':'Save choice',
+'Cookies & Datenschutz':'Cookies & privacy','Akzeptieren':'Accept','Nur notwendige':'Necessary only','Nur nötige':'Necessary only','Auswahl speichern':'Save choice','Passwort anzeigen':'Show password','Lädt …':'Loading …',
 'Notwendig':'Necessary','Präferenzen':'Preferences','Werbung':'Advertising',
 'Telefonnummer (Backup)':'Phone number (backup)','Code senden':'Send code','Bestätigen':'Verify','Sicherheit':'Security',
 'News':'News','Titel':'Title','Version':'Version','Text':'Text','Neu':'New','Bearbeiten':'Edit','Löschen':'Delete','Suchen':'Search','Spielerprofile':'Player profiles',

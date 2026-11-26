@@ -5,6 +5,32 @@ const initials=n=>(String(n||'?').trim()[0]||'?').toUpperCase();
 const fmtDate=d=>{try{return new Date(d).toLocaleDateString(LANG==='de'?'de-DE':'en-GB',{day:'numeric',month:'long',year:'numeric'})}catch(e){return''}};
 const num=n=>Number(n||0).toLocaleString(LANG==='de'?'de-DE':'en-GB');
 
+/* ---------- Scroll-Fortschritt, Ladeanimation, Handy-Navigation ---------- */
+(function(){
+  const bar=$('#pbar');let raf=0;
+  function draw(){
+    raf=0;if(!bar)return;
+    const i=bar.firstElementChild,scr=$('#scr'),sb=scr&&!scr.hidden?scr.querySelector('.sb'):null;
+    let p;
+    if(sb&&sb.scrollHeight>sb.clientHeight+2)p=sb.scrollTop/(sb.scrollHeight-sb.clientHeight);
+    else p=window.scrollY/Math.max(1,document.documentElement.scrollHeight-innerHeight);
+    if(i)i.style.width=(Math.max(0,Math.min(1,p))*100).toFixed(2)+'%';
+  }
+  window.pbarUpdate=()=>{if(!raf)raf=requestAnimationFrame(draw)};
+  document.addEventListener('scroll',window.pbarUpdate,true);
+  window.addEventListener('resize',window.pbarUpdate);
+  window.pbarUpdate();
+})();
+let loadTimer=0;
+function loadShow(msg){const l=$('#loader');if(!l)return;clearTimeout(loadTimer);l.hidden=false;l.classList.remove('out');const tx=$('#ldTxt');if(tx)tx.textContent=msg||t('Lädt …')}
+function loadHide(){const l=$('#loader');if(!l||l.hidden)return;l.classList.add('out');loadTimer=setTimeout(()=>{l.hidden=true},360)}
+setTimeout(loadHide,9000);
+document.addEventListener('click',e=>{
+  if(!document.body.classList.contains('navopen'))return;
+  if(e.target.closest('#rail')||e.target.closest('#hdrNav'))return;
+  document.body.classList.remove('navopen');
+});
+
 /* ---------- Screen-Manager ---------- */
 function shell(title,{sub='',right='',back=true,narrow=false}={},body='',foot=''){
   $('#scrP').className=narrow?'narrow':'';
@@ -27,6 +53,7 @@ function render(){
   p.innerHTML=html;
   if(scr.bind)scr.bind(p,arg);
   const sb=p.querySelector('.sb');if(sb)sb.scrollTop=st;
+  if(window.pbarUpdate)window.pbarUpdate();
 }
 function screenBack(){
   if(SCR.cur&&SCR.cur.name==='lobby'&&typeof lobLeave==='function')lobLeave(true);
@@ -60,11 +87,13 @@ const UI={newsTop:''};
 function renderHeader(){
   const p=AW.profile;
   $('#hdrR').innerHTML=`
-    <button class="ibtn" id="hdrMenu" type="button" aria-label="${t('Menü')}" ${started?'':'hidden'}>${ico('menu')}</button>
+    <button class="ibtn" id="hdrNav" type="button" aria-label="${t('Menü')}" ${started?'hidden':''}>${ico('menu')}</button>
+    <button class="ibtn" id="hdrMenu" type="button" aria-label="${t('Pause')}" ${started?'':'hidden'}>${ico('menu')}</button>
     <button class="ibtn" id="hdrNews" type="button" aria-label="${t('Neuigkeiten')}">${ico('news')}${newsUnseen()?'<i class="dot"></i>':''}</button>
     <button class="ibtn" id="hdrForum" type="button" aria-label="${t('Forum')}">${ico('chat')}</button>
     <button id="hdrProf" type="button" aria-label="${t('Profil')}"><span class="av">${p&&safeAvatar(p.avatar)?`<img alt="" src="${safeAvatar(p.avatar)}">`:ico('user')}</span><span class="nm">${AW.loggedIn?esc(p&&p.username||''):t('Anmelden')}</span>${AW.loggedIn&&p?`<span class="ruby">${ico('ruby')}${p.rubys}</span>`:''}</button>`;
   $('#hdrMenu').onclick=()=>{if(started&&!over){const k=$('#speed [data-sp="0"]');k&&k.click()}};
+  const nv=$('#hdrNav');if(nv)nv.onclick=()=>{if(!$('#home').hidden)document.body.classList.toggle('navopen')};
   $('#hdrNews').onclick=()=>openScreen('news',undefined,false);
   $('#hdrForum').onclick=()=>openScreen('forum',undefined,false);
   $('#hdrProf').onclick=()=>{if(REMOTE&&!AW.loggedIn)loginShow();else openScreen('profile',undefined,false)};
@@ -92,21 +121,21 @@ function adRender(){
 /* ---------- Cookie-Banner ---------- */
 function cookieShow(open){
   let c=$('#cookie');if(c)c.remove();
-  c=document.createElement('div');c.id='cookie';c.className='glass';c.setAttribute('role','dialog');c.setAttribute('aria-label',t('Cookies & Datenschutz'));
+  c=document.createElement('div');c.id='cookie';c.className='glass'+(open?'':' simple');c.setAttribute('role','dialog');c.setAttribute('aria-label',t('Cookies & Datenschutz'));
   const settings=!!open;
   c.innerHTML=`<h3>${ico('shield')} ${t('Cookies & Datenschutz')}</h3>
-  <p>${LANG==='de'?'Wir speichern notwendige Daten für Anmeldung und Spiel. Mit deiner Zustimmung merken wir uns außerdem Einstellungen, Sprache und Fortschritt in diesem Browser und zeigen Werbung an. Du kannst das jederzeit ändern.':'We store necessary data for sign-in and gameplay. With your consent we also remember settings, language and progress in this browser and show ads. You can change this at any time.'}</p>
+  <p>${settings?(LANG==='de'?'Wähle, was wir speichern dürfen. Notwendiges ist immer aktiv.':'Choose what we may store. Necessary data is always on.'):(LANG==='de'?'Nötig für Anmeldung und Spiel. Mit „Akzeptieren“ merken wir uns außerdem Einstellungen und Spielstand und zeigen die Werbefläche.':'Required for sign-in and gameplay. “Accept” also remembers settings and progress and shows the ad banner.')}</p>
   ${settings?`<div class="cset">
     <label class="sw"><span><b>${t('Notwendig')}</b><br><small class="mini">${LANG==='de'?'Anmeldung (Sitzung), Sicherheit':'Sign-in session, security'}</small></span><input type="checkbox" checked disabled></label>
     <label class="sw"><span><b>${t('Präferenzen')}</b><br><small class="mini">${LANG==='de'?'Sprache, Einstellungen, Gastfortschritt':'Language, settings, guest progress'}</small></span><input type="checkbox" id="ckP" ${CONSENT.prefs?'checked':''}></label>
     <label class="sw"><span><b>${t('Werbung')}</b><br><small class="mini">${LANG==='de'?'Werbebanner rechts':'Ad banner on the right'}</small></span><input type="checkbox" id="ckA" ${CONSENT.ads?'checked':''}></label></div>
     <div class="row"><button class="btn pri sp" id="ckSave" type="button">${t('Auswahl speichern')}</button><button class="btn" id="ckNec" type="button">${t('Nur notwendige')}</button></div>`
-  :`<div class="row"><button class="btn pri sp" id="ckAll" type="button">${t('Akzeptieren')}</button><button class="btn sp" id="ckSet" type="button">${t('Einstellungen')}</button></div>`}`;
+  :`<div class="row"><button class="btn pri sp" id="ckAll" type="button">${t('Akzeptieren')}</button><button class="btn" id="ckNec" type="button">${t('Nur nötige')}</button></div><button class="clink" id="ckSet" type="button">${t('Einstellungen')}</button>`}`;
   document.body.appendChild(c);
   const done=(prefs,ads)=>{CONSENT={set:true,prefs,ads};try{localStorage.setItem('aw_consent',JSON.stringify(CONSENT))}catch(e){}
     c.remove();adRender();if(prefs){try{saveST&&saveST();lsSet('aw_lang',LANG);if(!REMOTE||!AW.loggedIn)localSave&&localSave()}catch(e){}}};
   if(settings){$('#ckSave').onclick=()=>done($('#ckP').checked,$('#ckA').checked);$('#ckNec').onclick=()=>done(false,false)}
-  else{$('#ckAll').onclick=()=>done(true,true);$('#ckSet').onclick=()=>cookieShow(true)}
+  else{$('#ckAll').onclick=()=>done(true,true);$('#ckNec').onclick=()=>done(false,false);$('#ckSet').onclick=()=>cookieShow(true)}
 }
 function localSave(){if(!REMOTE&&AW.profile)lsSet('aw_local_profile',AW.profile)}
 
@@ -122,7 +151,7 @@ function loginShow(mode='in'){
     <form id="lgF" class="field" style="gap:10px" autocomplete="on" novalidate>
       ${mode==='up'?`<input class="inp" id="lgN" type="text" maxlength="20" minlength="2" placeholder="${t('Benutzername')}" autocomplete="nickname">`:''}
       <input class="inp" id="lgE" type="email" placeholder="${t('E-Mail')}" autocomplete="email" required>
-      <input class="inp" id="lgP" type="password" placeholder="${t('Passwort')}" autocomplete="${mode==='up'?'new-password':'current-password'}" minlength="8" required>
+      <div class="pwt"><input class="inp" id="lgP" type="password" placeholder="${t('Passwort')}" autocomplete="${mode==='up'?'new-password':'current-password'}" minlength="8" required><button class="pweye" id="lgPv" type="button" aria-label="${t('Passwort anzeigen')}" aria-pressed="false">${ico('eye')}</button></div>
       <div id="lgMsg"></div>
       <button class="btn pri lg block" type="submit">${mode==='up'?t('Registrieren'):t('Anmelden')}</button>
       ${mode==='in'?`<button class="btn sm" type="button" id="lgReset" style="align-self:center;background:transparent;border:0;color:var(--mu)">${t('Passwort vergessen?')}</button>`:''}
@@ -142,6 +171,7 @@ function loginShow(mode='in'){
       else{await AW.signIn(em,pw);loginHide();toast(LANG==='de'?'Angemeldet':'Signed in','good')}
     }catch(e){msg('err',e.message||t('Ungültige Zugangsdaten'))}
   };
+  const pv=$('#lgPv');if(pv)pv.onclick=()=>{const f=$('#lgP'),on=f.type==='password';f.type=on?'text':'password';pv.classList.toggle('on',on);pv.closest('.pwt').classList.toggle('on',on);pv.setAttribute('aria-pressed',on?'true':'false');f.focus()};
   const rs=$('#lgReset');if(rs)rs.onclick=async()=>{const em=$('#lgE').value.trim();if(/^\S+@\S+\.\S+$/.test(em)){try{await AW.reset(em)}catch(e){}}msg('ok',t('Wenn die Angaben stimmen, haben wir dir eine E-Mail geschickt.'))};
   setTimeout(()=>{const f=$('#lgE');f&&f.focus()},30);
 }

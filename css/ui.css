@@ -944,3 +944,69 @@ body.wmv #chips{display:none}
   .nitem.latest .bd{padding:0 17px 24px;font-size:16px;line-height:1.85}
   .nitem.latest .nrow .dt{order:3;margin-left:0;width:100%}
 }
+
+/* ===== v21.11: Ladeanimation, Fortschrittsbalken, Handy-Menü, Passwort-Auge ===== */
+/* Ladeoverlay beim Start und beim Aufbau einer Kolonie */
+#loader{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(900px 600px at 50% 40%,#182238 0,transparent 65%),#0a0e16;transition:opacity .35s ease}
+#loader.out{opacity:0;pointer-events:none}
+.ldbox{display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center}
+.ldlogo{height:66px;width:auto;display:block;animation:ldpulse 1.9s ease-in-out infinite}
+.ldtrack{position:relative;width:min(280px,72vw);height:34px;overflow:hidden}
+.ldline{position:absolute;left:0;right:0;top:50%;height:2px;margin-top:-1px;
+  background:repeating-linear-gradient(90deg,rgba(255,255,255,.22) 0 6px,transparent 6px 13px)}
+.ldline:before,.ldline:after{content:"";position:absolute;top:50%;width:5px;height:5px;margin-top:-2.5px;border-radius:50%;background:rgba(255,255,255,.3)}
+.ldline:before{left:0}.ldline:after{right:0}
+.ldant{position:absolute;top:50%;left:0;width:26px;height:26px;margin-top:-13px;color:var(--ac);
+  animation:ldwalk 2.4s linear infinite;filter:drop-shadow(0 2px 6px rgba(255,87,87,.45))}
+.ldant.a2{width:19px;height:19px;margin-top:-9.5px;color:#ffb0b0;animation-delay:-1.2s;animation-duration:2.9s;opacity:.85}
+@keyframes ldwalk{from{left:-9%;opacity:0}12%{opacity:1}86%{opacity:1}to{left:101%;opacity:0}}
+@keyframes ldpulse{0%,100%{transform:scale(1);opacity:.92}50%{transform:scale(1.05);opacity:1}}
+.ldtxt{font:800 11px/1 var(--ui);letter-spacing:.16em;text-transform:uppercase;color:var(--mu)}
+@media (prefers-reduced-motion:reduce){.ldlogo,.ldant{animation:none}.ldant{left:42%}}
+
+/* Scroll-Fortschritt ganz oben */
+#pbar{position:fixed;left:0;top:0;height:3px;width:100%;z-index:145;pointer-events:none}
+#pbar i{display:block;height:100%;width:0;border-radius:0 3px 3px 0;
+  background:linear-gradient(90deg,var(--ac),#ffb36b);box-shadow:0 0 14px rgba(255,87,87,.75);transition:width .12s linear}
+
+/* Passwort anzeigen */
+.pwt{position:relative;display:block;width:100%}
+.pwt .inp{padding-right:46px}
+.pweye{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:0;border-radius:9px;
+  background:transparent;color:var(--mu);display:flex;align-items:center;justify-content:center;padding:0}
+.pweye:hover{background:var(--g3);color:var(--tx)}
+.pweye .svg{width:19px;height:19px}
+.pwt.on .pweye{color:var(--ac)}
+
+/* Kompakter Cookie-Hinweis */
+#cookie.simple{gap:10px;padding:15px 16px}
+#cookie.simple h3{font-size:15px}
+#cookie.simple p{font-size:12.5px;line-height:1.45}
+#cookie .clink{background:none;border:0;color:var(--mu);font-size:12px;text-decoration:underline;align-self:center;padding:2px}
+#cookie .clink:hover{color:var(--tx)}
+@media (max-width:600px){#cookie{left:8px;right:8px;width:auto;bottom:calc(var(--adh) + 8px);padding:13px 14px}}
+
+/* Handy-Navigation: Menü wird als Schublade aufgeklappt */
+#hdrNav{display:none}
+@media (max-width:760px){
+  #hdrNav{display:inline-flex}
+  #rail{transition:width .2s ease,box-shadow .2s ease}
+  body.navopen #home{z-index:70}
+  body.navopen #rail{width:min(214px,76vw);box-shadow:18px 0 48px -18px #000}
+  body.navopen #rail button{flex-direction:row;justify-content:flex-start;gap:11px;font-size:13px;padding:11px 12px;text-align:left}
+  body.navopen #rail button .svg{width:22px;height:22px}
+  body.navopen #rail .sp{min-height:8px}
+}
+
+/* Handy-Steuerung im Spiel */
+#mctl{position:fixed;right:calc(var(--adw) + 10px);bottom:calc(var(--adh) + 12px);z-index:110;
+  display:none;flex-direction:column;gap:8px}
+@media (max-width:760px){#mctl{display:flex}}
+#mctl button{width:48px;height:48px;border-radius:15px;padding:0;display:flex;align-items:center;justify-content:center;
+  background:rgba(10,14,22,.86);border:1px solid var(--ln);color:var(--tx);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 8px 24px -12px #000;font:800 17px/1 var(--ui)}
+#mctl button:active{transform:translateY(1px)}
+#mctl button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+#mctl .svg{width:22px;height:22px}
+#mctl img.ic{width:24px;height:24px;image-rendering:pixelated;display:block}

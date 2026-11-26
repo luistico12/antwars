@@ -16,6 +16,7 @@ function toast(msg,kind){
 function setView(v){
   view=v;$('#viewColony').hidden=v!=='colony';$('#viewMap').hidden=v!=='map';
   $('#tabColony').classList.toggle('on',v==='colony');$('#tabMap').classList.toggle('on',v==='map');hideTip();
+  if(typeof mctlSync==='function')mctlSync();
 }
 
 /* ----- Pixel-Icons ----- */
@@ -267,6 +268,7 @@ function refreshLive(){
   else if(col.pin)hint=roomInfo(col,col.pin.c,col.pin.r)||'';
   else hint=`<b>${t.name}</b>${t.isCap?' (Hauptstadt)':''} · Wasser: ${WATER_N[col.water.size]}. Im Reiter <b>Räume</b> wählst du, was gebaut wird. Fahre mit der Maus über etwas für Details.`;
   setHTML($('#hint'),hint);
+  if(typeof mctlSync==='function')mctlSync();
 }
 
 /* ----- Seitenpanel der Karte ----- */
@@ -500,3 +502,25 @@ function frame(now){
 }
 newMap((Math.random()*1e6)|0);renderSetup();setView('map');
 requestAnimationFrame(frame);
+
+/* ---------- Handy-Steuerung (nur bis 760 px sichtbar) ---------- */
+document.body.insertAdjacentHTML('beforeend','<div id="mctl" aria-label="Handy-Steuerung" hidden>'+
+  '<button type="button" id="mView" aria-label="Ansicht wechseln"></button>'+
+  '<button type="button" id="mTun" aria-label="Tunnelansicht"></button>'+
+  '<button type="button" id="mZin" aria-label="Hineinzoomen">+</button>'+
+  '<button type="button" id="mZout" aria-label="Herauszoomen">−</button></div>');
+function mctlSync(){
+  const b=$('#mctl');if(!b)return;
+  b.hidden=!started||over;
+  const vb=$('#mView');if(vb)vb.innerHTML='<img class="ic" alt="" src="'+iconURL(view==='colony'?'flag':'ant')+'">';
+  const tn=$('#mTun');if(tn){tn.hidden=view!=='colony'||!col;tn.innerHTML='<img class="ic" alt="" src="'+iconURL('pick')+'">';tn.classList.toggle('on',!!(col&&col.buildSel==='tunnel'))}
+}
+function mZoom(f){
+  if(view==='colony'&&col){ccam.x+=VW/ccam.z/2;ccam.y+=VH/ccam.z/2;ccam.z*=f;clampCam();ccam.x-=VW/ccam.z/2;ccam.y-=VH/ccam.z/2;clampCam()}
+  else if(view==='map'){mcam.x+=MW/mcam.z/2;mcam.y+=MH/mcam.z/2;mcam.z=clamp(mcam.z*f,1,4);clampMapCam();mcam.x-=MW/mcam.z/2;mcam.y-=MH/mcam.z/2;clampMapCam()}
+}
+$('#mView').onclick=()=>{if(view==='colony')setView('map');else if(col)setView('colony');mctlSync()};
+$('#mTun').onclick=()=>{if(!col)return;col.buildSel=col.buildSel==='tunnel'?null:'tunnel';col.pin=null;refreshLive()};
+$('#mZin').onclick=()=>mZoom(1.2);
+$('#mZout').onclick=()=>mZoom(1/1.2);
+mctlSync();

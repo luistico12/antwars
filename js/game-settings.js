@@ -46,7 +46,8 @@ function renderSet(){
   }else if(setTab==='game'){
     h+=`<div><b>Standard-Truppenanteil</b><p class="note">Anteil der Truppen, der bei einem Angriff gesendet wird. Gilt zu Spielbeginn: <span id="pctV">${ST.pct}%</span></p><input type="range" id="pctSet" min="10" max="100" step="10" value="${ST.pct}" style="width:100%"></div>
     <label class="ck"><input type="checkbox" id="hideCk" ${ST.hideCosm?'checked':''}> Kosmetik anderer Spieler ausblenden</label>
-    <div><b>Interface-Größe</b><p class="note">Skaliert Leiste, Seitenmenü und Anzeigen. Aktuell: ${ST.ui}%</p><div class="opt">${[80,90,100,115,130].map(d=>`<button class="btn sm${ST.ui===d?' on':''}" data-ui="${d}" type="button">${d}%</button>`).join('')}</div></div>`;
+    <div><b>Interface-Größe</b><p class="note">Skaliert Leiste, Seitenmenü und Anzeigen. Aktuell: ${ST.ui}%</p><div class="opt">${[80,90,100,115,130].map(d=>`<button class="btn sm${ST.ui===d?' on':''}" data-ui="${d}" type="button">${d}%</button>`).join('')}</div></div>
+    <div><b>Cookies & Datenschutz</b><p class="note">Einwilligung jederzeit anpassen: Einstellungen und Werbefläche.</p><button class="btn sm" id="setCookie" type="button">Cookie-Einstellungen</button></div>`;
   }else if(setTab==='lang'){
     h+=`<p class="note">${t('Sprache der Oberfläche')}</p><div class="opt" id="setLang">${LANGS.map(l=>`<button class="btn sm${l[0]===LANG?' on':''}" data-l="${l[0]}" type="button">${flagSVG(l[3])} ${l[1]}</button>`).join('')}</div>`;
   }else{
@@ -76,6 +77,7 @@ $('#set').addEventListener('click',e=>{
   if(e.target.id==='vsCk'){ST.vsync=e.target.checked;saveST()}
   if(e.target.id==='hideCk'){ST.hideCosm=e.target.checked;saveST();if(typeof ownDirty!=='undefined')ownDirty=true}
   if(e.target.id==='fpsCk'){ST.fps=e.target.checked;saveST();$('#fpsBox').hidden=!ST.fps}
+  if(e.target.id==='setCookie')cookieShow(true);
 });
 $('#set').addEventListener('input',e=>{if(e.target.id==='pctSet'){ST.pct=+e.target.value;$('#pctV').textContent=ST.pct+'%';saveST();applyPct()}});
 document.addEventListener('keydown',e=>{

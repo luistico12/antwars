@@ -150,3 +150,12 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
     - Domain: öffentliche Serveradresse ist `https://antwars.123lumc.de` (gesetzt in `config.js`, `deploy/cloudflared-config.yml`, `deploy/ANLEITUNG-SERVER.md`; der Pages-Workflow fällt ohne Secret `SERVER_URL` darauf zurück). Über den Cloudflare-Connector ließ sich kein DNS-Eintrag anlegen: der Token darf keine Zonen lesen (Fehler 9109) und im Konto existiert noch kein Tunnel – Tunnel und Public Hostname `antwars.123lumc.de` → `HTTP 127.0.0.1:8787` entstehen im Dashboard und legen den CNAME selbst an.
 
 - Lobby-Liste im Dialog „Lobby beitreten“ heißt jetzt „Offene Lobbys“ (vorher „Öffentliche Spiele“); öffentliche Spiele laufen nur noch über Lobbys.
+
+32. Update v21.11 – 404-Seite, Ladeanimation, Handy-Menü, Fortschrittsbalken (getestet: `node --check` aller geänderten Dateien, Playwright im Gastmodus auf Desktop und 390 px Breite):
+    - `404.html` (GitHub Pages): eigenständige Seite mit Ameisen-Laufanimation, Logo und Weg zurück ins Spiel; lädt keine Spielskripte.
+    - Ladeanimation `#loader` in `index.html`/`css/ui.css`: Logo-Puls und zwei laufende Ameisen auf einer Spur; `loadShow()/loadHide()` in `js/ui-core.js`, verwendet beim Start und beim Aufbau einer Kolonie (`js/ui-boot.js` startGame-Wrapper).
+    - Cookie-Banner kompakt: eine kurze Zeile, Akzeptieren / Nur nötige / Einstellungen; „Cookie-Einstellungen“ öffnet ihn jederzeit aus den Einstellungen (Reiter Spiel) neu.
+    - Handy: `#hdrNav` klappt die Hauptmenü-Leiste als Schublade mit Beschriftungen auf (`body.navopen`); neue Steuerleiste `#mctl` (Ansicht wechseln, Tunnelansicht, Zoom) in `js/game-ui.js`, nur bis 760 px sichtbar.
+    - Scroll-Fortschrittsbalken `#pbar` oben, misst Fenster-Scroll und den Inhaltsbereich der Screens (`pbarUpdate()` in `js/ui-core.js`).
+    - Passwort-Auge im Anmeldeformular (`#lgPv`, schaltet zwischen password/text).
+    - News v21.11 in `DEFAULT_NEWS` und `supabase/schema.sql`.

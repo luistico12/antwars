@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>404 – Diese Seite gibt es nicht · Ant Wars</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0a0e16">
+<link rel="icon" type="image/png" href="img/icon.png">
+<style>
+  :root{--ac:#ff5757;--tx:#eef1f7;--mu:#8d97ab;--ln:rgba(255,255,255,.12);
+    --ui:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;display:flex;align-items:center;justify-content:center;padding:22px;color:var(--tx);
+    font:500 15px/1.5 var(--ui);text-align:center;background:#0a0e16;overflow:hidden}
+  body:before{content:"";position:fixed;inset:0;z-index:-1;
+    background:radial-gradient(1100px 700px at 20% 0,#1a2236 0,transparent 60%),radial-gradient(900px 600px at 90% 100%,#2a1620 0,transparent 55%),#0a0e16}
+  .box{max-width:520px;width:100%;padding:34px 26px 28px;border-radius:24px;border:1px solid var(--ln);
+    background:linear-gradient(158deg,rgba(255,255,255,.12),rgba(255,255,255,.03) 40%,rgba(12,17,28,.7));
+    backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 30px 80px rgba(0,0,0,.6)}
+  .logo{height:46px;width:auto;display:block;margin:0 auto 14px}
+  .ant{display:block;margin:0 auto 6px;width:70px;height:70px;color:var(--ac);opacity:.9}
+  h1{margin:0;font-size:clamp(52px,14vw,86px);line-height:.95;letter-spacing:-.04em;font-weight:800;
+    background:linear-gradient(180deg,#fff,#ff9c9c);-webkit-background-clip:text;background-clip:text;color:transparent}
+  h2{margin:10px 0 6px;font-size:19px;font-weight:800}
+  p{margin:0 auto 18px;max-width:400px;color:#b9c1d2;font-size:14px}
+  .trail{position:relative;height:28px;width:min(260px,80%);margin:0 auto 12px;overflow:hidden}
+  .trail i{position:absolute;left:0;right:0;top:50%;height:2px;margin-top:-1px;
+    background:repeating-linear-gradient(90deg,rgba(255,255,255,.22) 0 6px,transparent 6px 13px)}
+  .trail svg{position:absolute;top:50%;left:0;width:24px;height:24px;margin-top:-12px;color:var(--ac);
+    animation:walk 2.6s linear infinite}
+  .trail svg+svg{width:18px;height:18px;margin-top:-9px;color:#ffb0b0;animation-delay:-1.3s;animation-duration:3.1s}
+  @keyframes walk{from{left:-9%;opacity:0}12%{opacity:1}86%{opacity:1}to{left:101%;opacity:0}}
+  .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 20px;
+    border-radius:13px;border:1px solid var(--ln);background:rgba(255,255,255,.09);color:var(--tx);
+    font:700 14px/1 var(--ui);text-decoration:none}
+  .btn:hover{background:rgba(255,255,255,.16)}
+  .btn.pri{background:var(--ac);border-color:var(--ac);box-shadow:0 10px 28px -10px rgba(255,87,87,.9)}
+  .btn.pri:hover{background:#ff7a7a}
+  .small{margin-top:16px;color:#6f7a90;font-size:12px}
+  @media (prefers-reduced-motion:reduce){.trail svg{animation:none;left:42%}}
+</style>
+</head>
+<body>
+<div class="box">
+  <img class="logo" src="img/logo.png" alt="Ant Wars">
+  <div class="trail" aria-hidden="true">
+    <i></i>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="2.5" ry="2.7"/><ellipse cx="12" cy="12.5" rx="2" ry="2.5"/><ellipse cx="12" cy="19" rx="3" ry="3"/><path d="M5 9l5 2M19 9l-5 2M4 15l6-2M20 15l-6-2M6 21l4-3M18 21l-4-3M10 4L7 2M14 4l3-2"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="2.5" ry="2.7"/><ellipse cx="12" cy="12.5" rx="2" ry="2.5"/><ellipse cx="12" cy="19" rx="3" ry="3"/><path d="M5 9l5 2M19 9l-5 2M4 15l6-2M20 15l-6-2M6 21l4-3M18 21l-4-3M10 4L7 2M14 4l3-2"/></svg>
+  </div>
+  <h1>404</h1>
+  <h2>Dieses Gebiet ist leer</h2>
+  <p>Hier hat noch keine Kolonie gebaut. Die Seite gibt es nicht mehr oder die Adresse ist falsch geschrieben.</p>
+  <div class="row">
+    <a class="btn pri" href="./">Zum Spiel</a>
+    <a class="btn" href="./#weltkarte">Weltkarte</a>
+  </div>
+  <div class="small">This page does not exist. <a href="./" style="color:#ff8b8b">Back to Ant Wars</a></div>
+</div>
+</body>
+</html>

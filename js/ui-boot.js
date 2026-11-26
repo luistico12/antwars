@@ -40,7 +40,7 @@ function homeBuild(){
   const lg=document.createElement('div');lg.id='login';lg.hidden=true;document.body.appendChild(lg);
   renderHomeOpts();
   $('#rail').addEventListener('click',e=>{
-    const b=e.target.closest('[data-s]');if(!b)return;const s=b.dataset.s;
+    const b=e.target.closest('[data-s]');if(!b)return;document.body.classList.remove('navopen');const s=b.dataset.s;
     if(s==='settings'){openSet();return}
     if(REMOTE&&!AW.loggedIn){loginShow();return}
     openScreen(s,undefined,false);
@@ -60,7 +60,7 @@ function renderHomeOpts(){
   const ds=$('#hDiff');if(ds)ds.oninput=()=>{diffKey=DIFF_ORDER[Math.max(0,Math.min(2,(+ds.value||2)-1))];homeFill()};
   $('#hMode').onclick=e=>{const b=e.target.closest('[data-m]');if(!b||modeKey===b.dataset.m)return;modeKey=b.dataset.m;newMap((Math.random()*1e6)|0);renderSetup();homeDraw();homeFill()};
 }
-function homeShow(){closeScreens();$('#home').hidden=false;homeDraw();homeFill();renderHeader()}
+function homeShow(){closeScreens();document.body.classList.remove('navopen');$('#home').hidden=false;homeDraw();homeFill();renderHeader()}
 function homeHide(){$('#home').hidden=true;renderHeader()}
 function homeDraw(){const c=$('#homeBg'),g=c.getContext('2d');g.imageSmoothingEnabled=false;g.clearRect(0,0,c.width,c.height);if(baseCanvas){g.drawImage(baseCanvas,0,0,c.width,c.height);if(ownCanvas)g.drawImage(ownCanvas,0,0,c.width,c.height)}}
 function homeFill(){
@@ -80,6 +80,9 @@ let rep={terr:0,score:0,found:0,allied:false};
   const sg=startGame;
   startGame=function(){
     if(!requireSession())return;
+    document.body.classList.remove('navopen');
+    loadShow(LANG==='de'?'Die Kolonie wird aufgebaut …':'Building your colony …');
+    setTimeout(loadHide,700);
     if(MATCH.seed!=null&&MATCH.seed===CUR.seed){const o=Math.random;Math.random=seededRandom(CUR.seed+7);try{sg()}finally{Math.random=o}}else sg();
     rep={terr:0,score:0,found:0,allied:false};AW.report({games:1});Hist.begin();syncCosmetics();renderHeader();
     setTimeout(()=>toast(LANG==='de'?`Schutzzeit: ${mmss(PROT[diffKey])} lang kann niemand angreifen`:`Protection: nobody can attack for ${mmss(PROT[diffKey])}`,'good'),400);
@@ -154,7 +157,7 @@ AW.on(()=>{syncCosmetics();if(!$('#home').hidden)homeFill()});
   $('#backHome').onclick=homeShow;
   renderHeader();adRender();if(!CONSENT.set)cookieShow(false);
   await AW.init();
-  syncCosmetics();renderHeader();homeShow();potdRefresh();setInterval(potdRefresh,300000);
+  syncCosmetics();renderHeader();homeShow();loadHide();potdRefresh();setInterval(potdRefresh,300000);
   AW.news().then(l=>{UI.news=l;UI.newsTop=l[0]?String(l[0].id):'';renderHeader()}).catch(()=>{});
   if(AW.loggedIn&&isDefaultName(AW.profile&&AW.profile.username))nameShow();
   else if(REMOTE&&!AW.loggedIn&&AW.remote)loginShow();

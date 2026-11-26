@@ -1080,3 +1080,8 @@ where not exists (select 1 from public.news where version = 'v21.9');
 insert into public.news (version, title, body)
 select 'v21.10', 'Mehr Platz für den neuesten Release', 'Der neueste News-Eintrag nimmt sich jetzt deutlich mehr Raum: größere Überschrift, größerer Fließtext mit mehr Zeilenabstand, eine größere Initiale und großzügiger Innenabstand. Dadurch wirkt der aktuelle Release wie eine eigene Seite und läuft weiter nach unten aus, statt gedrängt über den älteren Einträgen zu stehen.'
 where not exists (select 1 from public.news where version = 'v21.10');
+
+-- News v21.11
+insert into public.news (version, title, body)
+select 'v21.11', 'Polierte Oberfläche: 404-Seite, Ladeanimation und Handy-Menü', 'Wer eine falsche Adresse aufruft, landet jetzt auf einer eigenen 404-Seite mit Ameisenrennen und einem Weg zurück ins Spiel. Beim Laden und beim Aufbau einer Kolonie läuft eine eigene Ladeanimation. Der Cookie-Hinweis ist auf das Nötigste geschrumpft – Akzeptieren, nur Nötiges oder Einstellungen – und lässt sich in den Einstellungen jederzeit wieder öffnen. Auf dem Handy klappt ein Menüknopf die Navigation als Schublade mit Beschriftungen auf, und eine neue Steuerleiste bietet Ansicht wechseln, Tunnelansicht und Zoom ohne Tastatur. Oben zeigt ein schmaler Balken den Scroll-Fortschritt, und im Anmeldeformular lässt sich das Passwort per Auge ein- und ausblenden.'
+where not exists (select 1 from public.news where version = 'v21.11');
