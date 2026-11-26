@@ -423,7 +423,11 @@ Object.assign(EN,{"Forum":"Forum",
 "Was ist passiert? Bei einem Spieler-Report bitte Name#Tag, Zeit und was vorgefallen ist.":"What happened? For a player report please include name#tag, time and what happened.",
 "Meldung gesendet – nur das Team kann sie lesen":"Report sent – only the team can read it",
 "Bitte Titel und Text ausfüllen":"Please fill in title and text",
-"Meldung wirklich löschen?":"Really delete this report?"});
+"Meldung wirklich löschen?":"Really delete this report?",
+"voll":"full",
+"Zufällig beitreten":"Join any game",
+"Gerade kein offenes Spiel. Starte eines mit „Zufällig beitreten“.":"No open game right now. Start one with “Join any game”.",
+});
 /* v21.6: Clans, Erfolge und Einstellungen */
 Object.assign(EN,{
 'Forum':'Forum','Sprache':'Language','Sprache der Oberfläche':'Interface language',

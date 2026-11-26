@@ -1,0 +1,8 @@
+{
+  "name": "antwars-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Antwars Server fuer oeffentliche Spiele",
+  "scripts": { "test": "node --test test/*.test.js" },
+  "dependencies": { "ws": "^8.18.0" }
+}

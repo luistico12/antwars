@@ -20,6 +20,7 @@ Statisches HTML5-Canvas-Spiel (Vanilla JS, kein Build-Schritt), Ameisenkolonie b
 - `css/ui.css`: komplettes Design-System. Alte Variablennamen (`--soil`, `--moss` …) sind auf das neue System abgebildet.
 - Spielcode: `js/game-core.js` (Karte, Hilfen), `game-colony.js` (Kolonie, Hügel/Ausgänge, `drawAnt`), `game-world.js` (Weltkarte, Kämpfe, Diplomatie, Bots), `game-ui.js` (HUD, Dock, Kamera, Eingaben, Hauptschleife), `game-radial.js`, `game-pause.js`, `game-settings.js`.
 - UI/Konto: `util.js` (Speicher mit Einwilligung, `MP`-Stub), `icons.js`, `flags.js`, `cosmetics.js` (Hüte/Flaggen), `backend.js` (`AW`-API: Supabase oder lokaler Gastmodus), `i18n.js`/`i18n-en.js`, `ui-core.js` (Header, Screen-Manager `S`/`openScreen`, Login, Cookie-Banner), `ui-screens.js` (alle Screens inkl. Lobby, Admin), `ui-boot.js` (Hauptmenü, Spiel-Hooks, Start), `game-sea.js` (Wälle, Häfen, Wege, Flöße, Seeangriff), `touch.js`, `net.js` (Mehrspieler nach Host-Prinzip: `NET`, Schnappschüsse, Befehle).
+- Öffentliche Spiele: `server/` (Node-WebSocket-Server, Welt im `vm`-Kontext, Modi classic/fast/chaos/unlimited, `npm test`), `deploy/` (Härtung, systemd, Cloudflare-Tunnel, Anleitung), `js/net-ws.js` (`WSNet`), Bildschirm `S.publicMatches`; `SERVER_URL` aus `AW_CONFIG`.
 - `supabase/schema.sql`: Tabellen, RLS, RPCs (`buy_item`, `claim_quest`, `report_stats`, `find_lobby`), Ranglisten-Views.
 - `scripts/gen-config.sh` erzeugt `config.js` aus `.env`/Secrets (gitignored, nie einchecken).
 

@@ -1,0 +1,69 @@
+# Antwars Spielserver (öffentliche Spiele). Installation: siehe ANLEITUNG-SERVER.md, Schritt 4.
+# Enthält kein Geheimnis: SUPABASE_URL ist ein öffentlicher Wert.
+[Unit]
+Description=Antwars Spielserver (WebSocket, nur 127.0.0.1)
+Documentation=file:///opt/antwars/deploy/ANLEITUNG-SERVER.md
+After=network-online.target
+Wants=network-online.target
+# Bei dauernden Abstürzen nicht endlos neu starten: 10 Versuche in 5 Minuten, dann bleibt der Dienst stehen (sichtbar in check.sh).
+StartLimitIntervalSec=300
+StartLimitBurst=10
+
+[Service]
+Type=simple
+User=antwars
+Group=antwars
+WorkingDirectory=/opt/antwars
+# Öffentliche Werte, keine Geheimnisse. Der Server lauscht fest auf 127.0.0.1 (Code), nur PORT ist einstellbar.
+Environment=PORT=8787 SUPABASE_URL=https://hkrnduhssueuijveffof.supabase.co BLOCKLIST_PATH=/etc/antwars/blocklist.txt
+ExecStart=/usr/bin/node /opt/antwars/server/index.js
+Restart=on-failure
+RestartSec=2
+
+# Ressourcen: Minecraft darf nie verdrängt werden.
+# Gemessen (server/LASTTEST.md): Spitze 123 MB bei 10 vollen Räumen, unter 1 % eines Kerns.
+# MemoryMax=384M ist gegenüber der Messempfehlung (256M) angehoben, damit auch Lastspitzen, Garbage Collection und
+# ein paar Verbindungen mehr nicht sofort zum Beenden führen (3-fache Reserve zur Spitze).
+MemoryMax=384M
+CPUQuota=100%
+TasksMax=64
+LimitNOFILE=4096
+UMask=0077
+
+# Härtung. Der Dienst schreibt nichts auf die Platte (Sperrliste wird nur gelesen), daher ProtectSystem=strict ohne Schreibpfade.
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+# Node/V8 erzeugt Maschinencode zur Laufzeit (JIT) und braucht dafür Speicher, der gleichzeitig beschreibbar und ausführbar ist.
+# MemoryDenyWriteExecute=yes würde Node beim Start abstürzen lassen, deshalb hier bewusst "no".
+MemoryDenyWriteExecute=no
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources
+# Verbotene Systemaufrufe liefern einen Fehler (EPERM) statt den Prozess abzuschießen.
+SystemCallErrorNumber=EPERM
+# Keine Capabilities: der Dienst lauscht auf Port 8787 (über 1024) und braucht keine Rechte.
+CapabilityBoundingSet=
+AmbientCapabilities=
+
+# Protokolle: nur journald. Der Server schreibt keine Token und keine IP-Adressen, nur Zähler und Fehler.
+# Eine Meldungsflut wird begrenzt (zusammen mit SystemMaxUse in journald, siehe harden.sh).
+LogRateLimitIntervalSec=30s
+LogRateLimitBurst=200
+SyslogIdentifier=antwars-server
+
+[Install]
+WantedBy=multi-user.target

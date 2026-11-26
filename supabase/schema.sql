@@ -1080,3 +1080,8 @@ where not exists (select 1 from public.news where version = 'v21.9');
 insert into public.news (version, title, body)
 select 'v21.10', 'Mehr Platz für den neuesten Release', 'Der neueste News-Eintrag nimmt sich jetzt deutlich mehr Raum: größere Überschrift, größerer Fließtext mit mehr Zeilenabstand, eine größere Initiale und großzügiger Innenabstand. Dadurch wirkt der aktuelle Release wie eine eigene Seite und läuft weiter nach unten aus, statt gedrängt über den älteren Einträgen zu stehen.'
 where not exists (select 1 from public.news where version = 'v21.10');
+
+-- News v22
+insert into public.news (version, title, body)
+select 'v22', 'Öffentliche Spiele auf dem Spielserver', 'Im Menü gibt es jetzt Öffentliche Spiele: Tritt einem Raum auf dem Spielserver bei, wähle einen Modus (Klassisch, Schnell, Chaos oder Unbegrenzt) und spiele mit bis zu acht Mitspielern. Die Liste zeigt wartende und laufende Räume mit Spielerzahl und Countdown und aktualisiert sich alle paar Sekunden. Auch anonyme Spieler können mitmachen.'
+where not exists (select 1 from public.news where version = 'v22');
