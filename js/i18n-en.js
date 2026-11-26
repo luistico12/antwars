@@ -269,7 +269,7 @@ Object.assign(EN,{
 "von": "by",
 "Ägypten": "Egypt",
 "Öffentlich": "Public",
-"Öffentliche Spiele": "Public games",
+"Offene Lobbys": "Open lobbies",
 "Österreich": "Austria",
 "Kosmetik": "Cosmetics",
 "Lobby erstellen ": "Create lobby",

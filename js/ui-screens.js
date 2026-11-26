@@ -304,7 +304,7 @@ async function lobJoin(code){
 UI.lobbies=null;
 S.lobbyJoin=()=>shell(t('Lobby beitreten'),{},`
   <div class="row"><input class="inp sp" id="jCode" placeholder="${t('Lobby-ID eingeben')}" style="flex:1;min-width:160px"><button class="ibtn" id="jPaste" type="button" aria-label="Paste" style="width:46px;height:46px">${ico('copy')}</button></div>
-  <div class="row"><span class="lbl">${ico('globe')} ${t('Öffentliche Spiele')} <b style="color:var(--ac)">${UI.lobbies?UI.lobbies.length:''}</b></span><span class="sp"></span><button class="ibtn" id="jRef" type="button" aria-label="Refresh">${ico('refresh')}</button></div>
+  <div class="row"><span class="lbl">${ico('globe')} ${t('Offene Lobbys')} <b style="color:var(--ac)">${UI.lobbies?UI.lobbies.length:''}</b></span><span class="sp"></span><button class="ibtn" id="jRef" type="button" aria-label="Refresh">${ico('refresh')}</button></div>
   ${UI.lobbies?`<div class="grid g3">${UI.lobbies.map(l=>`<button class="lobcard" data-c="${esc(l.code)}" type="button"><div class="im"><span class="tags"><span class="tag ac">FFA</span><span class="tag">${t({easy:'Leicht',normal:'Normal',hard:'Schwer'}[l.diff]||l.diff)}</span></span><b>${esc(l.name)}</b></div><div class="bd"><span style="color:#ffd24a">${ico('crown')}</span> ${esc(l.host_name||'')} · max ${l.max}</div></button>`).join('')||`<div class="mini">–</div>`}</div>`:spinner()}`,
   `<button class="btn pri lg block" id="jGo" type="button">${t('Lobby beitreten')}</button>`);
 S.lobbyJoin.bind=async p=>{

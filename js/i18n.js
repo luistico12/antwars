@@ -21,7 +21,7 @@ const EN={
 'Hüte':'Hats','Kronen':'Crowns','Muster':'Patterns','Schiffe':'Ships','Krone':'Crown','Schiff':'Ship','Hut':'Hat','Flagge':'Flag','Gegenstände':'items','Inventar':'Inventory','SPIELER DES TAGES':'PLAYER OF THE DAY','Siege heute':'wins today','abholbar':'ready','Quests':'Quests','Alles abgeholt':'All claimed','Weltflaggen':'World flags','Ameisenflaggen':'Ant flags','Kaufen':'Buy','Ausrüsten':'Equip','Ausgerüstet':'Equipped','Ablegen':'Remove','Nicht genug Rubys':'Not enough Rubys','Rubys':'Rubys',
 'Clan-Tag':'Clan tag','Beitreten':'Join','Verlassen':'Leave','Speichern':'Save','Spieler':'Players','Clans':'Clans','Siege ':'Wins','Spiele ':'Games','Quote':'Win %','Mitglieder':'Members',
 'Neuigkeiten':'News','Neueste':'Latest','Sprache wählen':'Choose language','Sprachen suchen …':'Search languages …',
-'Eigene Lobby':'Your lobby','Eigener Lobby beitreten':'Join a lobby','Lobby-ID eingeben':'Enter lobby ID','Öffentliche Spiele':'Public games','Lobby beitreten ':'Join lobby',
+'Eigene Lobby':'Your lobby','Eigener Lobby beitreten':'Join a lobby','Lobby-ID eingeben':'Enter lobby ID','Offene Lobbys':'Open lobbies','Lobby beitreten ':'Join lobby',
 'Regeln & Optionen':'Rules & options','Schwierigkeit':'Difficulty','Leicht':'Easy','Normal':'Normal','Schwer':'Hard','Max. Spieler':'Max players','Öffentlich':'Public','Privat':'Private',
 'Warten auf Spieler …':'Waiting for players …','Spiel starten':'Start game','Lobby verlassen':'Leave lobby','Chat':'Chat','Nachricht an die Lobby':'Message the lobby','Noch keine Nachrichten':'No messages yet',
 'Zurück':'Back','Schließen':'Close','Weiter spielen':'Resume','Spiel beenden':'End game','Pause':'Pause',
