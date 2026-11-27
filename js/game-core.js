@@ -23,8 +23,8 @@ let GW=96,GH=60;const CS=10;
 const MODES={
   classic:{n:'Klassisch',bots:7,scale:1,spd:2,d:'Standardspiel: 7 Gegner, Tempo 2x'},
   fast:{n:'Schnell',bots:7,scale:1,spd:3,d:'Wie Klassisch, aber mit Tempo 3x'},
-  chaos:{n:'Chaos',bots:7,scale:1,spd:3,rnd:true,d:'Zufällige Startpunkte für alle, Tempo 3x'},
-  unlimited:{n:'Unlimited',bots:5,scale:3.5,spd:3,d:'Riesige Karte (3,5× so groß), 5 Gegner, kein Sieg und kein Ende, Tempo 3x'}};
+  chaos:{n:'Chaos',bots:7,scale:1,spd:4,rnd:true,d:'Zufällige Startpunkte für alle, Tempo 4x'},
+  unlimited:{n:'Unlimited',bots:5,scale:3.5,spd:3.5,d:'Riesige Karte (3,5× so groß), 5 Gegner, kein Sieg und kein Ende, Tempo 3,5x'}};
 /* Feste Spielgeschwindigkeit des gewählten Modus (SIMV). Timer laufen in Echtzeit: rtime() = Spielzeit / SIMV */
 let SIMV=2;
 /* Zähler für Quests: wird alle paar Sekunden an AW.report geschickt */

@@ -1201,9 +1201,9 @@ body.ingame #toasts{bottom:calc(min(44vh,320px) + 18px);left:10px}
 /* Menüleiste bleibt links am Menürand (v21.17: wieder wie vor v21.15) */
 
 /* Glas-Hero: unverwaschenes Kartenbild oben, kleiner als im Vorbild */
-.hhero{padding:0;gap:0;overflow:hidden;border-radius:22px}
-.hmap{position:relative;height:clamp(116px,19vh,168px);overflow:hidden;background:#0b1017;border-bottom:1px solid rgba(255,255,255,.08)}
-#hMap{display:block;width:100%;height:100%;object-fit:cover;image-rendering:pixelated}
+.hhero{padding:0;gap:0;overflow:hidden;border-radius:22px;flex:none}
+.hmap{position:relative;flex:none;height:clamp(190px,32vh,290px);overflow:hidden;background:#0b1017;border-bottom:1px solid rgba(255,255,255,.08)}
+#hMap{display:block;width:100%;height:100%;object-fit:fill;image-rendering:pixelated}
 .hmap:after{content:"";position:absolute;inset:0;pointer-events:none;
   background:linear-gradient(0deg,rgba(12,17,28,.94),rgba(12,17,28,.3) 44%,rgba(12,17,28,0) 80%)}
 .hbody{position:relative;z-index:1;display:flex;flex-direction:column;gap:10px;padding:0 18px 16px;margin-top:-30px}
@@ -1256,6 +1256,12 @@ body.ingame #toasts{bottom:calc(min(44vh,320px) + 18px);left:10px}
 /* Menüleiste links: feste Spalte mit Symbol und Beschriftung */
 @media (min-width:900px){
   #home .hhero,#home .modes,#home .hacts{max-width:760px;width:100%}
+}
+
+/* Handy: Vorschau etwas flacher, Menü beginnt oben und scrollt nach unten */
+@media (max-width:760px){
+  .hmain{justify-content:flex-start}
+  .hmap{height:clamp(160px,24vh,220px)}
 }
 
 /* ===== v21.16: Profil, News und Forum ganz in die rechte obere Ecke ===== */

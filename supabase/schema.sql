@@ -1115,3 +1115,8 @@ where not exists (select 1 from public.news where version = 'v21.16');
 insert into public.news (version, title, body)
 select 'v21.17', 'Menü wieder links, Profil bleibt in der Ecke', 'Die Menüleiste mit Erfolge, Shop, Inventar, Freunde, Clan, Ranking und Einstellungen sitzt wieder links am Rand und reicht über die volle Höhe – mit Symbol und Beschriftung. Dadurch steht das Hauptmenü wieder mittig auf dem Bildschirm. Oben rechts in der Ecke bleiben News, Forum und Profil.'
 where not exists (select 1 from public.news where version = 'v21.17');
+
+-- News v21.18
+insert into public.news (version, title, body)
+select 'v21.18', 'Ganze Karte im Menü, Chaos und Unlimited schneller', 'Die Kartenvorschau im Hauptmenü zeigt jetzt die ganze Karte statt nur eines Ausschnitts: Das Bild ist höher, die ganze Karte ist vollständig zu sehen und die Ränder füllt dasselbe Kartenbild unscharf auf. Außerdem laufen Chaos mit Tempo 4x und Unlimited mit Tempo 3,5x.'
+where not exists (select 1 from public.news where version = 'v21.18');

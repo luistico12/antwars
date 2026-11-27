@@ -4,6 +4,7 @@ const CUR={seed:0},MATCH={seed:null};
 const mapTitle=()=>t('Karte')+' '+String(CUR.seed||0).padStart(6,'0');
 const DFN={easy:'Leicht',normal:'Normal',hard:'Schwer'};
 const DIFF_ORDER=['easy','normal','hard'];
+const spdTxt=v=>String(v).replace('.',LANG==='de'?',':'.')+'x';
 
 /* ---------- Hauptmenü (Seitenleiste, Karte, vier große Aktionen) ---------- */
 function homeBuild(){
@@ -52,30 +53,41 @@ function homeBuild(){
   $('#hTut').onclick=()=>openScreen('tutorial',undefined,false);
 }
 function renderHomeOpts(){
-  $('#hMode').innerHTML=Object.keys(MODES).map(m=>{const x=MODES[m];return `<button data-m="${m}" type="button" class="mode-card"><span class="mc-t"><b>${x.n}</b><em>${x.spd}x</em></span></button>`}).join('');
+  $('#hMode').innerHTML=Object.keys(MODES).map(m=>{const x=MODES[m];return `<button data-m="${m}" type="button" class="mode-card"><span class="mc-t"><b>${x.n}</b><em>${spdTxt(x.spd)}</em></span></button>`}).join('');
   const ds=$('#hDiff');if(ds)ds.oninput=()=>{diffKey=DIFF_ORDER[Math.max(0,Math.min(2,(+ds.value||2)-1))];homeFill()};
   $('#hMode').onclick=e=>{const b=e.target.closest('[data-m]');if(!b||modeKey===b.dataset.m)return;modeKey=b.dataset.m;newMap((Math.random()*1e6)|0);renderSetup();homeFill()};
 }
 function homeShow(){closeScreens();document.body.classList.remove('navopen','picking');$('#home').hidden=false;homeDraw();homeFill();renderHeader()}
 function homeHide(){$('#home').hidden=true;renderHeader()}
 /* Hintergrund des Hauptmenüs: statisch, einmal aus der ersten Karte gezeichnet (nur die Landschaft, keine Gebietsgrenzen) */
-let homeBgDrawn=false;
+let homeBgDrawn=false,mapRO=null;
 function homeDraw(){const c=$('#homeBg'),g=c&&c.getContext('2d');if(!g||homeBgDrawn||!baseCanvas)return;
   g.imageSmoothingEnabled=false;g.clearRect(0,0,c.width,c.height);
   const k=Math.max(c.width/baseCanvas.width,c.height/baseCanvas.height),w=baseCanvas.width*k,h=baseCanvas.height*k;
   g.drawImage(baseCanvas,(c.width-w)/2,(c.height-h)/2,w,h);
   g.fillStyle='rgba(8,12,20,.25)';g.fillRect(0,0,c.width,c.height);homeBgDrawn=true}
-/* Kartenvorschau im Menü: unverwaschene Karte, deutlich kleiner als im Vorbild */
-function homePreview(){const c=$('#hMap'),g=c&&c.getContext('2d');if(!g||!baseCanvas)return;
-  g.imageSmoothingEnabled=false;g.clearRect(0,0,c.width,c.height);
-  const k=Math.max(c.width/baseCanvas.width,c.height/baseCanvas.height),w=baseCanvas.width*k,h=baseCanvas.height*k;
-  g.drawImage(baseCanvas,(c.width-w)/2,(c.height-h)/2,w,h)}
+/* Kartenvorschau im Menü: die ganze Karte ist sichtbar, die Ränder füllt dieselbe Karte unscharf */
+function homePreview(){const c=$('#hMap');if(!c||!baseCanvas)return;
+  const r=c.getBoundingClientRect();if(!r.width||!r.height)return;
+  const dp=Math.min(2,window.devicePixelRatio||1),W=Math.round(r.width*dp),H=Math.round(r.height*dp);
+  if(c.width!==W||c.height!==H){c.width=W;c.height=H}
+  const g=c.getContext('2d');if(!g)return;
+  g.imageSmoothingEnabled=false;g.clearRect(0,0,W,H);
+  const cv=Math.max(W/baseCanvas.width,H/baseCanvas.height);
+  g.save();g.globalAlpha=.55;g.filter='blur(5px)';
+  g.drawImage(baseCanvas,(W-baseCanvas.width*cv)/2,(H-baseCanvas.height*cv)/2,baseCanvas.width*cv,baseCanvas.height*cv);
+  g.restore();
+  g.fillStyle='rgba(8,12,20,.6)';g.fillRect(0,0,W,H);
+  const ft=Math.min(W/baseCanvas.width,H/baseCanvas.height),w=Math.round(baseCanvas.width*ft),h=Math.round(baseCanvas.height*ft);
+  g.drawImage(baseCanvas,Math.round((W-w)/2),Math.round((H-h)/2),w,h);
+  if(!mapRO&&window.ResizeObserver){mapRO=new ResizeObserver(()=>{if(!$('#home').hidden)homePreview()});mapRO.observe(c)}}
+addEventListener('resize',()=>requestAnimationFrame(homePreview));
 function homeFill(){
   $('#hMapName').textContent=mapTitle();
   const bots=MODES[modeKey].bots,ds=$('#hDiff');
   if(ds)ds.value=DIFF_ORDER.indexOf(diffKey)+1;
   const dv=$('#hDiffV');if(dv)dv.textContent=t(DFN[diffKey]);
-  $('#hTags').innerHTML=`<span class="tag">${t(DFN[diffKey])}</span><span class="tag">${T.length} ${LANG==='de'?'Gebiete':'areas'}</span><span class="tag ac">${bots} ${t('Gegner')}</span><span class="tag">${MODES[modeKey].n} · ${MODES[modeKey].spd}x</span><span class="tag">${LANG==='de'?'Schutz':'Protection'} ${mmss(PROT[diffKey])}</span>`;
+  $('#hTags').innerHTML=`<span class="tag">${t(DFN[diffKey])}</span><span class="tag">${T.length} ${LANG==='de'?'Gebiete':'areas'}</span><span class="tag ac">${bots} ${t('Gegner')}</span><span class="tag">${MODES[modeKey].n} · ${spdTxt(MODES[modeKey].spd)}</span><span class="tag">${LANG==='de'?'Schutz':'Protection'} ${mmss(PROT[diffKey])}</span>`;
   homePreview();
   $$('#hMode [data-m]').forEach(b=>b.classList.toggle('on',b.dataset.m===modeKey));
   $('#railAdmin').hidden=!AW.isAdmin;

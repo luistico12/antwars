@@ -201,3 +201,10 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
     - Die v21.15-Umschaltung der Menüleiste nach oben rechts ist zurückgenommen: `#home{flex-direction:row}`, `.hmain{order:1}`, `#rail{order:2}` und der `position:absolute`-Block (≥ 900 px) samt `.hmain{padding-right:calc(var(--adw) + 96px)}` sind entfernt. `#rail` ist wieder die linke Spalte (78 px, Symbole + Beschriftung, Einstellungen unten).
     - Oben rechts in der Ecke bleiben weiterhin News, Forum und Profil (v21.16).
     - `index.html` Versionsparameter auf `v=21.17`; News v21.17 in `DEFAULT_NEWS` und `supabase/schema.sql`.
+
+39. Update v21.18 – ganze Karte in der Vorschau, Chaos 4x, Unlimited 3,5x (geprüft mit Playwright im Gastmodus: 1400×800 in allen vier Modi, 390×760, keine Seitenfehler; `node --check` der geänderten Dateien):
+    - `homePreview()` in `js/ui-boot.js`: Puffer in Bildschirmgröße (max. 2× DPR) statt fester 900×300, Hintergrund = dieselbe Karte unscharf gefüllt und abgedunkelt, darüber die ganze Karte mit `Math.min` (contain) zentriert – kein Beschnitt mehr. Neuzeichnen bei Fenstergröße (`resize`).
+    - `.hmap` von `clamp(116px,19vh,168px)` auf `clamp(190px,32vh,290px)` erhöht, `#hMap` mit `object-fit:fill` (Puffer passt jetzt zum Rahmen, keine Verzerrung).
+    - `MODES` in `js/game-core.js`: `chaos.spd` 3 → 4, `unlimited.spd` 3 → 3,5 (Beschreibungen mit); Anzeige über `spdTxt()` in `js/ui-boot.js` (deutsch „3,5x“).
+    - `.hhero`/`.hmap` mit `flex:none` (die Vorschau wurde sonst im hohen Menü zusammengedrückt), `ResizeObserver` + `requestAnimationFrame` zeichnen die Vorschau nach Größenänderungen neu; unter 760 px ist die Vorschau flacher (`clamp(160px,24vh,220px)`) und `.hmain` beginnt oben (`justify-content:flex-start`).
+    - `index.html` Versionsparameter auf `v=21.18`; News v21.18 in `DEFAULT_NEWS` und `supabase/schema.sql`.
