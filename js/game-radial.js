@@ -22,7 +22,8 @@ const RIC={
   raft:'<path d="M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1 .6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M19.38 20A11.6 11.6 0 0 0 21 14l-9-4-9 4c0 2.9.94 5.34 2.81 7.76"/><path d="M19 13V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6"/><path d="M12 10v4"/><path d="M12 2v3"/>',
   war:'<path d="M2 18h20l-3 4H5z"/><path d="M12 18V4l7 9h-7"/><path d="M12 4 6 14h6"/>',
   wall:'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
-  troops:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'
+  troops:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  sword:'<path d="M5 19l9-9M14 10l5-5V3h-2l-5 5M7 17l-2 2M9 15l-2 3"/><path d="M16 5l3 3"/>',
 };
 const RCOL={info:'#8f95a1',mat:'#e0a91d',troops:'#3dbf6a',ally:'#3dbf6a',brk:'#e5534b',build:'#d9b520',x:'#6e8576',back:'#8f95a1',out:'#3dbf6a',line:'#4a7ab8',port:'#2f7fd0',raft:'#4f78e0',war:'#e5534b',ship:'#4f78e0'};
 RIC.ship=RIC.raft;

@@ -180,3 +180,13 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
     - Hüte sitzen auf dem Kopf und drehen sich mit der Laufrichtung der Ameisen (`drawColony`).
     - `tests/hud.spec.js`: Tippfehler `$(` auf `$$(` bei der Bauleisten-Prüfung korrigiert (prüfte vorher nur ein einzelnes Element).
     - News v21.14 in `DEFAULT_NEWS`, `supabase/schema.sql` und live in Supabase eingespielt.
+
+36. Update v21.15 – Hauptmenü mit Kartenbild, Artwahl beim Start, weniger Gegner (geprüft mit Playwright im Gastmodus: Desktop 1400×820 und Handy 390×844, keine Seitenfehler, `node --check` aller geänderten Dateien):
+    - Hauptmenü: Das Menü (`#rail`) sitzt jetzt als schmale Glasleiste in der rechten oberen Ecke (ab 900 px absolut positioniert, nur Symbole), der doppelte Profil-Knopf darin ist entfernt – Profil bleibt oben rechts in der Kopfzeile. Unter 900 px bleibt die Leiste links.
+    - Hero (`.hhero`) ist kompakt: oben das unverwaschene Kartenbild (`#hMap`, ~156 px hoch, `homePreview()`), darunter Name, Tags, Schwierigkeitsregler und „Neue Karte“. Der Hintergrund (`#homeBg`) wird nur noch einmal gezeichnet (`homeBgDrawn`) und bleibt statisch.
+    - Modi (`#hMode`) sind Karten in der Größe der vier Aktionsknöpfe (`.modes` 4 Spalten, `min-height` 96 px = `.hact`), Hero, Modis und Knopfreihe sind alle 760 px breit.
+    - Ameisenart-Auswahl (`#hSp`) aus dem Hauptmenü entfernt; `spSeg()`/`pickSpecies()` sitzen jetzt in der Leiste „Wähle dein Startgebiet“ (`#pickSp` in `#pickBar`, `pickTitle()` in `js/ui-boot.js`).
+    - Selected-Farbe der Artwahl (`.spseg button.on`) in der Akzentfarbe; Hover für `.btn`, `.ibtn`, `.hact`, `.mode-card`, `#rail button`, `.chip` und `.tab` mit Akzentumrandung und Schein.
+    - Gegner starten mit nur einem Gebiet und `PLAYER_START*BOT_START[diffKey]` Truppen (`js/game-world.js`): Leicht 2, Normal 3, Schwer 4 (0,75 / 1 / 1,35 der 3 Starttruppen des Spielers).
+    - Angriffs-Leiste der Weltkarte (`.wmsend`) trägt statt Schild ein Schwert (`RIC.sword` in `js/game-radial.js`).
+    - `index.html` Versionsparameter auf `v=21.15`; News v21.15 in `DEFAULT_NEWS` und `supabase/schema.sql` (noch nicht live eingespielt).

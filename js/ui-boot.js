@@ -10,7 +10,6 @@ function homeBuild(){
   const el=document.createElement('div');el.id='home';el.hidden=true;
   el.innerHTML=`<canvas id="homeBg" width="480" height="300"></canvas>
   <nav id="rail" aria-label="Menü">
-    <button type="button" data-s="profile">${ico('user')}<span>${t('Profil')}</span></button>
     <button type="button" data-s="achievements">${ico('trophy')}<span>${t('Erfolge')}</span></button>
     <button type="button" data-s="shop">${ico('shop')}<span>${t('Shop')}</span></button>
     <button type="button" data-s="inventory">${ico('box')}<span>${t('Inventar')}</span></button>
@@ -22,13 +21,14 @@ function homeBuild(){
     <button type="button" data-s="settings">${ico('gear')}<span>${t('Einstellungen')}</span></button>
   </nav>
   <div class="hmain">
-    <div class="hhero glass"><div class="lbl">${t('Nächste Karte')}</div><h2 id="hMapName"></h2><div class="hmeta" id="hTags"></div>
-      <div class="hopts"><div class="field"><span class="lbl">${t('Art')}</span><div class="spsel" id="hSp"></div></div>
+    <div class="hhero glass"><div class="hmap"><canvas id="hMap" width="900" height="300"></canvas></div><div class="hbody"><div class="lbl">${t('Nächste Karte')}</div><h2 id="hMapName"></h2><div class="hmeta" id="hTags"></div>
+      <div class="hrow">
       <div class="field"><span class="lbl">${t('Schwierigkeit')}</span>
         <div class="hsl"><input type="range" id="hDiff" min="1" max="3" step="1" value="2" aria-label="${t('Schwierigkeit')}"><b id="hDiffV">${t('Normal')}</b></div>
         <div class="hmarks"><span>${t('Leicht')}</span><span>${t('Normal')}</span><span>${t('Schwer')}</span></div></div>
-      <div class="field wide"><div class="modes" id="hMode"></div></div></div>
-      <div class="row"><button class="btn" id="hReroll" type="button">${ico('refresh')} ${t('Neue Karte')}</button></div></div>
+      <button class="btn" id="hReroll" type="button">${ico('refresh')} ${t('Neue Karte')}</button></div>
+      </div></div>
+    <div class="modes" id="hMode"></div>
     <div class="hacts">
       <button class="hact pri" id="hSolo" type="button">${ico('play')}<span>${t('Spielen')}</span></button>
       <button class="hact" id="hCreate" type="button">${ico('plus')}<span>${t('Lobby erstellen')}</span></button>
@@ -45,37 +45,38 @@ function homeBuild(){
     if(REMOTE&&!AW.loggedIn){loginShow();return}
     openScreen(s,undefined,false);
   });
-  $('#hReroll').onclick=()=>{newMap((Math.random()*1e6)|0);renderSetup();homeDraw();homeFill()};
+  $('#hReroll').onclick=()=>{newMap((Math.random()*1e6)|0);renderSetup();homeFill()};
   $('#hSolo').onclick=()=>{if(requireSession()){homeHide();setView('map');pickStart()}};
   $('#hCreate').onclick=()=>lobCreate();
   $('#hJoin').onclick=()=>{if(requireSession())openScreen('lobbyJoin',undefined,false)};
   $('#hTut').onclick=()=>openScreen('tutorial',undefined,false);
 }
 function renderHomeOpts(){
-  $('#hSp').innerHTML=spSeg(setupSp);
-$('#hSp').onclick=e=>{const b=e.target.closest('[data-sp]');if(!b)return;setupSp=b.dataset.sp;
-    if(setupStart!=null&&T[setupStart].terrain!==SP[setupSp].terr){T[setupStart].owner=-1;setupStart=null;ownDirty=true}
-    F[0].species=setupSp;renderSetup();homeFill()};
   $('#hMode').innerHTML=Object.keys(MODES).map(m=>{const x=MODES[m];return `<button data-m="${m}" type="button" class="mode-card"><span class="mc-t"><b>${x.n}</b><em>${x.spd}x</em></span></button>`}).join('');
   const ds=$('#hDiff');if(ds)ds.oninput=()=>{diffKey=DIFF_ORDER[Math.max(0,Math.min(2,(+ds.value||2)-1))];homeFill()};
-  $('#hMode').onclick=e=>{const b=e.target.closest('[data-m]');if(!b||modeKey===b.dataset.m)return;modeKey=b.dataset.m;newMap((Math.random()*1e6)|0);renderSetup();homeDraw();homeFill()};
+  $('#hMode').onclick=e=>{const b=e.target.closest('[data-m]');if(!b||modeKey===b.dataset.m)return;modeKey=b.dataset.m;newMap((Math.random()*1e6)|0);renderSetup();homeFill()};
 }
 function homeShow(){closeScreens();document.body.classList.remove('navopen','picking');$('#home').hidden=false;homeDraw();homeFill();renderHeader()}
 function homeHide(){$('#home').hidden=true;renderHeader()}
-/* Hintergrund des Hauptmenüs: nur die Landschaft, keine Gebietsgrenzen (die dunklen Linien passten nicht zum Bild) */
-function homeDraw(){const c=$('#homeBg'),g=c.getContext('2d');g.imageSmoothingEnabled=false;g.clearRect(0,0,c.width,c.height);
-  if(baseCanvas){
-    const k=Math.max(c.width/baseCanvas.width,c.height/baseCanvas.height),w=baseCanvas.width*k,h=baseCanvas.height*k;
-    g.drawImage(baseCanvas,(c.width-w)/2,(c.height-h)/2,w,h);
-    g.fillStyle='rgba(8,12,20,.25)';g.fillRect(0,0,c.width,c.height)
-  }}
+/* Hintergrund des Hauptmenüs: statisch, einmal aus der ersten Karte gezeichnet (nur die Landschaft, keine Gebietsgrenzen) */
+let homeBgDrawn=false;
+function homeDraw(){const c=$('#homeBg'),g=c&&c.getContext('2d');if(!g||homeBgDrawn||!baseCanvas)return;
+  g.imageSmoothingEnabled=false;g.clearRect(0,0,c.width,c.height);
+  const k=Math.max(c.width/baseCanvas.width,c.height/baseCanvas.height),w=baseCanvas.width*k,h=baseCanvas.height*k;
+  g.drawImage(baseCanvas,(c.width-w)/2,(c.height-h)/2,w,h);
+  g.fillStyle='rgba(8,12,20,.25)';g.fillRect(0,0,c.width,c.height);homeBgDrawn=true}
+/* Kartenvorschau im Menü: unverwaschene Karte, deutlich kleiner als im Vorbild */
+function homePreview(){const c=$('#hMap'),g=c&&c.getContext('2d');if(!g||!baseCanvas)return;
+  g.imageSmoothingEnabled=false;g.clearRect(0,0,c.width,c.height);
+  const k=Math.max(c.width/baseCanvas.width,c.height/baseCanvas.height),w=baseCanvas.width*k,h=baseCanvas.height*k;
+  g.drawImage(baseCanvas,(c.width-w)/2,(c.height-h)/2,w,h)}
 function homeFill(){
   $('#hMapName').textContent=mapTitle();
   const bots=MODES[modeKey].bots,ds=$('#hDiff');
   if(ds)ds.value=DIFF_ORDER.indexOf(diffKey)+1;
   const dv=$('#hDiffV');if(dv)dv.textContent=t(DFN[diffKey]);
   $('#hTags').innerHTML=`<span class="tag">${t(DFN[diffKey])}</span><span class="tag">${T.length} ${LANG==='de'?'Gebiete':'areas'}</span><span class="tag ac">${bots} ${t('Gegner')}</span><span class="tag">${MODES[modeKey].n} · ${MODES[modeKey].spd}x</span><span class="tag">${LANG==='de'?'Schutz':'Protection'} ${mmss(PROT[diffKey])}</span>`;
-  $$('#hSp [data-sp]').forEach(b=>b.classList.toggle('on',b.dataset.sp===setupSp));
+  homePreview();
   $$('#hMode [data-m]').forEach(b=>b.classList.toggle('on',b.dataset.m===modeKey));
   $('#railAdmin').hidden=!AW.isAdmin;
 }
@@ -113,16 +114,22 @@ $('#endBtn').addEventListener('click',()=>setTimeout(()=>{MATCH.seed=null;pickSt
 
 /* ---------- Startgebiet wählen: 15 Sekunden, danach wird zufällig gewählt ---------- */
 const PICK_SECS=15;let pick15=null;
-document.body.insertAdjacentHTML('beforeend','<div id="pickBar" hidden><b id="pickTxt"></b><i><u id="pickFill"></u></i></div>');
+document.body.insertAdjacentHTML('beforeend','<div id="pickBar" hidden><div class="picksp" id="pickSp"></div><b id="pickTxt"></b><i><u id="pickFill"></u></i></div>');
+/* Art direkt in der Startgebiets-Auswahl wählen */
+function pickTitle(){const sp=SP[setupSp];$('#pickTxt').textContent=`${t('Ameisenart wählen')} · ${t('Startgebiet')}: ${TERR[sp.terr].name} · ${Math.max(0,Math.ceil(pick15?pick15.t:0))}s`}
 function pickStart(){
   pickStop();setupStart!=null&&(T[setupStart].owner=-1);setupStart=null;ownDirty=true;
   $('#setupPanel').hidden=true;document.body.classList.add('picking');
   pick15={t:PICK_SECS,iv:setInterval(()=>{
     if(!pick15)return;pick15.t-=0.1;
-    const sp=SP[setupSp];$('#pickTxt').textContent=`${t('Wähle dein Startgebiet')} (${TERR[sp.terr].name}) · ${Math.max(0,Math.ceil(pick15.t))}s`;
+    const sp=SP[setupSp];pickTitle();
     $('#pickFill').style.width=Math.max(0,pick15.t/PICK_SECS*100)+'%';
     if(pick15.t<=0){const opts=T.filter(x=>x.terrain===sp.terr);const x=opts[Math.floor(Math.random()*opts.length)]||T[0];mapClick(x.id)}
   },100)};
+  $('#pickSp').innerHTML=spSeg(setupSp);
+  $('#pickSp').onclick=e=>{const b=e.target.closest('[data-sp]');if(!b)return;
+    pickSpecies(b.dataset.sp);$('#pickSp').innerHTML=spSeg(setupSp);pickTitle()};
+  pickTitle();
   $('#pickBar').hidden=false;
   if(MODES[modeKey].rnd){const sp=SP[setupSp],opts=T.filter(x=>x.terrain===sp.terr);mapClick((opts[Math.floor(Math.random()*opts.length)]||T[0]).id)}
 }

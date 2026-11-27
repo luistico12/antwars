@@ -59,7 +59,7 @@ $('#viewMap .stage').insertAdjacentHTML('beforeend',`<div id="wmHud" hidden>
    <div class="wmpill mat" title="Material (Erde)"><img class="ih" alt="" src="${iconURL('clay')}"><b id="wmMat">0</b></div>
    <div class="wmpill leaf" title="Blätter"><img class="ih" alt="" src="${iconURL('leaf')}"><b id="wmFood">0</b></div>
    <div class="wmsl troops"><i id="wmTrFill"></i><span class="lbl">${ric('troops')}<b id="wmTr">0</b><small id="wmTrR"></small></span><input type="range" id="wmPct" min="10" max="100" step="10" aria-label="Truppenanteil"></div>
-   <div class="wmsend"><b id="wmPctL">50%</b> ${ric('line')} <b id="wmSendN">0</b></div>
+   <div class="wmsend" title="Angriff: so viele Soldaten ziehen mit">${ric('sword')} <b id="wmPctL">50%</b> <b id="wmSendN">0</b></div>
   </div>
   <div id="wmDon">
    <div class="wmsl don1"><i id="wmDtFill"></i><span class="lbl">Truppen spenden</span><span class="val" id="wmDtV"></span><input type="range" id="wmDt" min="10" max="100" step="1" aria-label="Truppen spenden"></div>
