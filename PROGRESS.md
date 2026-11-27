@@ -190,3 +190,9 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
     - Gegner starten mit nur einem Gebiet und `PLAYER_START*BOT_START[diffKey]` Truppen (`js/game-world.js`): Leicht 2, Normal 3, Schwer 4 (0,75 / 1 / 1,35 der 3 Starttruppen des Spielers).
     - Angriffs-Leiste der Weltkarte (`.wmsend`) trägt statt Schild ein Schwert (`RIC.sword` in `js/game-radial.js`).
     - `index.html` Versionsparameter auf `v=21.15`; News v21.15 in `DEFAULT_NEWS`, `supabase/schema.sql` und live in Supabase eingespielt.
+
+37. Update v21.16 – Profil/News/Forum in der rechten oberen Ecke (geprüft mit Playwright im Gastmodus: 1400×800, 1100×800, 1920×1080, 1400×650 und 390×760; Knopfleiste jeweils 12 px vom Fensterrand, Werbung beginnt unter der Kopfzeile, Hauptmenü unverändert, keine Seitenfehler):
+    - Ab 900 px reicht die Kopfzeile (`#top`) bis zum rechten Fensterrand (`right:0`), dadurch sitzen News, Forum und Profil (`#hdrR`) wirklich in der Ecke statt 176 px davor neben der Werbespalte.
+    - Die Werbefläche (`#adrail`) bekommt oben den Platz der Kopfzeile (`padding-top:calc(var(--hh) + 10px)`, `max-height` entsprechend), damit keine Anzeige unter den Knöpfen liegt.
+    - Das Hauptmenü (Hero, Modi, vier Aktionen, Menüleiste `#rail`) bleibt unverändert.
+    - `index.html` Versionsparameter auf `v=21.16`; News v21.16 in `DEFAULT_NEWS` und `supabase/schema.sql`.

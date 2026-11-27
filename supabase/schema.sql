@@ -1105,3 +1105,8 @@ where not exists (select 1 from public.news where version = 'v21.14');
 insert into public.news (version, title, body)
 select 'v21.15', 'Kompaktes Hauptmenü mit Kartenbild und neue Gegner-Stärke', 'Das Hauptmenü ist aufgeräumt: Oben sitzt eine kleinere Karte mit unverwaschenem Kartenbild, darunter stehen die vier Modi in einer Reihe – in derselben Größe wie die vier Knöpfe darunter. Die Ameisenart wählst du nicht mehr im Menü, sondern direkt beim Startgebiet: Die Wahl erscheint oben in der Leiste „Wähle dein Startgebiet“. Das Menü liegt jetzt oben rechts in der Ecke, der doppelte Profil-Knopf ist weg (dein Profil erreichst du oben rechts). Der Hintergrund bleibt fest stehen, er wechselt nicht mehr mit jeder neuen Karte. Knöpfe leuchten beim Überfahren in der Akzentfarbe auf. Gegner starten mit nur einem Gebiet und deutlich weniger Truppen: Leicht 75 %, Normal 100 %, Schwer 135 % deiner Starttruppen. Die Angriffs-Leiste auf der Weltkarte trägt jetzt ein Schwert.'
 where not exists (select 1 from public.news where version = 'v21.15');
+
+-- News v21.16
+insert into public.news (version, title, body)
+select 'v21.16', 'Profil, News und Forum ganz in der Ecke', 'Die Knöpfe für News, Forum und Profil sitzen jetzt wirklich in der rechten oberen Ecke des Fensters: Die Kopfzeile reicht bis zum rechten Rand, die Werbefläche bleibt darunter frei. Am Hauptmenü selbst ändert sich nichts – Karte, Modi und die vier Aktionsknöpfe bleiben, wo sie sind.'
+where not exists (select 1 from public.news where version = 'v21.16');

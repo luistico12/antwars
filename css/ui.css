@@ -1271,3 +1271,11 @@ body.ingame #toasts{bottom:calc(min(44vh,320px) + 18px);left:10px}
   .hmain{order:1}
   #rail{order:0;border-right:1px solid var(--glass-edge);border-left:0;box-shadow:none}
 }
+
+/* ===== v21.16: Profil, News und Forum ganz in die rechte obere Ecke ===== */
+/* Das Hauptmenü bleibt unverändert; nur die Kopfzeile reicht bis zum Fensterrand. */
+@media (min-width:900px){
+  #top{right:0}
+  #adrail{padding-top:calc(var(--hh) + 10px)}
+  #adrail .ad{max-height:calc(100dvh - var(--hh) - 28px)}
+}
