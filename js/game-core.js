@@ -111,23 +111,28 @@ function buildMap(seed){
     const s=((seed+att*7919)>>>0)&0xffffff;
     const rnd=mulberry32(s);
     let land=new Uint8Array(GW*GH);
+    const mx=Math.max(5,Math.round(GW*0.06)),my=Math.max(5,Math.round(GH*0.06));
     for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
       const nx=(x/GW-0.5)*2,ny=(y/GH-0.5)*2,d=Math.sqrt(nx*nx*0.85+ny*ny*1.2);
-      const v=fbm(x/(20*SQ),y/(20*SQ),s&0xffff)*0.7+(1-d)*0.6;
-      land[y*GW+x]=(v>0.5&&x>3&&y>3&&x<GW-4&&y<GH-4)?1:0;
+      const v=fbm(x/(20*SQ),y/(20*SQ),s&0xffff)*0.7+(1-d)*0.62;
+      land[y*GW+x]=(v>0.62&&x>mx&&y>my&&x<GW-1-mx&&y<GH-1-my)?1:0;
     }
     land=largestComponent(land);fillLakes(land);
+    /* Wasserrand: der Kontinent endet deutlich vor dem Kartenrand */
+    const ring=Math.max(4,Math.round(Math.min(GW,GH)*0.09));
+    for(let y=0;y<GH;y++)for(let x=0;x<GW;x++)if(x<ring||y<ring||x>=GW-ring||y>=GH-ring)land[y*GW+x]=0;
+    land=largestComponent(land);fillLakes(land);
     let n=0;for(let i=0;i<land.length;i++)n+=land[i];
-    if(n<1900*SC||n>3400*SC)continue;
+    if(n<1500*SC||n>2900*SC)continue;
     carveRivers(land,rnd,Math.max(3,Math.round(3*SC)));land=largestComponent(land);
     const idx=[];for(let i=0;i<land.length;i++)if(land[i])idx.push(i);
     const seeds=[];
     const wantS=Math.round(20*SC);
     for(let k=0;k<8000*SC&&seeds.length<wantS;k++){
       const i=idx[Math.floor(rnd()*idx.length)],x=i%GW,y=(i/GW)|0;
-      if(seeds.every(q=>Math.hypot(q.x-x,q.y-y)>=10.5))seeds.push({x,y,i});
+      if(seeds.every(q=>Math.hypot(q.x-x,q.y-y)>=9.2))seeds.push({x,y,i});
     }
-    if(seeds.length<wantS*0.75)continue;
+    if(seeds.length<wantS*0.9)continue;
     const tid=new Int16Array(GW*GH).fill(-1),dist=new Float64Array(GW*GH).fill(1e9),h=new Heap();
     seeds.forEach((q,k)=>{dist[q.i]=0;tid[q.i]=k;h.push(0,q.i)});
     while(h.size){

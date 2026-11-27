@@ -1120,3 +1120,8 @@ where not exists (select 1 from public.news where version = 'v21.17');
 insert into public.news (version, title, body)
 select 'v21.18', 'Ganze Karte im Menü, Chaos und Unlimited schneller', 'Die Kartenvorschau im Hauptmenü zeigt jetzt die ganze Karte statt nur eines Ausschnitts: Das Bild ist höher, die ganze Karte ist vollständig zu sehen und die Ränder füllt dasselbe Kartenbild unscharf auf. Außerdem laufen Chaos mit Tempo 4x und Unlimited mit Tempo 3,5x.'
 where not exists (select 1 from public.news where version = 'v21.18');
+
+-- News v21.19
+insert into public.news (version, title, body)
+select 'v21.19', 'Mehr Wasser: Karten sind jetzt Inseln', 'Die Karten haben deutlich mehr Meer: Das Land nimmt nur noch etwa ein Drittel der Fläche ein (vorher gut 40 Prozent) und endet mit Abstand vor dem Kartenrand. Dadurch liegt der ganze Kontinent als Insel mit Küste ringsum im Wasser, Seen und Flüsse bleiben. Die Zahl der Gebiete bleibt bei rund 20, bei Unlimited bei rund 70.'
+where not exists (select 1 from public.news where version = 'v21.19');

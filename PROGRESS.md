@@ -208,3 +208,8 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
     - `MODES` in `js/game-core.js`: `chaos.spd` 3 → 4, `unlimited.spd` 3 → 3,5 (Beschreibungen mit); Anzeige über `spdTxt()` in `js/ui-boot.js` (deutsch „3,5x“).
     - `.hhero`/`.hmap` mit `flex:none` (die Vorschau wurde sonst im hohen Menü zusammengedrückt), `ResizeObserver` + `requestAnimationFrame` zeichnen die Vorschau nach Größenänderungen neu; unter 760 px ist die Vorschau flacher (`clamp(160px,24vh,220px)`) und `.hmain` beginnt oben (`justify-content:flex-start`).
     - `index.html` Versionsparameter auf `v=21.18`; News v21.18 in `DEFAULT_NEWS` und `supabase/schema.sql`.
+
+40. Update v21.19 – mehr Wasser auf allen Karten (gemessen über je 8 Karten in Klassisch und Unlimited: Landanteil 0,29–0,33 statt 0,38–0,47, Küstenabstand 6–9 bzw. 10–12 Zellen; Playwright-Gastmodus: Vorschau und Weltkarte gesichtet, Partie startet, 18–20 Gebiete, 7 Bots, keine Seitenfehler):
+    - `buildMap` (`js/game-core.js`): Schwellwert 0,55 → 0,62, radialer Abfall 0,78 → 0,62, Randabstand 6 % statt 3 Zellen, zusätzlich Wasserring `max(4, min(GW,GH)*0,09)` nach `fillLakes` (Land wird dort entfernt, danach erneut größte zusammenhängende Fläche).
+    - Landgrenzen für die Kartensuche auf `1500*SC … 2900*SC` gesenkt; Gebietsabstand der Startpunkte 10,5 → 9,2 und Mindestfüllung 75 % → 90 %, damit trotz kleinerer Landfläche wieder ~20 (Unlimited ~70) Gebiete entstehen.
+    - `index.html` Versionsparameter auf `v=21.19`; News v21.19 in `DEFAULT_NEWS` und `supabase/schema.sql`.
