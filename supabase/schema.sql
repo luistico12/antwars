@@ -1125,3 +1125,8 @@ where not exists (select 1 from public.news where version = 'v21.18');
 insert into public.news (version, title, body)
 select 'v21.19', 'Mehr Wasser: Karten sind jetzt Inseln', 'Die Karten haben deutlich mehr Meer: Das Land nimmt nur noch etwa ein Drittel der Fläche ein (vorher gut 40 Prozent) und endet mit Abstand vor dem Kartenrand. Dadurch liegt der ganze Kontinent als Insel mit Küste ringsum im Wasser, Seen und Flüsse bleiben. Die Zahl der Gebiete bleibt bei rund 20, bei Unlimited bei rund 70.'
 where not exists (select 1 from public.news where version = 'v21.19');
+
+-- News v21.20
+insert into public.news (version, title, body)
+select 'v21.20', 'Kartenvorschau ohne Ränder', 'Im Hauptmenü füllt die Kartenvorschau jetzt die ganze Fläche: Links und rechts läuft das Meer im gleichen Zellenraster weiter, statt unscharfer Balken. Es ist kein Rand und keine Kante mehr an der Karte zu sehen, egal wie breit das Fenster ist.'
+where not exists (select 1 from public.news where version = 'v21.20');

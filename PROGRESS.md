@@ -213,3 +213,8 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
     - `buildMap` (`js/game-core.js`): Schwellwert 0,55 → 0,62, radialer Abfall 0,78 → 0,62, Randabstand 6 % statt 3 Zellen, zusätzlich Wasserring `max(4, min(GW,GH)*0,09)` nach `fillLakes` (Land wird dort entfernt, danach erneut größte zusammenhängende Fläche).
     - Landgrenzen für die Kartensuche auf `1500*SC … 2900*SC` gesenkt; Gebietsabstand der Startpunkte 10,5 → 9,2 und Mindestfüllung 75 % → 90 %, damit trotz kleinerer Landfläche wieder ~20 (Unlimited ~70) Gebiete entstehen.
     - `index.html` Versionsparameter auf `v=21.19`; News v21.19 in `DEFAULT_NEWS` und `supabase/schema.sql`.
+
+41. Update v21.20 – Kartenvorschau im Hauptmenü randlos:
+    - `homePreview()` (`js/ui-boot.js`): unscharfer Cover-Hintergrund und dunkler Schleier entfernt. Die Karte wird jetzt auf Höhe (bzw. Breite) eingepasst und der Rest der Fläche mit echten Meerzellen im selben Raster gefüllt (`hash2`-Farben `#2c6a93`/`#2a6390` + weiße Wellenstriche, Seed `M.seed`), darunter eine Meeres-Grundfläche. Dadurch keine Balken/Kanten mehr, auch bei 758×255 (Seitenverhältnis 2,97 gegen Karte 1,6).
+    - Geprüft per Playwright-Gastmodus bei 1920×1080, 1400×800, 1000×700, 760×700, 430×760: Randpixel der Vorschau sind Meerblau (42,99,144 u. ä.) statt dunkler Balken, Bildmitte Land, keine Seitenfehler; Screenshots gesichtet.
+    - `index.html` Versionsparameter auf `v=21.20`; News v21.20 in `DEFAULT_NEWS` und `supabase/schema.sql`.

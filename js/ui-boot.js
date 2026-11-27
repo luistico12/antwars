@@ -66,20 +66,27 @@ function homeDraw(){const c=$('#homeBg'),g=c&&c.getContext('2d');if(!g||homeBgDr
   const k=Math.max(c.width/baseCanvas.width,c.height/baseCanvas.height),w=baseCanvas.width*k,h=baseCanvas.height*k;
   g.drawImage(baseCanvas,(c.width-w)/2,(c.height-h)/2,w,h);
   g.fillStyle='rgba(8,12,20,.25)';g.fillRect(0,0,c.width,c.height);homeBgDrawn=true}
-/* Kartenvorschau im Menü: die ganze Karte ist sichtbar, die Ränder füllt dieselbe Karte unscharf */
+/* Kartenvorschau im Menü: die Karte füllt die ganze Fläche, außerhalb läuft das Meer im selben Zellenraster weiter (keine Ränder) */
 function homePreview(){const c=$('#hMap');if(!c||!baseCanvas)return;
   const r=c.getBoundingClientRect();if(!r.width||!r.height)return;
   const dp=Math.min(2,window.devicePixelRatio||1),W=Math.round(r.width*dp),H=Math.round(r.height*dp);
   if(c.width!==W||c.height!==H){c.width=W;c.height=H}
   const g=c.getContext('2d');if(!g)return;
   g.imageSmoothingEnabled=false;g.clearRect(0,0,W,H);
-  const cv=Math.max(W/baseCanvas.width,H/baseCanvas.height);
-  g.save();g.globalAlpha=.55;g.filter='blur(5px)';
-  g.drawImage(baseCanvas,(W-baseCanvas.width*cv)/2,(H-baseCanvas.height*cv)/2,baseCanvas.width*cv,baseCanvas.height*cv);
-  g.restore();
-  g.fillStyle='rgba(8,12,20,.6)';g.fillRect(0,0,W,H);
-  const ft=Math.min(W/baseCanvas.width,H/baseCanvas.height),w=Math.round(baseCanvas.width*ft),h=Math.round(baseCanvas.height*ft);
-  g.drawImage(baseCanvas,Math.round((W-w)/2),Math.round((H-h)/2),w,h);
+  const bw=baseCanvas.width,bh=baseCanvas.height,k=Math.min(W/bw,H/bh),mw=bw*k,mh=bh*k;
+  const x0=(W-mw)/2,y0=(H-mh)/2;
+  g.fillStyle='#2b6690';g.fillRect(0,0,W,H);
+  /* Wasser links/rechts/oben/unten als echte Meerzellen, damit kein Rand zu sehen ist */
+  const s=M.seed&0xffff,cs=Math.max(CS*k,1),pad=Math.ceil(cs)+1;
+  const gx0=Math.floor((-x0-pad)/cs),gx1=Math.ceil((W-x0+pad)/cs);
+  const gy0=Math.floor((-y0-pad)/cs),gy1=Math.ceil((H-y0+pad)/cs);
+  for(let gy=gy0;gy<=gy1;gy++)for(let gx=gx0;gx<=gx1;gx++){
+    if(gx>=0&&gy>=0&&gx<GW&&gy<GH)continue;
+    const px=x0+gx*cs,py=y0+gy*cs,cw=Math.ceil(cs)+1;
+    g.fillStyle=hash2(gx,gy,s)<0.5?'#2c6a93':'#2a6390';g.fillRect(px,py,cw,cw);
+    if(hash2(gx,gy,s+5)<0.05){g.fillStyle='rgba(255,255,255,.14)';g.fillRect(px+cs*.2,py+cs*.4,Math.max(1,cs*.5),Math.max(1,cs*.1))}
+  }
+  g.drawImage(baseCanvas,Math.round(x0),Math.round(y0),Math.round(mw),Math.round(mh));
   if(!mapRO&&window.ResizeObserver){mapRO=new ResizeObserver(()=>{if(!$('#home').hidden)homePreview()});mapRO.observe(c)}}
 addEventListener('resize',()=>requestAnimationFrame(homePreview));
 function homeFill(){
