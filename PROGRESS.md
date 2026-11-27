@@ -189,4 +189,4 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
     - Selected-Farbe der Artwahl (`.spseg button.on`) in der Akzentfarbe; Hover für `.btn`, `.ibtn`, `.hact`, `.mode-card`, `#rail button`, `.chip` und `.tab` mit Akzentumrandung und Schein.
     - Gegner starten mit nur einem Gebiet und `PLAYER_START*BOT_START[diffKey]` Truppen (`js/game-world.js`): Leicht 2, Normal 3, Schwer 4 (0,75 / 1 / 1,35 der 3 Starttruppen des Spielers).
     - Angriffs-Leiste der Weltkarte (`.wmsend`) trägt statt Schild ein Schwert (`RIC.sword` in `js/game-radial.js`).
-    - `index.html` Versionsparameter auf `v=21.15`; News v21.15 in `DEFAULT_NEWS` und `supabase/schema.sql` (noch nicht live eingespielt).
+    - `index.html` Versionsparameter auf `v=21.15`; News v21.15 in `DEFAULT_NEWS`, `supabase/schema.sql` und live in Supabase eingespielt.
