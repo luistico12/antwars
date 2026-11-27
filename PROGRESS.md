@@ -196,3 +196,8 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
     - Die Werbefläche (`#adrail`) bekommt oben den Platz der Kopfzeile (`padding-top:calc(var(--hh) + 10px)`, `max-height` entsprechend), damit keine Anzeige unter den Knöpfen liegt.
     - Das Hauptmenü (Hero, Modi, vier Aktionen, Menüleiste `#rail`) bleibt unverändert.
     - `index.html` Versionsparameter auf `v=21.16`; News v21.16 in `DEFAULT_NEWS` und `supabase/schema.sql`.
+
+38. Update v21.17 – Menüleiste wieder links (geprüft mit Playwright im Gastmodus: 1400×800 und 390×760, Menü links über die volle Höhe mit Beschriftungen, Hauptmenü wieder mittig, Kopfzeilen-Ecke unverändert):
+    - Die v21.15-Umschaltung der Menüleiste nach oben rechts ist zurückgenommen: `#home{flex-direction:row}`, `.hmain{order:1}`, `#rail{order:2}` und der `position:absolute`-Block (≥ 900 px) samt `.hmain{padding-right:calc(var(--adw) + 96px)}` sind entfernt. `#rail` ist wieder die linke Spalte (78 px, Symbole + Beschriftung, Einstellungen unten).
+    - Oben rechts in der Ecke bleiben weiterhin News, Forum und Profil (v21.16).
+    - `index.html` Versionsparameter auf `v=21.17`; News v21.17 in `DEFAULT_NEWS` und `supabase/schema.sql`.

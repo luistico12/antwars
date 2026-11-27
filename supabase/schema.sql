@@ -1110,3 +1110,8 @@ where not exists (select 1 from public.news where version = 'v21.15');
 insert into public.news (version, title, body)
 select 'v21.16', 'Profil, News und Forum ganz in der Ecke', 'Die Knöpfe für News, Forum und Profil sitzen jetzt wirklich in der rechten oberen Ecke des Fensters: Die Kopfzeile reicht bis zum rechten Rand, die Werbefläche bleibt darunter frei. Am Hauptmenü selbst ändert sich nichts – Karte, Modi und die vier Aktionsknöpfe bleiben, wo sie sind.'
 where not exists (select 1 from public.news where version = 'v21.16');
+
+-- News v21.17
+insert into public.news (version, title, body)
+select 'v21.17', 'Menü wieder links, Profil bleibt in der Ecke', 'Die Menüleiste mit Erfolge, Shop, Inventar, Freunde, Clan, Ranking und Einstellungen sitzt wieder links am Rand und reicht über die volle Höhe – mit Symbol und Beschriftung. Dadurch steht das Hauptmenü wieder mittig auf dem Bildschirm. Oben rechts in der Ecke bleiben News, Forum und Profil.'
+where not exists (select 1 from public.news where version = 'v21.17');
