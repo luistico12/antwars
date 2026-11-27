@@ -319,7 +319,12 @@ body.wmv #chips{display:none}
 #wmHud>*{pointer-events:auto}
 .wmp{background:rgba(10,14,22,.82);border:1px solid var(--ln);border-radius:12px;backdrop-filter:blur(10px)}
 #wmLb{position:absolute;left:10px;top:10px;width:min(330px,40%);padding:0 0 4px;overflow:hidden;font-size:12px}
-#wmLb .wmh{display:flex;align-items:center;gap:8px;padding:10px 12px;font-weight:700}
+#wmLb .wmh{display:flex;align-items:center;gap:8px;padding:10px 12px;font-weight:700;width:100%;background:none;border:0;color:inherit;font:inherit;font-weight:700;text-align:left;cursor:pointer;transition:background .15s}
+#wmLb .wmh:hover,#wmLb .wmh:focus-visible{background:rgba(255,255,255,.07)}
+#wmLb .wmh .chev{display:inline-flex;align-items:center;justify-content:center;transition:transform .18s}
+#wmLb .wmh .chev .svg{width:16px;height:16px;stroke:var(--mu)}
+#wmLb.shut .wmh .chev{transform:rotate(180deg)}
+#wmLb.shut table,#wmLb.shut .more{display:none}
 #wmLb .wmh .svg{width:18px;height:18px;stroke:var(--ac)}
 #wmLb .wmh span{flex:1;color:var(--ac)}
 #wmLb .mode{font-style:normal;font-size:10.5px;letter-spacing:.08em;background:rgba(255,255,255,.1);border-radius:5px;padding:3px 7px;color:var(--tx)}
@@ -1065,7 +1070,15 @@ body.ingame #toasts{bottom:14px}
   box-shadow:inset 0 1px 0 rgba(255,240,210,.6),0 8px 18px -10px #000}
 #viewColony #dock .card{border-radius:10px;border:2px solid rgba(255,220,170,.16);background:rgba(16,11,7,.55);
   box-shadow:inset 0 1px 0 rgba(255,226,180,.14),0 10px 22px -18px #000}
-#viewColony #dock .card:hover{background:rgba(34,23,13,.62);border-color:rgba(255,220,170,.3)}
+/* Gewählter Raum im Reiter „Räume“: klar markiert */
+#viewColony #dock .card.sel{border-color:#ffd08a;background:linear-gradient(180deg,rgba(255,214,150,.26),rgba(32,21,12,.78));
+  box-shadow:inset 0 0 0 1px rgba(255,240,206,.55),0 0 0 2px rgba(255,190,110,.5),0 12px 26px -16px #000}
+#viewColony #dock .card.sel .body h3{color:#ffeac6}
+#viewColony #dock .card.sel .pic{background:rgba(255,196,120,.18);border-bottom-color:rgba(255,214,150,.4)}
+#viewColony #dock .card.sel::after{content:'✓';position:absolute;right:7px;top:6px;width:20px;height:20px;border-radius:50%;
+  display:grid;place-items:center;background:#ffca7a;color:#3a2410;font:900 13px/1 var(--ui);box-shadow:0 2px 8px rgba(0,0,0,.45)}
+#viewColony #dock .card:hover:not(.sel){background:rgba(34,23,13,.62);border-color:rgba(255,220,170,.3)}
+#viewColony #dock .card.sel:hover{background:linear-gradient(180deg,rgba(255,214,150,.34),rgba(38,25,14,.82))}
 #viewColony #dock .card .pic{background:linear-gradient(180deg,#2c1c0e,#150d06);border-bottom:2px solid rgba(255,220,170,.14);height:74px}
 #viewColony #dock .card .pic canvas{width:108px;height:72px;image-rendering:pixelated}
 #viewColony #dock .card h3{font-size:14px;text-shadow:0 1px 0 rgba(0,0,0,.7)}
@@ -1097,11 +1110,6 @@ body.ingame #toasts{bottom:14px}
 @media (max-width:640px){#hSp .spc{flex:1 1 100%}}
 
 /* ---- Weltkarte: Bestenliste oben links, FPS unten links, Schutzzeit ---- */
-#wmTopLeft{position:absolute;left:10px;top:10px;display:flex;gap:6px;align-items:center}
-#wmTopLeft .wmb{display:inline-flex;gap:8px;background:rgba(10,14,22,.82);border:1px solid var(--ln);border-radius:10px;padding:7px;width:34px;height:34px;align-items:center;justify-content:center;backdrop-filter:blur(18px) saturate(1.6)}
-#wmTopLeft .wmb .svg{width:20px;height:20px}
-#wmTopLeft .wmb:hover,#wmTopLeft .wmb.on{background:var(--ac-soft);border-color:var(--ac-line)}
-#wmLb{top:52px}
 #wmFps{position:absolute;left:10px;bottom:10px;z-index:2;padding:5px 9px;border-radius:9px;font:700 11.5px/1 var(--mono);
   color:#9df0d2;background:rgba(10,14,22,.78);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(12px);letter-spacing:.03em}
 #wmProt{display:none;align-items:center;gap:6px;padding:0 12px;height:30px;border-radius:9px;font-weight:800;font-size:12.5px;
@@ -1189,8 +1197,6 @@ body.ingame #toasts{bottom:calc(min(44vh,320px) + 18px);left:10px}
   #gRight .wmb{width:30px;height:30px;padding:6px}
 }
 
-/* Bestenlisten-Knopf trägt das Symbol der Bestenliste selbst */
-#wmTopLeft .wmb svg{width:18px;height:18px;stroke:var(--ac)}
 
 /* Erfolgsmeldung: 5 Sekunden sichtbar, per Klick schließbar */
 .qAch{pointer-events:auto;cursor:pointer;transform:translateX(-50%)}

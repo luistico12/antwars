@@ -10,7 +10,7 @@ const cosmVisible=own=>own||!ST.hideCosm;
 /* Bildwechsel: mit VSync per requestAnimationFrame, sonst per Nachrichtenkanal (ohne Monitor-Takt) */
 const nextFrame=(()=>{
   const ch=new MessageChannel(),q=[],MINF=1000/1024;let lastT=0,pend=false;
-  const run=()=>{const n=performance.now();if(n-lastT<MINF){ch.port2.postMessage(0);return}lastT=n;pend=false;const l=q.splice(0);for(const f of l)f(n)};
+  const run=()=>{const n=performance.now();if(n-lastT<MINF){ch.port2.postMessage(0);return}lastT=n;pend=false;const l=q.splice(0);for(const f of l){try{f(n)}catch(e){console.error('Spielfehler im Frame',e)}}};
   ch.port1.onmessage=run;
   return f=>{if(ST.vsync)requestAnimationFrame(f);else{q.push(f);if(!pend){pend=true;ch.port2.postMessage(0)}}};
 })();

@@ -50,7 +50,6 @@ function hudKey(k){const i=k==='0'?9:+k-1;if(i<HSLOTS.length)hudSlot(i)}
 (function(){const sv=setView;setView=function(v){sv(v);updateHud()}})();
 
 $('#viewMap .stage').insertAdjacentHTML('beforeend',`<div id="wmHud" hidden>
- <div id="wmTopLeft"><button class="wmb" id="wmLbT" type="button" aria-label="Bestenliste ein-/ausblenden" title="Bestenliste ein-/ausblenden">${ico('board')}</button></div>
  <div id="wmLb" class="wmp"></div>
  <div id="wmFps">– FPS</div>
  <div id="wmBar">
@@ -83,12 +82,13 @@ $('#gMap').onclick=()=>setView('map');
 $('#wmSlots').innerHTML=HSLOTS.map((s,i)=>`<button type="button" class="slot" data-i="${i}"><i class="no">${i+1}</i><span class="ic" style="color:${RCOL[s.k]||'#fff'}">${ric(s.k)}</span><small class="cost"></small></button>`).join('');
 $('#wmSlots').addEventListener('click',e=>{const b=e.target.closest('.slot');if(b)hudSlot(+b.dataset.i)});
 $('#wmSet').onclick=()=>openSet();
-$('#wmLbT').onclick=()=>{ST.hideLb=!ST.hideLb;saveST();updateHud()};
 $('#wmExit').onclick=()=>{if(started&&!over){setSpeedUI(0);showPause()}};
 $('#wmPct').oninput=e=>{pct=+e.target.value;$('#pct').value=pct;$('#pctLbl').textContent=pct+'%';updateHud()};
 $('#wmDt').oninput=e=>{donT=+e.target.value;updateHud()};
 $('#wmDm').oninput=e=>{donM=+e.target.value;updateHud()};
-$('#wmLb').addEventListener('click',e=>{if(e.target.closest('#wmMore')){lbAll=!lbAll;updateHud()}});
+$('#wmLb').addEventListener('click',e=>{
+  if(e.target.closest('.wmh')){ST.hideLb=!ST.hideLb;saveST();updateHud();return}
+  if(e.target.closest('#wmMore')){lbAll=!lbAll;updateHud()}});
 $('#wmEv').addEventListener('click',e=>{
   const tb=e.target.closest('[data-t]');if(tb){evTab=tb.dataset.t;evOpen=true;updateHud();return}
   if(e.target.closest('#wmEvTog')){evOpen=!evOpen;updateHud()}
@@ -106,7 +106,7 @@ function hudBoard(){
   const row=(r,i)=>`<tr class="${r.me?'me':''}"><td>${i+1}</td><td>${i===0?`<img class="crn" alt="" src="${crownURL(cosmOf(r.id).crown||null)}">`:`<i class="dot" style="background:${rgb(r.rgb)}"></i>`}${r.me?tag:''}<b>${esc(r.name)}</b></td><td>${r.share.toFixed(1)}%</td><td>${r.n}</td><td>${fk(r.tr)}</td></tr>`;
   const top=lbAll?rows:rows.slice(0,4),mi=rows.findIndex(r=>r.me);
   let b=top.map((r,i)=>row(r,i)).join('');if(mi>=top.length)b+=row(rows[mi],mi);
-  return `<div class="wmh">${ico('board')}<span>Team: ${esc(F[0].name)}</span><i class="mode">${MODES[modeKey].n.toUpperCase()}</i></div><table><thead><tr><th>#</th><th>Spieler</th><th>Besitz</th><th>Gebiete</th><th>Truppen</th></tr></thead><tbody>${b}</tbody></table><button type="button" id="wmMore" class="more">${lbAll?'−':'+'}</button>`;
+  return `<button type="button" class="wmh" aria-expanded="${!ST.hideLb}" aria-label="Bestenliste ein-/ausblenden" title="Bestenliste ein-/ausblenden">${ico('board')}<span>Team: ${esc(F[0].name)}</span><i class="mode">${MODES[modeKey].n.toUpperCase()}</i><i class="chev">${ico('down')}</i></button><table><thead><tr><th>#</th><th>Spieler</th><th>Besitz</th><th>Gebiete</th><th>Truppen</th></tr></thead><tbody>${b}</tbody></table><button type="button" id="wmMore" class="more">${lbAll?'−':'+'}</button>`;
 }
 function hudEvents(){
   const tabs=$$('#wmEv [data-t]');tabs.forEach(b=>b.classList.toggle('on',b.dataset.t===evTab));
@@ -139,8 +139,8 @@ function updateHud(){
   $('#viewMap').classList.toggle('wm',started);document.body.classList.toggle('wmv',on);
   hud.hidden=!on;if(!on||!G)return;
   $('#viewMap .stage').style.setProperty('--ar',(MW/MH).toFixed(3));
-  $('#wmLb').hidden=!!ST.hideLb;if(!ST.hideLb)setHTML($('#wmLb'),hudBoard());
-  $('#wmLbT').classList.toggle('on',!ST.hideLb);
+  $('#wmLb').hidden=false;setHTML($('#wmLb'),hudBoard());
+  $('#wmLb').classList.toggle('shut',!!ST.hideLb);
   const tg=hudTarget();
   $$('#wmSlots .slot').forEach((el,i)=>{const s=HSLOTS[i],c=s.c?s.c(tg):null;
     const poor=c?poorFor(c):false,bad=tg&&((s.k==='port'&&(tg.port||!tg.coast||!tg.coast.length))||(s.k==='raft'&&(!tg.port||tg.port.rafts>=tg.port.max))||(s.k==='war'&&(!tg.port||warsOf(tg)>=WAR_MAX))||(s.k==='wall'&&tg.walls.length>=WALL_MAX)||(s.k==='out'&&tg.str.out>=OUT_MAX));

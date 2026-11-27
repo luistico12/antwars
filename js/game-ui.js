@@ -501,8 +501,14 @@ $('#endBtn').onclick=()=>{
 
 /* ----- Hauptschleife ----- */
 let last=performance.now(),acc5=0,fpsAcc=0,fpsCnt=0,fpsVal=0;
+/* Ein Fehler in einer Szene darf das Spiel nicht einfrieren: der nächste Frame wird immer angefordert */
 function frame(now){
-  if(typeof ST!=='undefined'&&ST.fpsMax&&now-(frame.t||0)<1000/ST.fpsMax-1.5){nextFrame(frame);return}
+  try{tick(now)}
+  catch(e){frame.errs=(frame.errs||0)+1;if(frame.errs<=3)console.error('Spielfehler im Frame',e)}
+  typeof nextFrame==='function'?nextFrame(frame):requestAnimationFrame(frame);
+}
+function tick(now){
+  if(typeof ST!=='undefined'&&ST.fpsMax&&now-(frame.t||0)<1000/ST.fpsMax-1.5)return
   frame.t=now;
   const rdt=Math.min(0.1,(now-last)/1000);last=now;
   if(started&&!over&&speed>0){
@@ -517,7 +523,6 @@ function frame(now){
   if(started&&dockDirty)renderDock();
   if(started&&view==='colony'&&col)drawColony(cg,now,ccam);
   if(view==='map')drawMap(mg,now);
-  typeof nextFrame==='function'?nextFrame(frame):requestAnimationFrame(frame);
 }
 newMap((Math.random()*1e6)|0);renderSetup();setView('map');
 requestAnimationFrame(frame);

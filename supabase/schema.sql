@@ -1130,3 +1130,8 @@ where not exists (select 1 from public.news where version = 'v21.19');
 insert into public.news (version, title, body)
 select 'v21.20', 'Kartenvorschau ohne Ränder', 'Im Hauptmenü füllt die Kartenvorschau jetzt die ganze Fläche: Links und rechts läuft das Meer im gleichen Zellenraster weiter, statt unscharfer Balken. Es ist kein Rand und keine Kante mehr an der Karte zu sehen, egal wie breit das Fenster ist.'
 where not exists (select 1 from public.news where version = 'v21.20');
+
+-- News v22
+insert into public.news (version, title, body)
+select 'v22', 'Kein Einfrieren, markierte Räume, Bestenliste an der Kopfzeile', 'Das Spiel friert nicht mehr ein: Ein Fehler in einem einzelnen Bild wird abgefangen, Simulation und Anzeige laufen weiter. Beim Bauen ist der gewählte Raum im Dock jetzt deutlich markiert – goldener Rahmen, helle Fläche und ein Häkchen. Die Bestenliste klappt man über ihre eigene Kopfzeile ein und aus; der kleine Knopf darüber ist weg, und eingeklappt bleibt die Kopfzeile sichtbar.'
+where not exists (select 1 from public.news where version = 'v22');
