@@ -155,6 +155,8 @@ const Remote={
     /* Schlägt das fehl (z. B. „Allow anonymous sign-ins“ ist im Dashboard aus), bleibt der Server aktiv: Registrieren/Anmelden geht trotzdem. */
     if(!AW.user){try{await Remote.anon()}catch(e){Remote.anonFailed=true;console.warn('Anonyme Anmeldung nicht möglich (Supabase → Authentication → Sign In / Providers → Allow anonymous sign-ins):',e.message)}}
     if(AW.user)await Remote.loadProfile();
+    /* Profil beim Zurückkehren in den Tab neu laden (z. B. frisch vergebenes AntWars +) */
+    let _rf=0;document.addEventListener('visibilitychange',()=>{if(document.hidden||!AW.user||Date.now()-_rf<15000)return;_rf=Date.now();Remote.loadProfile().then(()=>AW.emit()).catch(()=>{})});
     /* Kein await auf Supabase-Aufrufe direkt im Callback (Deadlock im SDK) – Arbeit läuft danach in einem eigenen Tick. */
     AW.sb.auth.onAuthStateChange((ev,s)=>{AW.user=s?s.user:null;AW.profile=null;
       if(ev==='SIGNED_OUT'&&!Remote.userOut){console.warn('Unerwartet abgemeldet (SIGNED_OUT)');try{toast('Abgemeldet (Sitzung ungültig)','bad')}catch(e){}}

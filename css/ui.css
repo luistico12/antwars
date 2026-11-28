@@ -63,16 +63,16 @@ h1,h2,h3,p{margin:0}
 /* ---- Kopfzeile ---- */
 #top{position:fixed;z-index:100;left:0;right:var(--adw);top:0;height:var(--hh);padding:0 12px;display:flex;align-items:center;gap:12px;
   background:rgba(10,14,22,.72);border-bottom:1px solid var(--ln);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
-.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand{display:flex;align-items:center;gap:12px;min-width:0;flex:0 1 auto}
 .brand img{height:40px;width:auto;display:block;cursor:pointer}
 #dayLabel{color:var(--mu);font-size:13.5px;white-space:nowrap}
 #viewtabs,#speed{display:flex;gap:4px}
 #viewtabs .btn{min-height:34px;padding:4px 12px}
-#hdrR{margin-left:auto;display:flex;align-items:center;gap:8px}
-#hdrProf{display:flex;align-items:center;gap:9px;height:40px;padding:0 12px 0 6px;border-radius:12px;background:var(--g2);border:1px solid var(--ln)}
+#hdrR{margin-left:auto;display:flex;align-items:center;gap:8px;flex:0 0 auto;min-width:0}
+#hdrProf{flex:0 0 auto;display:flex;align-items:center;gap:9px;height:40px;padding:0 12px 0 6px;border-radius:12px;background:var(--g2);border:1px solid var(--ln)}
 #hdrProf:hover{background:var(--g3)}
 #hdrProf .av{width:28px;height:28px;border-radius:9px;background:var(--ac-soft);border:1px solid var(--ac-line);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px}
-#hdrProf .nm{font-weight:700;font-size:13.5px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#hdrProf .nm{font-weight:700;font-size:13.5px;max-width:min(260px,28vw);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #hdrLang .flag{width:26px;height:17px}
 @media (max-width:760px){#dayLabel,#hdrProf .nm,#hdrProf .ruby{display:none}.brand img{height:32px}#hdrProf{padding:0 6px}}
 #fpsBox{background:rgba(0,0,0,.5);color:#9df0d2;font:600 12px/1.2 var(--mono);padding:3px 7px;border-radius:7px}
@@ -1420,3 +1420,8 @@ body.ingame #toasts{bottom:calc(min(44vh,320px) + 18px);left:10px}
 .cosm-inc{margin-top:8px}
 .redeembox{max-width:520px}
 .redeembox .row{gap:8px}
+
+/* Kopfzeile: Name nie abschneiden (Clan-Tag + Plus-Zeichen bleiben sichtbar) */
+#hdrProf .nm{max-width:none;overflow:visible;text-overflow:clip}
+#hdrProf{flex:0 0 auto;max-width:none}
+#dayLabel,#viewtabs{flex-shrink:1;min-width:0}
