@@ -1394,3 +1394,7 @@ language sql security definer set search_path=public stable as $$
 $$;
 revoke all on function public.player_public(uuid, text, text) from public, anon;
 grant execute on function public.player_public(uuid, text, text) to authenticated;
+-- News v26
+insert into public.news (version, title, body)
+select 'v26', 'Gegner-Städte erzeugen jetzt Truppen wie deine', 'Gegner-Städte erzeugen jetzt Truppen nach derselben Formel wie deine: Je größer das Gebiet und je mehr Außenposten, desto schneller wachsen die Soldaten – nicht mehr nur ein fester Wert für Hauptstadt und Städte. Die Schwierigkeit bestimmt das Tempo: Leicht 70 Prozent, Normal genauso schnell wie du, Schwer 130 Prozent. Damit bist du auf Normal nicht mehr im Vorteil, wenn du viele Gebiete hältst, und Gegner mit großem Reich werden spürbar stärker.'
+where not exists (select 1 from public.news where version = 'v26');
