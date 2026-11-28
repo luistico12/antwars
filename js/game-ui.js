@@ -18,23 +18,35 @@ function fitStage(c,st){
   if(!c||!st)return;const r=st.getBoundingClientRect();if(r.width<2||r.height<2)return;
   const ar=c.width/c.height;let w=r.width,h=w/ar;
   if(h>r.height){h=r.height;w=h*ar}
-  c.style.width=Math.round(w)+'px';c.style.height=Math.round(h)+'px';
+  const W=Math.round(w)+'px',H=Math.round(h)+'px';
+  /* Nur bei echter Änderung schreiben: sonst erzwingt jedes Bild ein neues Layout und das Spiel ruckelt/friert ein */
+  if(c.style.width!==W)c.style.width=W;
+  if(c.style.height!==H)c.style.height=H;
 }
-function fitStages(){fitStage(cv,cv&&cv.parentElement);fitStage(mv,mv&&mv.parentElement)}
+let _fitSig='';
+function fitStages(){
+  const a=cv&&cv.parentElement,b=mv&&mv.parentElement;
+  const sig=[a?a.clientWidth:0,a?a.clientHeight:0,b?b.clientWidth:0,b?b.clientHeight:0].join('x');
+  if(sig===_fitSig)return;_fitSig=sig;
+  fitStage(cv,a);fitStage(mv,b);
+}
 addEventListener('resize',()=>{if(!over)fitStages()});
 /* Unscharrfer Hintergrund hinter dem Spielfeld: dieselbe Szene, unscharf und abgedunkelt.
    Dadurch entstehen links und rechts keine leeren Raender mehr, wenn das Seitenverhaeltnis nicht passt. */
 function mkStageBg(c){if(!c||!c.parentElement)return null;const b=document.createElement('canvas');b.className='stagebg';b.setAttribute('aria-hidden','true');c.parentElement.insertBefore(b,c);return b}
 const cvBg=mkStageBg(cv),mvBg=mkStageBg(mv);
-let bgT=0;
-function drawStageBg(b,c){if(!b||!c)return;const st=c.parentElement;if(!st)return;const r=st.getBoundingClientRect();if(r.width<4||r.height<4)return;
+let bgT=0,bgS=0;
+function drawStageBg(b,c){if(!b||!c)return;const st=c.parentElement;if(!st)return;
+  /* unscharfer Hintergrund nur jedes 3. Bild und nie für ausgeblendete Flächen */
+  if(c.offsetParent===null)return;if((bgS=(bgS+1)%3)!==0)return;
+  const r=st.getBoundingClientRect();if(r.width<4||r.height<4)return;
   const w=Math.max(8,Math.round(r.width/10)),h=Math.max(8,Math.round(r.height/10));
   if(b.width!==w||b.height!==h){b.width=w;b.height=h}
   const g=b.getContext('2d'),ar=b.width/b.height,car=c.width/c.height;let dw=b.width,dh=b.height;
   if(car>ar){dw=b.height*car}else{dh=b.width/car}
   g.clearRect(0,0,b.width,b.height);g.drawImage(c,(b.width-dw)/2,(b.height-dh)/2,dw,dh)}
 function setView(v){
-  view=v;$('#viewColony').hidden=v!=='colony';$('#viewMap').hidden=v!=='map';
+  view=v;_fitSig='';$('#viewColony').hidden=v!=='colony';$('#viewMap').hidden=v!=='map';
   $('#tabColony').classList.toggle('on',v==='colony');$('#tabMap').classList.toggle('on',v==='map');
   {const gc=$('#gColony'),gm=$('#gMap');if(gc&&gm){gc.classList.toggle('on',v==='colony');gm.classList.toggle('on',v==='map')}}hideTip();
   document.body.classList.toggle('ingame',!!(started&&!over&&(v==='colony'||v==='map')));
@@ -275,7 +287,9 @@ function refreshLive(){
   $('#cH').textContent=heatStage();
   $('#chipFood').classList.toggle('warn',G.food<10);
   {const pl=protLeft();if(pl>0)prevProt=1;else if(prevProt){prevProt=0;toast('Die Schutzzeit ist vorbei. Ab jetzt sind Angriffe möglich','bad')}$('#dayLabel').textContent=pl>0?`Schutz ${mmss(pl)}`:''}
-  renderStat();renderColSwitch();renderPw();
+  renderStat();renderPw();
+  /* Kolonie-Leiste nicht bei jedem Takt neu bauen (viele Kolonien = teures DOM) */
+  {const t=performance.now();if(!refreshLive.t||t-refreshLive.t>900){refreshLive.t=t;renderColSwitch()}}
   if(!col)return;
   const e=econC(col),t=T[col.tid];
   if(dockTab==='ants'&&$('#af')){

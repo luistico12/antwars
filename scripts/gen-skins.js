@@ -320,6 +320,24 @@ ${hull('url(#h)', '#0a0618')}
 <path d="M20 19l-4 4 4 2" fill="none" stroke="#c6b0ff" stroke-width="1.2" opacity=".7"/>
 <g fill="#ff4fd8"><circle cx="18" cy="35" r="2"/><circle cx="32" cy="35" r="2"/><circle cx="46" cy="35" r="2"/></g>`;
 
+/* Kriegsschiff: Kanonen an der Bordwand, roter Wimpel am Mast */
+const WAR_ADD = `<g stroke="#1c1008" stroke-width=".9" stroke-linejoin="round">
+<g fill="#2b2f38"><rect x="12" y="28.4" width="9" height="3.6" rx="1.2"/><rect x="25" y="28.4" width="9" height="3.6" rx="1.2"/><rect x="38" y="28.4" width="9" height="3.6" rx="1.2"/></g>
+<g fill="#0c0e13"><circle cx="12.6" cy="30.2" r="1"/><circle cx="25.6" cy="30.2" r="1"/><circle cx="38.6" cy="30.2" r="1"/></g>
+<path d="M31 1.4h12.6l-4.2 3.4 4.2 3.4H31z" fill="#ff5757" stroke="#7d1b20" stroke-width=".8"/>
+<path d="M30.4 1h2.2v9h-2.2z" fill="#1c1008" stroke="none"/>
+<g fill="#ffd23f" stroke="none" opacity=".9"><circle cx="17" cy="40.4" r="1.4"/><circle cx="32" cy="40.4" r="1.4"/><circle cx="47" cy="40.4" r="1.4"/></g>
+</g>`;
+/* Handelsschiff: Kisten an Deck, Münzen und ein Wimpel in Gold */
+const TRADE_ADD = `<g stroke="#3d2710" stroke-width=".9" stroke-linejoin="round">
+<g fill="#b8874a"><rect x="11" y="33" width="10" height="7" rx="1.2"/><rect x="23" y="35" width="8" height="5" rx="1.1"/></g>
+<g fill="none" stroke="#7a5a2a" stroke-width=".8"><path d="M11 36.6h10M16 33v7M23 37.6h8"/></g>
+<g fill="#ffd23f" stroke="#8a5a00"><circle cx="45" cy="37" r="2.6"/><circle cx="51" cy="39.4" r="1.8"/></g>
+<path d="M45 34.4v5.2M51 37.6v3.6" stroke="#8a5a00" stroke-width=".8" fill="none"/>
+<path d="M40.6 2.4h10l-3.4 2.8 3.4 2.8h-10z" fill="#ffd23f" stroke="#8a5a00" stroke-width=".8"/>
+<path d="M40 1.6h2v8h-2z" fill="#3d2710" stroke="none"/>
+</g>`;
+
 function write(dir, id, svg) {
   const d = path.join(OUT, dir);
   fs.mkdirSync(d, { recursive: true });
@@ -327,5 +345,9 @@ function write(dir, id, svg) {
 }
 for (const [id, body] of Object.entries(HATS)) write('hats', id, wrap(32, 24, body));
 for (const [id, body] of Object.entries(CROWNS)) write('crowns', id, wrap(64, 36, body));
-for (const [id, body] of Object.entries(SHIPS)) write('ships', id, wrap(64, 48, body));
-console.log(`Hüte: ${Object.keys(HATS).length}, Kronen: ${Object.keys(CROWNS).length}, Schiffe: ${Object.keys(SHIPS).length}`);
+for (const [id, body] of Object.entries(SHIPS)) {
+  write('ships', id, wrap(64, 48, body));
+  write('wships', id, wrap(64, 48, body + WAR_ADD));
+  write('tships', id, wrap(64, 48, body + TRADE_ADD));
+}
+console.log(`Hüte: ${Object.keys(HATS).length}, Kronen: ${Object.keys(CROWNS).length}, Schiffe: ${Object.keys(SHIPS).length} (+ Krieg und Handel)`);

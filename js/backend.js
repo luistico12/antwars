@@ -15,6 +15,10 @@ const safeAvatar=s=>typeof s==='string'&&s.length<=30000&&/^data:image\/(png|jpe
 const CROWNS=[['monarch','Königskrone',4],['ruby','Rubinkrone',6],['coral','Korallenkrone',7],['amethyst','Amethystturm',8],['toxic','Giftkrone',8],['laurel','Lorbeerkranz',10],['halo','Himmelsreif',10],['frost','Eiskrone',11],['inferno','Infernokrone',13],['prism','Prisma-Herrscher',16],['sun','Sonnenkrone',18],['obsidian','Obsidiankrone',22],['omega','Omega-Krone',0],['aurora','Polarlicht-Krone',0]];
 const PATTERNS=[['stripes','Diagonalen',3],['diagonal','Streifen',3],['checker','Schachbrett',3],['dots','Punkte',3],['bricks','Mauerwerk',4],['hearts','Herzchen',4],['stars','Sterne',4],['waves','Wellen',5],['grid','Gitter',5],['arrows','Pfeile',5],['hexes','Waben',6],['scales','Schuppen',6],['plus','Plus-Muster',0],['aurora','Polarlicht',0]];
 const SHIPS=[['leaf','Blattkahn',4],['paper','Papierboot',5],['duck','Entenboot',6],['turtle','Schildkrötenfloß',6],['viking','Wikingerboot',6],['ice','Eisbrecher',7],['steam','Dampfer',8],['pirate','Piratenschiff',10],['ghost','Geisterschiff',11],['golden','Goldgaleone',14],['leviathan','Leviathan',0],['nebula','Nebelgaleone',0]];
+/* Kriegs- und Handelsschiffe: gleiche Schlüssel wie die Schiffe, werden mit dem passenden Schiff freigeschaltet */
+const WARSHIP_NAME={leaf:'Kriegsblatt',paper:'Kriegsboot',duck:'Enterboot',turtle:'Panzerschildkröte',viking:'Langschiff',ice:'Eisbrecher',steam:'Kanonendampfer',pirate:'Kaperfahrer',ghost:'Geisterfregatte',golden:'Goldflaggschiff',leviathan:'Leviathan',nebula:'Nebelgaleone'};
+const TRADESHIP_NAME={leaf:'Blatthändler',paper:'Papierkutsche',duck:'Entenhandel',turtle:'Schildkrötenkarawane',viking:'Wikingerhandel',ice:'Eisfrachter',steam:'Dampffrachter',pirate:'Schmuggler',ghost:'Geisterfrachter',golden:'Goldhandel',leviathan:'Leviathan-Frachter',nebula:'Nebelfrachter'};
+const shipRows=(kind,names)=>SHIPS.map(([id,n,p])=>({id:kind+':'+id,kind,key:id,name:names[id]||n,price:p||0,plus:!p,shipOf:'ship'}));
 /* Kosmetik in Stufen. Preis 0 = nur über AntWars + erhältlich (Stufe „Ultimativ“). */
 const TIERS={common:'Gewöhnlich',rare:'Selten',epic:'Episch',legendary:'Legendär',mythic:'Mythisch',ultimate:'Ultimativ'};
 const TIER_ORDER=['common','rare','epic','legendary','mythic'];
@@ -24,6 +28,8 @@ const SHOP=[
   ...cosRows(CROWNS,'crown'),
   ...cosRows(PATTERNS,'pattern'),
   ...cosRows(SHIPS,'ship'),
+  ...shipRows('wship',WARSHIP_NAME),
+  ...shipRows('tship',TRADESHIP_NAME),
   ...Object.entries(BSKINS).filter(([id])=>id!=='default').map(([id,x])=>({id:'bskin:'+id,kind:'bskin',key:id,name:x.n,price:x.price||0,plus:!x.price})),
   ...Object.entries(TSKINS).filter(([id])=>id!=='default').map(([id,x])=>({id:'tskin:'+id,kind:'tskin',key:id,name:x.n,price:x.price||0,plus:!x.price})),
   ...Object.entries(RSKINS).filter(([id])=>id!=='default').map(([id,x])=>({id:'rskin:'+id,kind:'rskin',key:id,name:x.n,price:x.price||0,plus:!x.price})),
@@ -40,9 +46,13 @@ const SHOP=[
   /* „Am beliebtesten“: je Art der mittlere (epische) Artikel */
   for(const k of['crown','ship','pattern','bskin','hat']){const it=SHOP.find(i=>i.kind===k&&i.tier==='epic');if(it)it.pop=true}
 })();
+/* Schiffs-Kosmetik gilt auch für Kriegs- und Handelsschiffe: gleiche Stufe und derselbe Preis */
+for(const i of SHOP)if(i.shipOf){const s=SHOP.find(x=>x.id==='ship:'+i.key);if(s){i.tier=s.tier;i.pop=!!s.pop;i.price=s.price;i.plus=s.plus}}
 const PLUS_IDS=SHOP.filter(i=>i.plus).map(i=>i.id);
+/* Besitz: Schiffs-Kosmetik schaltet Kriegs- und Handelsschiff derselben Art mit frei */
+const ownsItem=(p,id)=>{const it=SHOP_BY_ID[id];const owned=(p&&p.owned)||[];return owned.includes(id)||!!(it&&it.shipOf&&owned.includes(it.shipOf+':'+it.key))};
 const plusItems=kind=>SHOP.filter(i=>i.plus&&(!kind||i.kind===kind));
-const SHOP_BY_ID=Object.fromEntries(SHOP.map(i=>[i.id,i]));
+var SHOP_BY_ID=Object.fromEntries(SHOP.map(i=>[i.id,i]));
 /* Quests: [id, Art, Statistik, Ziel, Belohnung (Rubys), Titel] */
 /*Q-BEGIN*/
 /* Quest: [id, Art, Stat, Ziel, Belohnung, Titel, Beschreibung, Symbol, Kategorie, Extra]. Stat 'bonus' = alle anderen Quests der Art abgeholt */
@@ -180,12 +190,14 @@ const Remote={
     if('username' in p){const nm=cleanName(p.username);if(nm.length<2)throw new Error('Name zu kurz');delete p.username;const{error}=await AW.sb.rpc('set_username',{n:nm});if(error)throw new Error('Name konnte nicht gespeichert werden')}
     if(Object.keys(p).length){const{error}=await AW.sb.from('profiles').update(p).eq('id',AW.user.id);if(error)throw new Error('Speichern nicht möglich')}
     await Remote.loadProfile()},
-  async buy(id){if(SHOP_BY_ID[id]&&SHOP_BY_ID[id].plus)throw new Error('Nur mit AntWars + erhältlich');const{error}=await AW.sb.rpc('buy_item',{item:id});if(error)throw new Error(error.message);await Remote.loadProfile()},
+  async buy(id){if(SHOP_BY_ID[id]&&SHOP_BY_ID[id].plus)throw new Error('Nur mit AntWars + erhältlich');if(SHOP_BY_ID[id]&&SHOP_BY_ID[id].shipOf)throw new Error('Wird mit dem passenden Schiff freigeschaltet');const{error}=await AW.sb.rpc('buy_item',{item:id});if(error)throw new Error(error.message);await Remote.loadProfile()},
   async buyPlus(){const{error}=await AW.sb.rpc('buy_plus');if(error)throw new Error(/function|schema cache/i.test(error.message)?'Server noch nicht aktualisiert: supabase/schema.sql im SQL-Editor ausführen':error.message);await Remote.loadProfile()},
   async switchAccount(){try{await AW.sb.auth.signOut()}catch(e){AW.user=null;AW.profile=null}Remote.userOut=true;AW.emit()},
   async claim(id){const{error}=await AW.sb.rpc('claim_quest',{qid:id});if(error)throw new Error(error.message);await Remote.loadProfile()},
   async report(p){const{error}=await AW.sb.rpc('report_stats',{p});if(error)console.warn('report_stats fehlgeschlagen (schema.sql ausgeführt?):',error.message);else await Remote.loadProfile()},
   async players(){const{data}=await AW.sb.from('leaderboard_players').select('*').order('wins',{ascending:false}).limit(100);return data||[]},
+  /* Profil eines anderen Spielers ansehen (nur öffentliche Felder, per RPC) */
+  async player(id,n,tg){const{data,error}=await AW.sb.rpc('player_public',{pid:id||null,n:n||null,tg:tg||null});if(error){console.warn('player_public:',error.message);throw new Error(/function|schema cache/i.test(error.message)?'Server noch nicht aktualisiert: supabase/schema.sql im SQL-Editor ausführen':'Profil konnte nicht geladen werden')}return data&&data[0]||null},
   async clans(){const{data}=await AW.sb.from('leaderboard_clans').select('*').order('wins',{ascending:false}).limit(100);return data||[]},
   async potd(){const{data}=await AW.sb.from('player_of_day').select('*').limit(1);const r=data&&data[0];return r&&r.wins>0?r:null},
   async news(){const{data}=await AW.sb.from('news').select('*').order('created_at',{ascending:false}).limit(30);return data||[]},
@@ -259,9 +271,13 @@ const Local={
     if('avatar' in p)a.avatar=safeAvatar(p.avatar);
     if('hat' in p){if(p.hat&&!a.owned.includes('hat:'+p.hat))throw new Error('Nicht freigeschaltet');a.hat=p.hat}
     if('flag' in p){if(p.flag&&!a.owned.includes('flag:'+p.flag))throw new Error('Nicht freigeschaltet');a.flag=p.flag}
-    for(const k of['crown','pattern','ship','bskin','tskin','rskin'])if(k in p){if(p[k]&&!a.owned.includes(k+':'+p[k]))throw new Error('Nicht freigeschaltet');a[k]=p[k]}
+    for(const k of['crown','pattern','ship','wship','tship','bskin','tskin','rskin'])if(k in p){if(p[k]&&!ownsItem(a,k+':'+p[k]))throw new Error('Nicht freigeschaltet');a[k]=p[k]}
     lsSet('ak_name',a.username);Local.save()},
-  async buy(id){const it=SHOP_BY_ID[id],a=AW.profile;if(!it)throw new Error('Unbekannt');if(it.plus)throw new Error('Nur mit AntWars + erhältlich');if(a.owned.includes(id))throw new Error('Schon gekauft');if(a.rubys<it.price)throw new Error('Nicht genug Rubys');a.rubys-=it.price;a.owned.push(id);Local.save()},
+  async buy(id){const it=SHOP_BY_ID[id],a=AW.profile;if(!it)throw new Error('Unbekannt');if(it.plus)throw new Error('Nur mit AntWars + erhältlich');if(it.shipOf)throw new Error('Wird mit dem passenden Schiff freigeschaltet');if(a.owned.includes(id))throw new Error('Schon gekauft');if(a.rubys<it.price)throw new Error('Nicht genug Rubys');a.rubys-=it.price;a.owned.push(id);Local.save()},
+  async player(id,n,tg){const p=AW.profile||{};if(!p.username)return null;
+    if(id&&p.id===id)return p;
+    if(n&&String(p.username).toLowerCase()===String(n).trim().toLowerCase()&&(!tg||p.tag===tg))return p;
+    return null},
   async buyPlus(){const a=AW.profile;if(a.rubys<PLUS_COST)throw new Error('Nicht genug Rubys (900 nötig)');
     const base=Math.max(Date.now(),new Date(a.plus_until||0).getTime());
     a.rubys-=PLUS_COST;a.plus_until=new Date(base+PLUS_DAYS*864e5).toISOString();
@@ -281,7 +297,7 @@ const Local={
     if(p.games){const st=a.stats.streak||{n:0,last:''},y=new Date(Date.now()-864e5).toISOString().slice(0,10);
       if(st.last!==today){st.n=st.last===y?st.n+1:1;st.last=today}a.stats.streak=st}
     a.games+=Math.min(1,+p.games||0);a.wins+=Math.min(1,+p.wins||0);Local.save()},
-  async players(){const a=AW.profile;return[{username:a.username,tag:a.tag,clan_tag:a.clan_tag,wins:a.wins,games:a.games}].concat(lsGet(LP+'fake',[]))},
+  async players(){const a=AW.profile;return[{id:a.id,username:a.username,tag:a.tag,clan_tag:a.clan_tag,wins:a.wins,games:a.games}].concat(lsGet(LP+'fake',[]))},
   async clans(){const a=AW.profile;return a.clan_tag?[{clan_tag:a.clan_tag,wins:a.wins,games:a.games,members:1}]:[]},
   async potd(){const p=AW.profile,b=p&&p.stats&&p.stats.daily,w=b&&b.k===dayKey()?(b.v.wins||0):0;return w>0?{username:p.username,clan_tag:p.clan_tag,wins:w}:null},
   async news(){return lsGet(LP+'news',null)||DEFAULT_NEWS},
@@ -368,6 +384,7 @@ const Local={
   }
 };
 const DEFAULT_NEWS=[
+  {id:'d35',version:'v24',title:'Profile anderer Spieler, Handelsschiffe und neue Schiffs-Kosmetik',body:'Du kannst jetzt die Profile anderer Spieler ansehen: In der Bestenliste öffnet ein Klick auf einen Namen sein Profil mit Siegen, Spielen, Siegquote, Statistik und Kosmetik – ohne Bearbeiten-Knöpfe. Spieler des Tages steht mittig in der Kopfzeile. Das Spiel friert beim schnellen Wechsel zwischen Kolonie und Weltkarte nicht mehr ein: Die Zeichenfläche wird nur noch bei echter Größenänderung neu vermessen. Die Vorschauen im Shop zeigen jedes Stück so, wie es im Spiel aussieht: Schiffe auf Wasser, Muster auf Land, Hüte und Kronen über der Kolonie. Neu sind Kriegsschiff- und Handelsschiff-Kosmetik: Wer ein Schiff kauft, bekommt dieselbe Optik auch für sein Kriegsschiff und seine Handelsschiffe dazu. Handelsschiffe fahren jetzt von Hafen zu Hafen und bringen dabei Erde und Blätter ein. Alle Gebäude auf der Weltkarte sind etwas kleiner, damit mehr aufs Bild passt. Die FPS-Anzeige leuchtet in der Akzentfarbe. Das Profil zeigt deutlich mehr Statistik: Eroberungen, Gebäude, versenkte Schiffe, Bündnisse, Funde, Spielzeit, Tage, Serie, größtes Reich und Bestpunkte. AntWars + verspricht keinen Clan-Tag mehr – der gehört zu den Clans, nicht zur Mitgliedschaft –, und die goldenen Plus-Stücke sind jetzt eigenständig gestaltet, damit sie nicht wie die normalen goldigen Kosmetikstücke aussehen.',created_at:'2026-11-28T16:00:00Z'},
   {id:'d34',version:'v23',title:'AntWars +, Stufen im Shop, freies Bauen und schnelle Kolonie',body:'AntWars + ist da: für 900 Rubys im Monat bekommst du 16 exklusive Kosmetikstücke (zwei je Art), ein + vor dem Namen und den Clan-Tag hinter dem Namen. Die Kosmetik liegt im Shop im neuen Reiter „AntWars +“. Alle Kosmetik ist jetzt in Stufen sortiert – Gewöhnlich, Selten, Episch, Legendär, Mythisch – und die beliebtesten Stücke tragen ein Band. Der Shop ist neu: große Karten mit Stufenfarbe, ein Filter über den Stufen und eine Detailansicht mit großem Vorschaufenster und Preis. Fehlen Rubys, führt ein Knopf direkt zu den Quests. Das Inventar hat zwei Reiter: eigene Kosmetik und AntWars +, dazu „Mehr im Shop“ und einen Shop-Knopf. Bauen ohne Limit: Außenposten, Verteidigungswälle und Häfen stehen jetzt so oft in einem Gebiet, wie du willst und bezahlen kannst. Auch kleine Städte erzeugen langsam Ameisen. Wege laufen eckig über das Raster und treffen sich an Kreuzungen – keine Bögen mehr. Die Ameisenflaggen sind neu gezeichnet, die Kolonie läuft mit vielen Bauten flüssig, und im Spiel sind die Ränder links und rechts weg.' ,created_at:'2026-11-28T09:00:00Z'},
   {id:'d33',version:'v22',title:'Kein Einfrieren, markierte Räume, Bestenliste an der Kopfzeile',body:'Das Spiel friert nicht mehr ein: Ein Fehler in einem einzelnen Bild wird abgefangen, Simulation und Anzeige laufen weiter. Beim Bauen ist der gewählte Raum im Dock jetzt deutlich markiert – goldener Rahmen, helle Fläche und ein Häkchen. Die Bestenliste klappt man über ihre eigene Kopfzeile ein und aus; der kleine Knopf darüber ist weg, und eingeklappt bleibt die Kopfzeile sichtbar.',created_at:'2026-11-27T19:30:00Z'},
   {id:'d32',version:'v21.20',title:'Kartenvorschau ohne Ränder',body:'Im Hauptmenü füllt die Kartenvorschau jetzt die ganze Fläche: Links und rechts läuft das Meer im gleichen Zellenraster weiter, statt unscharfer Balken. Es ist kein Rand und keine Kante mehr an der Karte zu sehen, egal wie breit das Fenster ist.',created_at:'2026-11-27T18:40:00Z'},
@@ -409,7 +426,7 @@ Object.assign(AW,{
   reset:(...a)=>API.reset(...a),setPhone:(...a)=>API.setPhone(...a),verifyPhone:(...a)=>API.verifyPhone(...a),
   update:async p=>{await API.update(p);AW.emit()},buy:async id=>{await API.buy(id);AW.emit()},claim:async id=>{await API.claim(id);AW.emit()},report:p=>API.report(p).then(()=>AW.emit()),
   buyPlus:async()=>{await API.buyPlus();AW.emit()},switchAccount:async()=>{await API.switchAccount();AW.emit()},
-  players:()=>API.players(),potd:()=>API.potd(),clans:()=>API.clans(),news:()=>API.news(),newsSave:n=>API.newsSave(n),newsDel:id=>API.newsDel(id),
+  players:()=>API.players(),player:(id,n,tg)=>API.player(id,n,tg),potd:()=>API.potd(),clans:()=>API.clans(),news:()=>API.news(),newsSave:n=>API.newsSave(n),newsDel:id=>API.newsDel(id),
   adminProfiles:q=>API.adminProfiles(q),adminUpdate:(i,p)=>API.adminUpdate(i,p),
   friends:()=>API.friends(),friendRequest:n=>API.friendRequest(n),friendRespond:(i,a)=>API.friendRespond(i,a),friendRemove:i=>API.friendRemove(i),
   lobbies:()=>API.lobbies(),lobbyCreate:l=>API.lobbyCreate(l),lobbyFind:c=>API.lobbyFind(c),lobbyUpdate:(c,p)=>API.lobbyUpdate(c,p),lobbyClose:c=>API.lobbyClose(c),channel:(c,h)=>API.channel(c,h),

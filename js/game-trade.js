@@ -3,8 +3,10 @@
    Auf jedem Weg läuft ein Ameisenhändler. Betritt er ein Gebäude, lässt er einen kleinen Teil Material da. */
 const TRADE={mat:0.7,food:0.5,spd:38,stay:1.2};
 const WAR_COST={mat:70,food:35},WAR_RANGE=90,WAR_MAX=2,WAR_PLACE=300;
-let links=[],failedL=new Set(),traders=[],warships=[],syncT=0,roadCanvas=null,roadDirty=true,roadSig='',roadConn=new Map(),linkSig='';
-function tradeReset(){links=[];failedL=new Set();traders=[];warships=[];syncT=0;roadCanvas=null;roadDirty=true;roadSig='';roadConn=new Map();linkSig=''}
+/* Handelsschiffe: fahren von Hafen zu Hafen und bringen Erde und Blätter ein */
+const SHIP_TRADE={mat:2.6,food:1.6,spd:46,stay:2.2,max:4};
+let links=[],failedL=new Set(),traders=[],warships=[],tradeShips=[],shipTimer=5,syncT=0,roadCanvas=null,roadDirty=true,roadSig='',roadConn=new Map(),linkSig='';
+function tradeReset(){links=[];failedL=new Set();traders=[];warships=[];tradeShips=[];shipTimer=5;syncT=0;roadCanvas=null;roadDirty=true;roadSig='';roadConn=new Map();linkSig=''}
 const roadsChanged=()=>{roadDirty=true;syncT=0};
 const myCosm=()=>(typeof COSM!=='undefined'?COSM:{});
 
@@ -95,7 +97,43 @@ function updateTrade(dt){
     tr.d+=tr.dir*TRADE.spd*dt;
     if(tr.d>=tr.l.L){tr.d=tr.l.L;enterNode(tr,tr.l.b)}else if(tr.d<=0){tr.d=0;enterNode(tr,tr.l.a)}
   }
-  updateWarships(dt);updateBotRaids(dt);
+  updateWarships(dt);updateTradeShips(dt);updateBotRaids(dt);
+}
+/* ----- Handelsschiffe zwischen eigenen Häfen ----- */
+function ownPorts(){const l=[];for(const t of T)if(t.owner===0){if(typeof portsOf!=='function')break;for(const p of portsOf(t))l.push({t,p})}return l}
+function shipRoute(a,b){
+  if(!a||!b||a.p.idx===b.p.idx)return null;
+  const path=waterPath(a.p.idx,b.p.idx);if(!path)return null;
+  return{pts:path,L:pathLen(path),from:a,to:b};
+}
+function spawnTradeShip(){
+  if(!M||!started)return false;
+  const ps=ownPorts();if(ps.length<2)return false;
+  const max=Math.min(SHIP_TRADE.max,ps.length-1);if(tradeShips.length>=max)return false;
+  for(let k=0;k<4;k++){
+    const a=ps[Math.floor(Math.random()*ps.length)],b=ps[Math.floor(Math.random()*ps.length)];
+    if(a===b||a.t.id===b.t.id)continue;
+    const r=shipRoute(a,b);if(!r)continue;
+    tradeShips.push({...r,d:0,dir:1,in:0,seed:Math.random()*6});return true;
+  }
+  return false;
+}
+function deliverShip(s){
+  if(!G)return;
+  G.mat=Math.min(G.matCap,G.mat+SHIP_TRADE.mat);
+  G.food=Math.min(G.foodCap,G.food+SHIP_TRADE.food);
+  const[x,y]=pathAt(s.pts,s.d);
+  if(typeof addFloat==='function')addFloat(x,y-30,`+${SHIP_TRADE.mat} Erde`,'#c8a05a');
+}
+function updateTradeShips(dt){
+  shipTimer-=dt;if(shipTimer<=0){shipTimer=3;spawnTradeShip()}
+  tradeShips=tradeShips.filter(s=>s.from.t.owner===0&&s.to.t.owner===0);
+  for(const s of tradeShips){
+    if(s.in>0){s.in-=dt;continue}
+    s.d+=s.dir*SHIP_TRADE.spd*dt;
+    if(s.d>=s.L){s.d=s.L;s.dir=-1;s.in=SHIP_TRADE.stay;deliverShip(s)}
+    else if(s.d<=0){s.d=0;s.dir=1;s.in=SHIP_TRADE.stay;deliverShip(s)}
+  }
 }
 /* ----- Kriegsschiffe ----- */
 const warsOf=t=>warships.filter(w=>w.home===t.id).length;
@@ -171,12 +209,27 @@ function drawRoadLayer(g,now){
     const ok=svDraw(g,'trader',ts,pc,x,y-2,0.8,1,Math.atan2(ddy,left?-ddx:ddx),left);
     if(!ok){g.fillStyle='#3a2418';g.fillRect(x-3,y-3,6,4)}
   }
+  drawTradeShips(g,now);
 }
 function drawWarships(g,now){
   const showR=new Set();if(selT!=null)showR.add(selT);if(hovT!=null)showR.add(hovT);
+  const wid=cosmOf(0).wship;
   for(const w of warships){
     const by=w.y+Math.sin(now/500+w.seed)*1.5;
     if(showR.has(w.home)){g.strokeStyle='rgba(255,190,110,.55)';g.setLineDash([5,4]);g.lineWidth=1.5;g.beginPath();g.arc(w.x,w.y,WAR_RANGE,0,6.283);g.stroke();g.setLineDash([])}
-    svDraw(g,'war',cosmOf(0).bskin||'default',rgb(F[0].rgb),w.x,by+10,0.62,0);
+    if(!(wid&&typeof drawWarShip==='function'&&drawWarShip(g,wid,w.x,by+2)))svDraw(g,'war',cosmOf(0).bskin||'default',rgb(F[0].rgb),w.x,by+10,0.62,0);
+    g.fillStyle='rgba(255,255,255,.45)';g.fillRect(w.x-13,by+6,26,1);
+  }
+}
+/* Handelsschiffe zeichnen (eigenes Kosmetik-Schiff, sonst Standard) */
+function drawTradeShips(g,now){
+  if(!tradeShips.length)return;
+  const id=myCosm().tship;
+  for(const s of tradeShips){
+    const[x,y]=pathAt(s.pts,s.d),by=y+Math.sin(now/260+s.seed)*1.2;
+    if(!(id&&typeof drawTradeShip==='function'&&drawTradeShip(g,id,x,by+1))){
+      if(!svDraw(g,'ship',myCosm().bskin||'default',rgb(F[0].rgb),x,by+12,0.58,0)){g.fillStyle='#8a5a30';g.fillRect(x-9,by-1,18,6)}
+    }
+    g.fillStyle='rgba(255,255,255,.5)';g.fillRect(x-10,by+7,20,1);
   }
 }

@@ -176,7 +176,7 @@ function profStats(p){
   const mp=h.filter(x=>x.mp).length,so=h.length-mp,tot=Math.max(1,mp+so),durs=h.map(x=>x.dur).filter(x=>x>0);
   const avg=durs.length?durs.reduce((a,b)=>a+b,0)/durs.length:0,mx=durs.length?Math.max(...durs):0,mn=durs.length?Math.min(...durs):0;
   const fm=UI.profMode,hm=h.filter(x=>fm==='all'||x.mode===fm),mw=hm.filter(x=>x.res==='win').length,mt=hm.reduce((a,b)=>a+b.dur,0);
-  const cv=(p.stats&&p.stats.career&&p.stats.career.v)||{};
+  const cv=(p.stats&&p.stats.career&&p.stats.career.v)||{},stk=streakNow();
   return `<div class="pf-box"><h4>${t('ALLE SPIELE')}</h4>
     <div class="pf-row3">${pStat(num(p.games),t('Spiele'),'board')}${pStat(`<span style="color:#f7c948">${num(p.wins)}</span>`,t('Siege'),'trophy')}${pStat(wr+'%',t('Siegrate'),'up')}</div>
     <div class="pf-split"><label><span>${t('Mehrspieler')} <b>${mp}</b></span><span><b>${so}</b> ${t('Einzelspieler')}</span></label><div class="bar2"><i style="width:${Math.round(100*mp/tot)}%"></i></div></div>
@@ -184,7 +184,8 @@ function profStats(p){
     <div class="pf-box"><div class="pf-hd"><h4>${t('MODI')}</h4><div class="pf-pills" id="pfM">${[['all','Alle'],['classic','Klassisch'],['fast','Schnell'],['chaos','Chaos'],['unlimited','Unlimited']].map(([k,n])=>`<button type="button" data-m="${k}" class="${fm===k?'on':''}">${t(n)}</button>`).join('')}</div></div>
       <div class="pf-grid2">${pTile(hm.length,t('SPIELE'))}${pTile(`<span style="color:#f7c948">${mw}</span>`,t('SIEGE'))}${pTile(mt?fmtDur(mt):'–',t('SPIELZEIT'))}${pTile((hm.length?Math.round(100*mw/hm.length):0)+'%',t('SIEGRATE'))}</div>
       <div class="mini" style="margin-top:8px">${t('Modus-Werte stammen aus dem Spielverlauf dieses Geräts.')}</div></div>
-    <div class="pf-box"><h4>${ico('swords')} ${t('KRIEGSFÜHRUNG')}</h4><div class="pf-grid2">${pTile(num(cv.conq||0),t('Eroberte Gebiete'),'rd')}${pTile(num(cv.built||0),t('Gebaute Gebäude'))}${pTile(num(cv.sunk||0),t('Versenkte Schiffe'))}${pTile(num(cv.terr||0),t('Meiste Gebiete'))}${pTile(num(cv.allied||0),t('Bündnisse'))}${pTile(num(cv.found||0),t('Funde'))}</div></div>`;
+    <div class="pf-box"><h4>${ico('swords')} ${t('KRIEGSFÜHRUNG')}</h4><div class="pf-grid2">${pTile(num(cv.conq||0),t('Eroberte Gebiete'),'rd')}${pTile(num(cv.built||0),t('Gebaute Gebäude'))}${pTile(num(cv.sunk||0),t('Versenkte Schiffe'))}${pTile(num(cv.terr||0),t('Meiste Gebiete'))}${pTile(num(cv.allied||0),t('Bündnisse'))}${pTile(num(cv.found||0),t('Funde'))}</div></div>
+    <div class="pf-box"><h4>${ico('clock')} ${t('SPIELZEIT & SERIE')}</h4><div class="pf-grid2">${pTile(num(cv.mins||0)+' min',t('Gesamte Spielzeit'))}${pTile(num(cv.days||0),t('Spieltage'))}${pTile(stk.n,t('Tage Serie'),stk.today?'gr':'')}${pTile(num(cv.score||0),t('Bestpunkte'),'pu')}${pTile(num(cv.games||p.games||0),t('Gezählte Partien'))}${pTile(num(cv.wins||p.wins||0),t('Gezählte Siege'))}</div></div>`;
 }
 function profHist(p){
   const h=Hist.list();

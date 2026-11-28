@@ -33,6 +33,50 @@ S.profile=()=>{
       <div class="panel"><div class="row" style="margin-bottom:8px"><span class="lbl">${t('Erfolge')}</span><span class="sp"></span><button class="btn sm" data-go="achievements" type="button">→</button></div><div class="grid" style="gap:8px">${qs}</div></div>
     </div></div>`);
 };
+/* Karriere-Statistik als Zahlenraster (Profil, eigenes und fremdes) */
+function profStat(v,l){return `<div class="stat"><b>${num(v||0)}</b><span>${t(l)}</span></div>`}
+function careerStats(p){
+  const c=(p.stats&&p.stats.career&&p.stats.career.v)||{},st=(p.stats&&p.stats.streak)||{};
+  return `<div class="grid g3 keep">
+    ${profStat(c.conq,'Eroberungen')}${profStat(c.built,'Gebäude')}${profStat(c.sunk,'Schiffe versenkt')}
+    ${profStat(c.allied,'Bündnisse')}${profStat(c.found,'Funde')}${profStat(c.mins,'Minuten gespielt')}
+    ${profStat(c.days,'Spieltage')}${profStat(st.n,'Tage in Serie')}${profStat(c.terr,'Größtes Reich')}
+    ${profStat(c.score,'Bestpunkte')}</div>`;
+}
+/* Profil eines anderen Spielers ansehen (nur Lesen, keine Bearbeitung) */
+UI.viewP=null;
+const playerKey=a=>typeof a==='string'?a:(a&&(a.id||a.name+'#'+a.tag))||'';
+S.player=()=>{
+  const a=(SCR.cur&&SCR.cur.arg)||{},d=UI.viewP&&UI.viewP.k===playerKey(a)?UI.viewP:null;
+  if(!d)return shell(t('Profil'),{sub:t('Spieler')},spinner());
+  if(d.err)return shell(t('Profil'),{},`<div class="msg err">${esc(d.err)}</div>`);
+  const p=d.p||{},wr=p.games?Math.round(100*p.wins/p.games):0,plus=p.plus_until&&new Date(p.plus_until)>new Date();
+  const cos=[['crown','Krone'],['ship','Schiff'],['wship','Kriegsschiff'],['tship','Handelsschiff'],['bskin','Gebäude'],['tskin','Händler'],['rskin','Wege'],['pattern','Muster']]
+    .filter(([k])=>p[k]).map(([k,n])=>`<span class="tag">${t(n)}</span>`).join('');
+  return shell(t('Profil'),{sub:t('Spieler')},`
+  <div class="grid" style="grid-template-columns:minmax(0,300px) minmax(0,1fr);align-items:start" id="viewGrid">
+    <div class="panel" style="display:flex;flex-direction:column;gap:12px">
+      <div class="avbig">${safeAvatar(p.avatar)?`<img alt="" src="${safeAvatar(p.avatar)}">`:esc(initials(p.username))}</div>
+      <div style="text-align:center"><b style="font-size:19px">${plus?'<b class="plusmk">+</b>':''}${p.clan_tag?`<span class="ctag">${esc(p.clan_tag)}</span>`:''}${esc(p.username||'Gast')}<span class="mini" style="font-weight:400">#${esc(p.tag||'0000')}</span></b>
+        <div class="row" style="justify-content:center;margin-top:6px">${p.flag?flagSVG(p.flag):''}${plus?`<span class="tag ac">AntWars +</span>`:''}</div></div>
+      <div class="field"><span class="lbl">${t('Mitglied seit')}</span><span>${fmtDate(p.created_at)}</span></div>
+      ${cos?`<div class="field"><span class="lbl">${t('Kosmetik')}</span><div class="row" style="gap:6px;flex-wrap:wrap">${cos}</div></div>`:''}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+      <div class="panel"><div class="lbl" style="margin-bottom:8px">${t('Alle Spiele')}</div>
+        <div class="grid g3 keep"><div class="stat"><b>${num(p.games)}</b><span>${t('Spiele')}</span></div><div class="stat"><b>${num(p.wins)}</b><span>${t('Siege')}</span></div><div class="stat"><b>${wr}%</b><span>${t('Siegquote')}</span></div></div></div>
+      <div class="panel"><div class="lbl" style="margin-bottom:8px">${t('Statistik')}</div>${careerStats(p)}</div>
+    </div></div>`);
+};
+S.player.bind=async el=>{
+  const a=(SCR.cur&&SCR.cur.arg)||{},k=playerKey(a);
+  if(el.dataset.bound===k)return;el.dataset.bound=k;
+  if(UI.viewP&&UI.viewP.k===k)return;
+  try{const p=await AW.player(a&&a.id,a&&a.name,a&&a.tag);UI.viewP=p?{k,p}:{k,err:t('Profil nicht gefunden')}}
+  catch(e){UI.viewP={k,err:e.message}}
+  if(SCR.cur&&SCR.cur.name==='player')render();
+  if(innerWidth<720&&el.querySelector('#viewGrid'))el.querySelector('#viewGrid').style.gridTemplateColumns='1fr';
+};
 /* Profilbild: mittig zuschneiden, auf 96×96 verkleinern, als webp/jpeg speichern */
 function avatarFromFile(f){return new Promise((ok,no)=>{
   if(!f||!/^image\/(png|jpeg|webp)$/.test(f.type)||f.size>8e6)return no(new Error(LANG==='de'?'Bitte ein PNG, JPG oder WebP unter 8 MB wählen':'Please choose a PNG, JPG or WebP under 8 MB'));
@@ -117,7 +161,7 @@ S.achievements.bind=p=>{p.querySelectorAll('#achT [data-k]').forEach(b=>b.onclic
 
 /* ---------- Shop: Kosmetik in Stufen ---------- */
 /* Vorschau und Ausrüstungsstatus für alle Kosmetik-Arten */
-const COS_TABS=[['hat','Hüte','hat'],['crown','Kronen','crown'],['pattern','Muster','gem'],['ship','Schiffe','map'],['bskin','Gebäude','box'],['tskin','Händler','users'],['rskin','Wege','link'],['world','Weltflaggen','globe'],['ant','Ameisenflaggen','flag']];
+const COS_TABS=[['hat','Hüte','hat'],['crown','Kronen','crown'],['pattern','Muster','gem'],['ship','Schiffe','map'],['wship','Kriegsschiffe','sword'],['tship','Handelsschiffe','anchor'],['bskin','Gebäude','box'],['tskin','Händler','users'],['rskin','Wege','link'],['world','Weltflaggen','globe'],['ant','Ameisenflaggen','flag']];
 const cosFilter=(tab,i)=>tab==='plus'?!!i.plus:(!i.plus&&(tab==='world'?i.kind==='flag'&&!i.custom:tab==='ant'?i.kind==='flag'&&i.custom:i.kind===tab));
 const cosEq=(i,p)=>p[i.kind]===i.key;
 const cosPv=i=>i.kind==='flag'?flagSVG(i.key):`<span data-cos="${i.kind}:${i.key}"></span>`;
@@ -135,17 +179,18 @@ function plusBanner(){
     <div class="plushead"><span class="pluslogo">+</span><div class="plustx"><b>AntWars +</b><small>${plusTxt()}</small></div><span class="sp"></span>
       ${AW.plusActive?'':`<button class="btn pri" id="plusBuy" type="button">${ico('plus')} ${PLUS_COST} ${ico('ruby')}</button>`}</div>
     <div class="plusperks">
-      <span>${ico('hat')} 16 ${t('exklusive Stücke')}</span><span>${ico('star')} + ${t('vor dem Namen')}</span><span>${ico('shield')} ${t('Clan-Tag hinter dem Namen')}</span>
+      <span>${ico('hat')} 16 ${t('exklusive Stücke')}</span><span>${ico('star')} + ${t('vor dem Namen')}</span>
     </div></div>`;
 }
 /* Detailansicht einer Kosmetik (Bild 4+5) */
 function cosModal(id){
   const i=SHOP_BY_ID[id];if(!i)return;
-  const p=AW.profile||{},own=(p.owned||[]).includes(i.id),eq=cosEq(i,p),plusT=AW.plusActive,miss=Math.max(0,i.price-(p.rubys||0));
+  const p=AW.profile||{},own=ownsItem(p,i.id),eq=cosEq(i,p),plusT=AW.plusActive,miss=Math.max(0,i.price-(p.rubys||0));
   const sib=SHOP.filter(x=>!x.plus&&x.kind===i.kind&&x.id!==i.id).slice(0,6);
   let foot;
   if(i.plus&&!plusT)foot=`<button class="shbuy big t-ultimate" data-plus="1" type="button">${ico('plus')} ${t('Mit AntWars + freischalten')}</button>`;
   else if(own)foot=`<button class="shbuy big equ ${eq?'on':''}" data-eq="${i.id}" type="button">${eq?t('Ablegen'):t('Ausrüsten')}</button>`;
+  else if(i.shipOf)foot=`<div class="missing">${t('Wird mit dem passenden Schiff freigeschaltet')}</div><button class="shbuy big" data-goship="1" type="button">${ico('map')} ${t('Zu den Schiffen')}</button>`;
   else if(miss>0)foot=`<div class="missing">${t('Es fehlen')} <b>${num(miss)} ${ico('ruby')}</b></div><button class="shbuy big quest" data-go="achievements" type="button">${ico('trophy')} ${t('Zu den Quests')}</button>`;
   else foot=`<button class="shbuy big t-${i.tier}" data-buy="${i.id}" type="button">${num(i.price)} ${ico('ruby')} · ${t('Kaufen')}</button>`;
   const old=document.getElementById('cosM');if(old)old.remove();
@@ -168,6 +213,7 @@ function cosModal(id){
     if(e.target===el||e.target.closest('[data-cmx]')){el.remove();return}
     const pl=e.target.closest('[data-plus]');
     if(pl){el.remove();UI.shopTab='plus';UI.shopTier='all';openScreen('shop',undefined,false);return}
+    if(e.target.closest('[data-goship]')){el.remove();UI.shopTab='ship';UI.shopTier='all';openScreen('shop',undefined,false);return}
     const buy=e.target.closest('[data-buy]');
     if(buy){const card=buy.closest('.cosm-pv'),rc=card?card.getBoundingClientRect():null,pic=card?card.innerHTML:'';
       AW.buy(buy.dataset.buy).then(()=>{el.remove();if(rc)flyBits(rc,pic,1,52)}).catch(toastErr);return}
@@ -180,10 +226,11 @@ S.shop=()=>{
   const p=AW.profile||{owned:[]},tab=UI.shopTab,tf=UI.shopTier;
   const items=SHOP.filter(i=>cosFilter(tab,i)).filter(i=>tf==='all'||i.tier===tf);
   const card=i=>{
-    const own=(p.owned||[]).includes(i.id),eq=cosEq(i,p);
+    const own=ownsItem(p,i.id),eq=cosEq(i,p);
     let act;
     if(i.plus&&!AW.plusActive)act=`<button class="shbuy t-ultimate" data-plus="1" type="button">${ico('plus')} AntWars +</button>`;
     else if(own)act=`<button class="shbuy equ ${eq?'on':''}" data-eq="${i.id}" type="button">${eq?t('Ablegen'):t('Ausrüsten')}</button>`;
+    else if(i.shipOf)act=`<button class="shbuy" disabled type="button">${t('Im Schiff enthalten')}</button>`;
     else act=`<button class="shbuy t-${i.tier}" data-buy="${i.id}" type="button">${num(i.price)} ${ico('ruby')}</button>`;
     return `<div class="shcard t-${i.tier} ${eq?'eq':''} ${i.plus?'pc':''}" data-card="${i.id}">${bestBand(i)}
       <div class="shpv" data-open="${i.id}">${cosPv(i)}</div>${tierChip(i)}<b class="shnm">${esc(i.name)}</b>${act}</div>`;
@@ -214,7 +261,7 @@ S.shop.bind=p=>{
 UI.invTab='hat';UI.invPlus=false;
 S.inventory=()=>{
   const p=AW.profile||{owned:[]},tab=UI.invTab,plusM=UI.invPlus;
-  const mine=(p.owned||[]).map(id=>SHOP_BY_ID[id]).filter(Boolean).filter(i=>plusM?i.plus:!i.plus);
+  const mine=SHOP.filter(i=>ownsItem(p,i.id)).filter(i=>plusM?i.plus:!i.plus);
   const items=mine.filter(i=>plusM?true:cosFilter(tab,i));
   const more=SHOP.filter(i=>!i.plus&&!(p.owned||[]).includes(i.id)).length;
   const card=i=>{const eq=cosEq(i,p);
@@ -250,11 +297,12 @@ S.leaderboard=()=>{
   const me=(AW.profile||{});
   const body=rows?`<div class="panel" style="padding:0;overflow:auto"><table class="lb"><thead><tr><th style="text-align:center">#</th><th>${tab==='players'?t('Spieler'):'Clan'}</th><th>${t('Siege')}</th><th>${t('Spiele')}</th><th>${t('Quote')}</th></tr></thead><tbody>
     ${rows.map((r,i)=>{const wr=r.games?100*r.wins/r.games:0;const nm=tab==='players'?`${esc(r.username)}<span class="mini">#${esc(r.tag||'')}</span>${r.clan_tag?`<span class="ctag">${esc(r.clan_tag)}</span>`:''}`:`<span class="ctag">${esc(r.clan_tag)}</span>${r.members||''} ${t('Mitglieder')}`;
-      return `<tr class="r${i+1} ${tab==='players'&&r.username===me.username&&r.tag===me.tag&&me.games?'me':''}"><td style="text-align:center"><span class="rk">${i+1}</span></td><td><b>${nm}</b></td><td><b>${num(r.wins)}</b></td><td style="color:var(--mu)">${num(r.games)}</td><td><span class="wp ${wr<50?'low':''}">${wr.toFixed(1)}%</span></td></tr>`}).join('')||`<tr><td colspan="5" style="text-align:center;color:var(--mu)">–</td></tr>`}</tbody></table></div>`:spinner();
+      return `<tr class="r${i+1} ${tab==='players'&&r.username===me.username&&r.tag===me.tag&&me.games?'me':''}" ${tab==='players'?`data-pid="${esc(r.id||'')}" data-pn="${esc(r.username||'')}" data-pt="${esc(r.tag||'')}" style="cursor:pointer" title="${t('Profil ansehen')}"`:''}><td style="text-align:center"><span class="rk">${i+1}</span></td><td><b>${nm}</b></td><td><b>${num(r.wins)}</b></td><td style="color:var(--mu)">${num(r.games)}</td><td><span class="wp ${wr<50?'low':''}">${wr.toFixed(1)}%</span></td></tr>`}).join('')||`<tr><td colspan="5" style="text-align:center;color:var(--mu)">–</td></tr>`}</tbody></table></div>`:spinner();
   return shell('Leaderboard',{sub:LANG==='de'?'Aktualisiert beim Öffnen':'Updated when opened',right:`<div class="pills" id="lbT"><button data-k="players" class="${tab==='players'?'on':''}" type="button">${ico('users')} ${t('Spieler')}</button><button data-k="clans" class="${tab==='clans'?'on':''}" type="button">${ico('shield')} ${t('Clans')}</button></div>`},body);
 };
 S.leaderboard.bind=async p=>{
   p.querySelectorAll('#lbT [data-k]').forEach(b=>b.onclick=()=>{UI.lbTab=b.dataset.k;render()});
+  p.querySelectorAll('tr[data-pn]').forEach(tr=>tr.onclick=()=>openScreen('player',{id:tr.dataset.pid||null,name:tr.dataset.pn,tag:tr.dataset.pt||''}));
   const tab=UI.lbTab;if(!UI['lb_'+tab]){UI['lb_'+tab]=await(tab==='players'?AW.players():AW.clans());if(SCR.cur&&SCR.cur.name==='leaderboard')render()}
 };
 const lbReset=()=>{UI.lb_players=UI.lb_clans=null;UI.clans=null};

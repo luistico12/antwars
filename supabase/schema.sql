@@ -1183,3 +1183,55 @@ on conflict (id) do update set kind=excluded.kind, stat=excluded.stat, goal=excl
 insert into public.news (version, title, body)
 select 'v23', 'AntWars +, Stufen im Shop, freies Bauen und schnelle Kolonie', 'AntWars + ist da: für 900 Rubys im Monat bekommst du 16 exklusive Kosmetikstücke (zwei je Art), ein + vor dem Namen und den Clan-Tag hinter dem Namen. Die Kosmetik liegt im Shop im neuen Reiter „AntWars +“. Alle Kosmetik ist jetzt in Stufen sortiert – Gewöhnlich, Selten, Episch, Legendär, Mythisch – und die beliebtesten Stücke tragen ein Band. Der Shop ist neu: große Karten mit Stufenfarbe, ein Filter über den Stufen und eine Detailansicht mit großem Vorschaufenster und Preis. Fehlen Rubys, führt ein Knopf direkt zu den Quests. Das Inventar hat zwei Reiter: eigene Kosmetik und AntWars +, dazu „Mehr im Shop“ und einen Shop-Knopf. Bauen ohne Limit: Außenposten, Verteidigungswälle und Häfen stehen jetzt so oft in einem Gebiet, wie du willst und bezahlen kannst. Auch kleine Städte erzeugen langsam Ameisen. Wege laufen eckig über das Raster und treffen sich an Kreuzungen – keine Bögen mehr. Die Ameisenflaggen sind neu gezeichnet, die Kolonie läuft mit vielen Bauten flüssig, und im Spiel sind die Ränder links und rechts weg.'
 where not exists (select 1 from public.news where version = 'v23');
+
+-- ============ Update v24: Profile anderer Spieler, Kriegs- und Handelsschiff-Kosmetik ============
+-- Eigene Kriegs- und Handelsschiff-Optik (wird mit dem passenden Schiff freigeschaltet)
+alter table public.profiles add column if not exists wship text;
+alter table public.profiles add column if not exists tship text;
+
+-- Ausrüsten nur, wenn das passende Schiff im Besitz ist
+create or replace function public.protect_profile() returns trigger
+language plpgsql security definer set search_path=public as $$
+begin
+  if auth.uid() is null or coalesce(current_setting('app.rpc', true),'') = '1' or public.is_admin() then return new; end if;
+  new.rubys := old.rubys; new.wins := old.wins; new.games := old.games; new.owned := old.owned;
+  new.username := old.username; new.tag := old.tag; new.quests := old.quests; new.stats := old.stats; new.is_admin := old.is_admin; new.id := old.id; new.created_at := old.created_at;
+  new.clan_tag := old.clan_tag; new.clan_id := old.clan_id;
+  if new.hat is not null and not ('hat:'||new.hat) = any(old.owned) then new.hat := old.hat; end if;
+  if new.flag is not null and not ('flag:'||new.flag) = any(old.owned) then new.flag := old.flag; end if;
+  if new.crown is not null and not ('crown:'||new.crown) = any(old.owned) then new.crown := old.crown; end if;
+  if new.pattern is not null and not ('pattern:'||new.pattern) = any(old.owned) then new.pattern := old.pattern; end if;
+  if new.ship is not null and not ('ship:'||new.ship) = any(old.owned) then new.ship := old.ship; end if;
+  if new.wship is not null and not ('ship:'||new.wship) = any(old.owned) then new.wship := old.wship; end if;
+  if new.tship is not null and not ('ship:'||new.tship) = any(old.owned) then new.tship := old.tship; end if;
+  if new.bskin is not null and not ('bskin:'||new.bskin) = any(old.owned) then new.bskin := old.bskin; end if;
+  if new.tskin is not null and not ('tskin:'||new.tskin) = any(old.owned) then new.tskin := old.tskin; end if;
+  if new.rskin is not null and not ('rskin:'||new.rskin) = any(old.owned) then new.rskin := old.rskin; end if;
+  return new;
+end $$;
+
+-- Profil eines anderen Spielers lesen (nur öffentliche Felder)
+create or replace function public.player_public(pid uuid default null, n text default null, tg text default null)
+returns table(id uuid, username text, tag text, clan_tag text, avatar text, wins int, games int,
+  crown text, pattern text, ship text, wship text, tship text, bskin text, tskin text, rskin text,
+  hat text, flag text, plus_until timestamptz, stats jsonb, created_at timestamptz)
+language sql security definer set search_path=public stable as $$
+  select p.id, p.username, p.tag, p.clan_tag, p.avatar, p.wins, p.games, p.crown, p.pattern, p.ship, p.wship, p.tship,
+         p.bskin, p.tskin, p.rskin, p.hat, p.flag, p.plus_until, p.stats, p.created_at
+  from public.profiles p
+  where (pid is not null and p.id = pid)
+     or (n is not null and lower(p.username) = lower(trim(n)) and (tg is null or p.tag = tg))
+  limit 1
+$$;
+revoke all on function public.player_public(uuid, text, text) from public, anon;
+grant execute on function public.player_public(uuid, text, text) to authenticated;
+
+-- Rangliste mit Kennung, damit sich Profile aus der Bestenliste öffnen lassen
+create or replace view public.leaderboard_players with (security_invoker=false) as
+  select id, username, clan_tag, wins, games, tag from public.profiles where games > 0;
+grant select on public.leaderboard_players to anon, authenticated;
+
+-- News v24
+insert into public.news (version, title, body)
+select 'v24', 'Profile anderer Spieler, Handelsschiffe und neue Schiffs-Kosmetik', 'Du kannst jetzt die Profile anderer Spieler ansehen: In der Bestenliste öffnet ein Klick auf einen Namen sein Profil mit Siegen, Spielen, Siegquote, Statistik und Kosmetik – ohne Bearbeiten-Knöpfe. Spieler des Tages steht mittig in der Kopfzeile. Das Spiel friert beim schnellen Wechsel zwischen Kolonie und Weltkarte nicht mehr ein: Die Zeichenfläche wird nur noch bei echter Größenänderung neu vermessen. Die Vorschauen im Shop zeigen jedes Stück so, wie es im Spiel aussieht: Schiffe auf Wasser, Muster auf Land, Hüte und Kronen über der Kolonie. Neu sind Kriegsschiff- und Handelsschiff-Kosmetik: Wer ein Schiff kauft, bekommt dieselbe Optik auch für sein Kriegsschiff und seine Handelsschiffe dazu. Handelsschiffe fahren jetzt von Hafen zu Hafen und bringen dabei Erde und Blätter ein. Alle Gebäude auf der Weltkarte sind etwas kleiner, damit mehr aufs Bild passt. Die FPS-Anzeige leuchtet in der Akzentfarbe. Das Profil zeigt deutlich mehr Statistik: Eroberungen, Gebäude, versenkte Schiffe, Bündnisse, Funde, Spielzeit, Tage, Serie, größtes Reich und Bestpunkte. AntWars + verspricht keinen Clan-Tag mehr – der gehört zu den Clans, nicht zur Mitgliedschaft –, und die goldenen Plus-Stücke sind jetzt eigenständig gestaltet, damit sie nicht wie die normalen goldigen Kosmetikstücke aussehen.'
+where not exists (select 1 from public.news where version = 'v24');

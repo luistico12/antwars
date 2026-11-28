@@ -295,7 +295,7 @@ tr.r1 td{background:rgba(255,200,60,.1)}tr.r2 td{background:rgba(220,228,240,.07
 
 #pickBar{position:fixed;left:50%;top:calc(var(--hh,60px) + 12px);transform:translateX(-50%);z-index:150;background:rgba(10,14,22,.92);border:1px solid var(--ln);border-radius:12px;padding:10px 16px;min-width:300px;text-align:center;box-shadow:0 8px 28px rgba(0,0,0,.5)}#pickBar b{display:block;font-size:14px;margin-bottom:8px}#pickBar i{display:block;height:5px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden}#pickBar u{display:block;height:100%;background:var(--ac);text-decoration:none;transition:width .1s linear}
 
-#potd{display:flex;align-items:center;gap:10px;margin-left:8px;padding:0 14px;height:40px;border-left:1px solid var(--ln);white-space:nowrap}
+#potd{position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px;margin:0;padding:0 14px;height:40px;border-left:0;white-space:nowrap}
 #potd .pcrown svg{width:22px;height:22px;stroke:#ff4d4d;fill:none;stroke-width:2}#potd .plbl{font-size:12px;letter-spacing:.08em;color:var(--mu);font-weight:700}
 #potd .psep{width:1px;height:22px;background:var(--ln)}#potd .pclan{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);color:#c9ced8;border-radius:6px;padding:1px 7px;font-size:12px;font-weight:800}
 #potd .pname{font-size:17px;color:#ffd23f}#potd .pwins{color:var(--mu);font-size:13px}#potd .pwins b{color:#ff4d4d;font-size:20px;margin-right:4px}
@@ -503,7 +503,7 @@ body.wmv #chips{display:none}
 .panel,.pf-card,.pf-box,.shopit,.li,.pf-g,.nitem,.chatbox,.lobcard{box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
 #potd{
   background:linear-gradient(150deg,rgba(255,255,255,.12),rgba(255,255,255,.02) 55%,rgba(255,87,87,.1));
-  border:1px solid var(--glass-edge);border-radius:12px;padding:0 14px;margin-left:12px;
+  border:1px solid var(--glass-edge);border-radius:12px;padding:0 14px;margin-left:0;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 10px 26px -14px rgba(0,0,0,.9)
 }
 #potd .pname{font-weight:800;letter-spacing:.01em;text-shadow:0 1px 10px rgba(255,210,63,.35)}
@@ -1111,7 +1111,7 @@ body.ingame #toasts{bottom:14px}
 
 /* ---- Weltkarte: Bestenliste oben links, FPS unten links, Schutzzeit ---- */
 #wmFps{position:absolute;left:10px;bottom:10px;z-index:2;padding:5px 9px;border-radius:9px;font:700 11.5px/1 var(--mono);
-  color:#9df0d2;background:rgba(10,14,22,.78);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(12px);letter-spacing:.03em}
+  color:var(--ac);background:rgba(10,14,22,.78);border:1px solid rgba(255,87,87,.38);backdrop-filter:blur(12px);letter-spacing:.03em}
 #wmProt{display:none;align-items:center;gap:6px;padding:0 12px;height:30px;border-radius:9px;font-weight:800;font-size:12.5px;
   color:#ffe2b0;background:rgba(255,170,60,.16);border:1px solid rgba(255,170,60,.45);white-space:nowrap}
 #wmProt.on{display:inline-flex}
@@ -1322,7 +1322,8 @@ body.ingame #toasts{bottom:calc(min(44vh,320px) + 18px);left:10px}
 .shpv{height:92px;display:flex;align-items:center;justify-content:center;border-radius:12px;overflow:hidden;cursor:pointer;
   background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.2));border:1px solid rgba(255,255,255,.06)}
 .shpv .flag{width:96px;height:64px;border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,.45)}
-.shpv canvas{width:104px;height:86px;image-rendering:pixelated}
+.shpv canvas{width:104px;height:86px;image-rendering:auto}
+.shpv canvas.cos{width:auto;height:86px;border-radius:8px}
 .shpv .cos{max-width:104px;max-height:86px;object-fit:contain;filter:drop-shadow(0 6px 12px rgba(0,0,0,.5))}
 .tier{display:inline-flex;align-items:center;justify-content:center;gap:3px;align-self:center;padding:3px 9px;border-radius:7px;
   font:800 10.5px/1.4 Inter,system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--tc);
@@ -1387,14 +1388,14 @@ body.ingame #toasts{bottom:calc(min(44vh,320px) + 18px);left:10px}
 .cosm-pv{position:relative;display:flex;align-items:center;justify-content:center;min-height:300px;border-radius:16px;overflow:hidden;
   border:1px solid rgba(255,255,255,.08);background:radial-gradient(circle at 50% 40%,rgba(96,140,200,.35),rgba(8,12,20,.9))}
 .cosm-pv .flag{width:min(420px,86%);height:auto;border-radius:10px;box-shadow:0 20px 50px rgba(0,0,0,.55)}
-.cosm-pv canvas{width:min(340px,70%)!important;height:auto!important;image-rendering:pixelated}
+.cosm-pv canvas{width:min(340px,70%)!important;height:auto!important;image-rendering:auto}
 .cosm-pv .cos{max-width:min(340px,70%);max-height:340px;object-fit:contain}
 .cosm-side{display:flex;flex-direction:column;gap:10px;min-width:0}
 .cosm-badges{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
 .best.small{align-self:flex-start}
 .cosm-mini{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:8px;border-radius:12px;border:1px solid var(--ln);background:rgba(0,0,0,.25)}
 .cosm-mini .mnm{display:flex;align-items:center;justify-content:center;height:52px;border-radius:9px;background:rgba(255,255,255,.04);overflow:hidden}
-.cosm-mini canvas{width:52px;height:44px;image-rendering:pixelated}
+.cosm-mini canvas{width:52px;height:40px;image-rendering:auto}
 .cosm-mini .flag{width:48px;height:32px;border-radius:4px}
 .cosm-mini .cos{max-width:46px;max-height:42px;object-fit:contain}
 .cosm-price{margin-top:auto;display:flex;align-items:center;gap:6px;font:800 18px Inter,system-ui,sans-serif;color:#fff}

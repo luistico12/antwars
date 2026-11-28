@@ -114,6 +114,19 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
     - Supabase live aktualisiert: shop_items (123 Artikel, neue Preise), quests (84 Zeilen, Tabelle neu aufgebaut) und News v21. Dasselbe SQL steht am Ende von supabase/schema.sql.
     - News v21 in DEFAULT_NEWS (js/backend.js) und am Ende von supabase/schema.sql.
 
+44. Update v24 – Profile anderer Spieler, Handelsschiffe, Kriegs-/Handelsschiff-Kosmetik (geprüft: `node --check` aller geänderten Dateien, eigener Playwright-Smoketest im Gastmodus: Profil-Statistik, Shop-Reiter/Karten/Vorschauen, Schiff-Kauf schaltet wship/tship frei, Ausrüsten, Handelsschiffe liefern Erde, Bestenlisten-Klick öffnet Profil, potd zentriert, FPS-Farbe, 40 Ansichtswechsel ohne Fehler; `node tests/quests.spec.js` grün):
+    - Profile anderer Spieler: `S.player` (`js/ui-screens.js`) mit Avatar, AntWars+-, Clan- und Kosmetik-Angaben, Siegen/Spielen/Quote und der Karriere-Statistik; Zeilen der Bestenliste sind klickbar (`data-pid/-pn/-pt`). Backend `AW.player(id,n,tg)` → RPC `player_public` (nur öffentliche Felder) bzw. Gastmodus. `leaderboard_players` liefert jetzt `id`.
+    - Spieler des Tages (`#potd`) steht absolut mittig in der Kopfzeile (CSS).
+    - Einfrieren bei häufigem Wechsel Kolonie↔Weltkarte: `fitStage` schreibt die Canvas-Größe nur noch bei echter Änderung, `fitStages` merkt sich die letzte Flächengröße (kein Layout pro Bild), `drawStageBg` läuft nur jedes 3. Bild und nie für ausgeblendete Flächen, die Kolonie-Leiste wird höchstens 1×/s neu gebaut, der Himmel nur noch in 24 statt 64 Tagesstufen vorgerendert.
+    - Kosmetik-Vorschauen: 2×-Szenen (`pvCanvas`, `pvWater/pvLand/pvSky` in `cosmetics.js`) – Schiffe auf Wasser, Muster auf Land, Hüte/Kronen am Abendhimmel; `svPreview` 2×, `image-rendering:auto` statt `pixelated` (die Unschärfe kam vom Skalieren kleiner Canvasse).
+    - Kriegs- und Handelsschiff-Kosmetik: neue Arten `wship`/`tship` mit denselben Schlüsseln wie `ship`; `ownsItem()` behandelt sie als enthalten, sobald das Schiff (`ship:<key>`) gekauft ist (Shop-Karte „Im Schiff enthalten“, Ausrüsten im Inventar). SVGs `img/skins/wships|tships` aus `scripts/gen-skins.js` (Kanonen bzw. Kisten/Münzen über dem Basisschiff). Ausgerüstet: `COSM.wship` auf Kriegsschiffen (`drawWarShip`), `COSM.tship` auf Handelsschiffen.
+    - AntWars +: Clan-Tag aus den Vorteilen des Plus-Banners entfernt (Clan-Tags vergibt der Clan). Die goldenen Plus-Stücke sind eigenständig: `aurum`-Skins für Gebäude, Händler und Wege in Elfenbein/Violett statt Gold, Flagge `p_aurum` in Weiß/Rosé-Gold mit Regenbogenring.
+    - Handelsschiffe (`js/game-trade.js`): fahren zwischen eigenen Häfen über Wasserwege, warten kurz und bringen je Ankunft 2,6 Erde und 1,6 Blätter (max. 4 Schiffe, mind. 2 Häfen), gezeichnet mit dem Handelsschiff-Skin.
+    - Gebäude auf der Weltkarte 25 % kleiner (`BSC=0.75`, Stadt/Nest, Außenposten, Wall, Hafen), damit mehr aufs Bild passt.
+    - FPS-Anzeige (`#wmFps`) in der Akzentfarbe.
+    - Profil (`js/ui-quests.js` `profStats`): neuer Block „Spielzeit & Serie“ – Gesamtzeit, Spieltage, Tagesserie, Bestpunkte, gezählte Partien und Siege.
+    - `supabase/schema.sql`: v24-Block (Spalten `profiles.wship/tship`, `protect_profile` prüft sie gegen `ship:*`, RPC `player_public`, `leaderboard_players` mit `id`, News v24). **Noch im Supabase-SQL-Editor ausführen** (ohne ihn bleibt das Fremdprofil auf dem Server leer).
+
 ## Offen (neu)
 - Mehrspieler-Kosmetik (v16): Kronen/Muster/Schiffe werden beim Start gemeldet (`ready` → Host → `init`, `cosmPack/cosmClean/cosmOf`), „Kosmetik anderer ausblenden“ wirkt jetzt. Hüte/Flaggen anderer Spieler werden noch nicht synchronisiert; Bots tragen nur die Standardkrone.
 - Bots nutzen die Bauleiste/Spenden nicht, Gebietsbeschriftung auf der Karte noch im alten Stil.

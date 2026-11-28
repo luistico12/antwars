@@ -10,6 +10,8 @@ const STR_COST={out:[{mat:40,food:20},{mat:70,food:35},{mat:110,food:55}],line:[
 const outCost=n=>{const i=Math.max(0,n),base=STR_COST.out[i%3],k=1+Math.floor(i/3)*0.75;return{mat:Math.round(base.mat*k),food:Math.round(base.food*k)}};
 let MW=GW*CS,MH=GH*CS,modeKey='classic';
 let contWin=false,M=null,F=[],T=[],marches=[],fxs=[],started=false,over=false,speed=1,gtime=0,selT=null,hovT=null,pct=50;
+/* Gebäude auf der Weltkarte etwas kleiner, damit mehr aufs Bild passt */
+const BSC=0.75;
 let setupSp='ground',setupStart=null,diffKey='normal',baseCanvas=null,ownCanvas=null,strCanvas=null,ownDirty=true,strDirty=true,dockDirty=true;
 const mcam={x:0,y:0,z:1};
 const H={v:0,recent:{}};
@@ -319,10 +321,10 @@ function drawMap(g,now){
     if(lead>=0&&t.isCap&&t.owner===lead)drawCrown(g,cosmOf(lead).crown||null,px,py-24,2);
     if(!started){
       if(t.terrain===SP[setupSp].terr&&setupStart!==t.id){g.strokeStyle='rgba(255,255,255,.9)';g.lineWidth=2;g.beginPath();g.arc(px,py,13+Math.sin(now/300)*2,0,6.283);g.stroke()}
-      if(setupStart===t.id){drawCapMark(g,px,py,FCOL[0]);drawNest(g,setupSp,px,py+26,1)}
+      if(setupStart===t.id){drawCapMark(g,px,py,FCOL[0]);g.save();g.translate(px,py+26);g.scale(BSC,BSC);g.translate(-px,-(py+26));drawNest(g,setupSp,px,py+26,1);g.restore()}
       continue;
     }
-    if(t.owner>=0&&!svDraw(g,'city',cosmOf(t.owner).bskin||'default',rgb(F[t.owner].rgb),px,py+30,nestSize(t)*0.55,F[t.owner].species))drawNest(g,F[t.owner].species,px,py+28,nestSize(t));
+    if(t.owner>=0&&!svDraw(g,'city',cosmOf(t.owner).bskin||'default',rgb(F[t.owner].rgb),px,py+26,nestSize(t)*0.55*BSC,F[t.owner].species)){g.save();g.translate(px,py+28);g.scale(BSC,BSC);g.translate(-px,-(py+28));drawNest(g,F[t.owner].species,px,py+28,nestSize(t));g.restore()}
     const flg=t.isCap&&t.owner>=0&&typeof cosmOf==='function'?cosmOf(t.owner).flag:null;
     if(flg){const im=flagImg(flg);if(im.complete&&im.naturalWidth){g.fillStyle='#d9d0b8';g.fillRect(px-1,py+2,1,16);g.drawImage(im,px,py+2,13,9)}}
     const txt=String(Math.floor(t.troops));g.font='700 13px '+PX;

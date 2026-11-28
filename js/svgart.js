@@ -22,7 +22,7 @@ const BSKINS={
   obsidian:{n:'Obsidianzitadelle',price:280,p:{b:'#3b3f4c',h:'#7b8496',d:'#0d0f14',a:'#ff3b5c',g:'#c9d2e0'}},
   neon:{n:'Neonbau',price:300,p:{b:'#14203a',h:'#2f6bff',d:'#070c16',a:'#41e0d0',g:'#8ff6ff'}},
   golden:{n:'Goldpalast',price:320,p:{b:'#e0b030',h:'#fff0a0',d:'#7a5410',a:'#c62f3a',g:'#fff8d0'}},
-  aurum:{n:'Aurum-Residenz',price:0,p:{b:'#f0c860',h:'#fffbe0',d:'#7a5410',a:'#ff5757',g:'#ffffff'}},
+  aurum:{n:'Aurum-Residenz',price:0,p:{b:'#f4eef7',h:'#ffffff',d:'#7a5a86',a:'#ff4fd8',g:'#ffd9f2'}},
   void:{n:'Leerenzitadelle',price:0,p:{b:'#2a1836',h:'#8b5cf6',d:'#0b0512',a:'#ff4fd8',g:'#e9d5ff'}}
 };
 const TSKINS={
@@ -33,7 +33,7 @@ const TSKINS={
   royal:{n:'Königlicher Händler',price:190,p:{b:'#5a1f78',h:'#b86be0',d:'#220a30',a:'#f2c14e',g:'#fff3a8'}},
   jade:{n:'Jadehändler',price:220,p:{b:'#1d6b58',h:'#59d6a8',d:'#0a2a23',a:'#ffd23f',g:'#e9fff8'}},
   golden:{n:'Goldkutsche',price:240,p:{b:'#b8860b',h:'#ffe27a',d:'#5a3f05',a:'#fff3a8',g:'#ffffff'}},
-  aurum:{n:'Goldene Karawane',price:0,p:{b:'#c99a10',h:'#fff0a0',d:'#5a3f05',a:'#ff5757',g:'#ffffff'}},
+  aurum:{n:'Goldene Karawane',price:0,p:{b:'#f6f0f8',h:'#ffffff',d:'#6b4a7a',a:'#ff5757',g:'#ffd9f2'}},
   void:{n:'Schattenkarawane',price:0,p:{b:'#241a33',h:'#7c4ddb',d:'#08040f',a:'#ff4fd8',g:'#e9d5ff'}}
 };
 /* Wege: edge = Rand, body = Belag, dash = Mittelmarkierung, acc = Spielerfarbe als Akzent (nur Standard) */
@@ -45,7 +45,7 @@ const RSKINS={
   gold:{n:'Goldstraße',price:230,edge:'#7a5410',body:'#e0b030',dash:'#fff0a0',w:4.2,glow:'#ffe27a'},
   lava:{n:'Lavapfad',price:260,edge:'#3a0d05',body:'#8e2a12',dash:'#ff8a3d',w:4.2,glow:'#ff5a1a'},
   neon:{n:'Neonbahn',price:280,edge:'#0b1a2a',body:'#1f3a5a',dash:'#41e0d0',w:4,glow:'#41e0d0'},
-  aurum:{n:'Goldene Allee',price:0,edge:'#7a5410',body:'#f0c860',dash:'#fffbe0',w:4.4,glow:'#ffd23f'},
+  aurum:{n:'Goldene Allee',price:0,edge:'#6b4a7a',body:'#f2e8f6',dash:'#ff4fd8',w:4.4,glow:'#ffb0f0'},
   void:{n:'Leerenpfad',price:0,edge:'#120a1e',body:'#3a2058',dash:'#ff4fd8',w:4.2,glow:'#8b5cf6'}
 };
 const SKIN_KINDS={bskin:BSKINS,tskin:TSKINS,rskin:RSKINS};
@@ -120,7 +120,9 @@ function svDraw(g,type,skin,pc,x,y,scale,extra,rot,flip){
 }
 /* Vorschau für Shop und Inventar (SVG direkt als Element) */
 function svPreview(kind,id,w,h){
-  const c=document.createElement('canvas');c.width=84;c.height=60;const g=c.getContext('2d');g.fillStyle='#3f8f4a';g.fillRect(0,0,84,60);g.fillStyle='rgba(0,0,0,.12)';g.fillRect(0,46,84,14);
+  /* 2× Auflösung: die Kachel wird im Shop größer angezeigt, sonst wirken die Ränder verwaschen */
+  const c=document.createElement('canvas');c.width=168;c.height=120;c.className='cos';const g=c.getContext('2d');g.scale(2,2);
+  g.fillStyle='#3f8f4a';g.fillRect(0,0,84,60);g.fillStyle='rgba(0,0,0,.12)';g.fillRect(0,46,84,14);
   if(kind==='bskin'){let n=0;const iv=setInterval(()=>{g.fillStyle='#3f8f4a';g.fillRect(0,0,84,60);svDraw(g,'city',id,'#ff5757',24,50,.62);svDraw(g,'tower',id,'#ff5757',60,52,.62,1);if(n++>8||(svDraw(g,'city',id,'#ff5757',24,50,.62)&&svDraw(g,'tower',id,'#ff5757',60,52,.62,1)))clearInterval(iv)},120)}
   else if(kind==='tskin'){const iv=setInterval(()=>{g.fillStyle='#3f8f4a';g.fillRect(0,0,84,60);if(svDraw(g,'trader',id,'#ff5757',42,38,1.9,1))clearInterval(iv)},120)}
   else{const s=RSKINS[id]||RSKINS.default;g.fillStyle='#3f8f4a';g.fillRect(0,0,84,60);roadStroke(g,[[-4,44],[26,30],[56,34],[88,14]],s,'#ff5757',1,1.5)}

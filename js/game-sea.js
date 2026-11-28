@@ -171,13 +171,13 @@ function updateSea(dt){
 
 /* ----- Zeichnen ----- */
 function drawWall(g,x,y,sk,pc){
-  if(svDraw(g,'wall',sk||'default',pc||'#fff',x,y+8,0.8))return;
+  if(svDraw(g,'wall',sk||'default',pc||'#fff',x,y+8,0.8*(typeof BSC==='number'?BSC:1)))return;
   g.fillStyle='#22242b';g.fillRect(x-10,y-5,20,11);g.fillStyle='#8c919c';g.fillRect(x-9,y-4,18,9);g.fillStyle='#b4b9c4';g.fillRect(x-9,y-4,18,2);
   g.fillStyle='#22242b';g.fillRect(x-10,y-9,20,4);g.fillStyle='#b4b9c4';for(let k=0;k<4;k++)g.fillRect(x-9+k*5,y-8,3,3);
 }
 function drawDock(g,t,now,port){
   port=port||t.port;const[x,y]=cellPos(port.idx),sk=cosmOf(t.owner).bskin||'default',pc=rgb(F[t.owner].rgb);
-  if(!svDraw(g,'dock',sk,pc,x,y+9,0.85)){
+  if(!svDraw(g,'dock',sk,pc,x,y+9,0.85*(typeof BSC==='number'?BSC:1))){
     g.fillStyle='#22140a';g.fillRect(x-9,y-4,18,9);g.fillStyle='#8a5a30';g.fillRect(x-8,y-3,16,7);g.fillStyle='#a8764a';g.fillRect(x-8,y-3,16,2);
     g.fillStyle='#22140a';g.fillRect(x-1,y-14,2,11);g.fillStyle='#e6edf5';g.fillRect(x+1,y-14,8,6)}
   const txt=`${port.rafts}/${port.max}`;g.font='700 11px '+PX;g.textAlign='center';g.textBaseline='middle';
@@ -198,7 +198,7 @@ function drawSeaLayer(g,now){
       const list=(t.outs&&t.outs.length)?t.outs:[(()=>{const[ox,oy]=cellPos(outpostCell(t));return{x:ox,y:oy}})()];
       list.forEach((o,idx)=>{
         const ox=o.x,oy=o.y;
-        if(!svDraw(g,'tower',sk,pc,ox,oy+8,0.72,t.str.out))drawTower(g,ox,oy,t.str.out,F[t.owner].rgb);
+        if(!svDraw(g,'tower',sk,pc,ox,oy+8,0.72*(typeof BSC==='number'?BSC:1),t.str.out))drawTower(g,ox,oy,t.str.out,F[t.owner].rgb);
         if(showR.has(t.id)){g.font='700 10px '+PX;g.textAlign='center';g.textBaseline='middle';g.lineWidth=3;g.strokeStyle='rgba(20,12,4,.9)';const lb=`Außenposten ${idx+1}`;g.strokeText(lb,ox,oy+14);g.fillStyle='#fff';g.fillText(lb,ox,oy+14)}
       });
     }
@@ -243,7 +243,7 @@ function drawSeaTop(g,now){
     const t=T[placing.tid],[px,py]=cellPos(t.port.idx),ci=cellOf(mw[0],mw[1]),ok=ci>=0&&!M.land[ci]&&Math.hypot(mw[0]-px,mw[1]-py)<=WAR_PLACE;
     g.strokeStyle='rgba(150,200,255,.55)';g.setLineDash([6,5]);g.lineWidth=1.5;g.beginPath();g.arc(px,py,WAR_PLACE,0,6.283);g.stroke();g.setLineDash([]);
     g.strokeStyle=ok?'rgba(255,190,110,.8)':'rgba(255,110,100,.8)';g.beginPath();g.arc(mw[0],mw[1],WAR_RANGE,0,6.283);g.stroke();
-    g.globalAlpha=.8;svDraw(g,'war','default',rgb(F[0].rgb),mw[0],mw[1]+10,0.62,0);g.globalAlpha=1;
+    g.globalAlpha=.8;if(!(COSM.wship&&drawWarShip(g,COSM.wship,mw[0],mw[1]+2)))svDraw(g,'war','default',rgb(F[0].rgb),mw[0],mw[1]+10,0.62,0);g.globalAlpha=1;
   }else if(placing.kind==='land'){
     const t=T[placing.tid],src=T[placing.src];
     g.fillStyle='rgba(110,180,255,.75)';for(const i of t.coast){const[cx,cy]=cellPos(i);g.fillRect(cx-1,cy-1,3,3)}

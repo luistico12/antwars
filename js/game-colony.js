@@ -423,7 +423,7 @@ function buildHill(C){
 /* ===== Kolonie: Zeichnen ===== */
 /* Himmel als Pixelverlauf mit Dithering und ferner Hügelkette (einmal je Tagesphase vorgerendert) */
 function sky(g){
-  const C=col,ph=(G.time/DAYLEN)%1,ang=ph*Math.PI*2,sn=Math.sin(ang),day=clamp(0.5+sn*0.9,0,1),key=Math.round(day*64);
+  const C=col,ph=(G.time/DAYLEN)%1,ang=ph*Math.PI*2,sn=Math.sin(ang),day=clamp(0.5+sn*0.9,0,1),key=Math.round(day*24);
   if(!C.skyC||C.skyK!==key){
     const cv=makeCanvas(CW,GY),s=cv.getContext('2d');
     const top=mixc([10,16,38],[96,158,212],day),bot=mixc([44,42,84],[236,206,182],day),N=26;
