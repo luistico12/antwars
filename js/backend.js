@@ -6,19 +6,16 @@ const CFG=window.AW_CONFIG||{};
 const REMOTE=!!(CFG.SUPABASE_URL&&CFG.SUPABASE_ANON_KEY);
 
 /* ---- Katalog (Anzeige; maßgeblich sind die Preise in der DB-Tabelle shop_items bzw. im lokalen Fallback) ---- */
-const HATS=[['cap','Kappe',2],['beanie','Wollmütze',2],['flower','Blume',2],['party','Partyhut',2],['helmet','Helm',3],['top','Zylinder',3],['pirate','Piratenhut',3],['mushroom','Pilzhut',3],['wizard','Zaubererhut',4],['cowboy','Cowboyhut',4],['chef','Kochmütze',4],['miner','Grubenhelm',4],['viking','Wikingerhelm',5],['headphones','Kopfhörer',5],['crown','Krone',5],['halo','Heiligenschein',6],['santa','Weihnachtsmütze',6],['astro','Astronautenhelm',8],['pharaoh','Pharaonenkrone',0],['nebula','Nebelkappe',0]];
+const HATS=[['cap','Kappe',20],['beanie','Wollmütze',22],['flower','Blume',24],['party','Partyhut',26],['helmet','Helm',30],['top','Zylinder',34],['pirate','Piratenhut',38],['mushroom','Pilzhut',42],['wizard','Zaubererhut',50],['cowboy','Cowboyhut',56],['chef','Kochmütze',62],['miner','Grubenhelm',70],['viking','Wikingerhelm',80],['headphones','Kopfhörer',92],['crown','Krone',105],['halo','Heiligenschein',120],['santa','Weihnachtsmütze',140],['astro','Astronautenhelm',170],['pharaoh','Pharaonenkrone',0],['nebula','Nebelkappe',0]];
 const WORLD_FLAGS=['de','gb','us','fr','es','it','nl','pl','pt','br','ar','mx','ca','au','jp','kr','cn','in','tr','ru','ua','se','no','dk','fi','at','ch','ie','be','gr','cz','hu','ro','bg','rs','sk','si','il','sa','eg','za','bd','mk'];
 const FLAG_NAMES={de:'Deutschland',gb:'Vereinigtes Königreich',us:'USA',fr:'Frankreich',es:'Spanien',it:'Italien',nl:'Niederlande',pl:'Polen',pt:'Portugal',br:'Brasilien',ar:'Argentinien',mx:'Mexiko',ca:'Kanada',au:'Australien',jp:'Japan',kr:'Südkorea',cn:'China',in:'Indien',tr:'Türkei',ru:'Russland',ua:'Ukraine',se:'Schweden',no:'Norwegen',dk:'Dänemark',fi:'Finnland',at:'Österreich',ch:'Schweiz',ie:'Irland',be:'Belgien',gr:'Griechenland',cz:'Tschechien',hu:'Ungarn',ro:'Rumänien',bg:'Bulgarien',rs:'Serbien',sk:'Slowakei',si:'Slowenien',il:'Israel',sa:'Saudi-Arabien',eg:'Ägypten',za:'Südafrika',bd:'Bangladesch',mk:'Nordmazedonien'};
-const ANT_FLAGS=[['a_red','Rote Kolonie',2],['a_green','Blattschneider',2],['a_gold','Goldstern',2],['a_stripe','Streifen',2],['a_mound','Hügelwacht',3],['a_fungus','Pilzgarten',3],['a_swords','Kriegsbanner',3],['a_queen','Königin',3],['p_plus','AntWars +',0],['p_aurum','Goldene Kolonie',0]];
+const ANT_FLAGS=[['a_red','Rote Kolonie',30],['a_green','Blattschneider',30],['a_gold','Goldstern',32],['a_stripe','Streifen',34],['a_mound','Hügelwacht',40],['a_fungus','Pilzgarten',45],['a_swords','Kriegsbanner',52],['a_queen','Königin',60],['p_plus','AntWars +',0],['p_aurum','Goldene Kolonie',0]];
 /* Profilbild: kleines Bild als Data-URL (nur png/jpeg/webp, höchstens 30 kB), wird nur per <img> angezeigt */
 const safeAvatar=s=>typeof s==='string'&&s.length<=30000&&/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+\/=]+$/.test(s)?s:null;
-const CROWNS=[['monarch','Königskrone',4],['ruby','Rubinkrone',6],['coral','Korallenkrone',7],['amethyst','Amethystturm',8],['toxic','Giftkrone',8],['laurel','Lorbeerkranz',10],['halo','Himmelsreif',10],['frost','Eiskrone',11],['inferno','Infernokrone',13],['prism','Prisma-Herrscher',16],['sun','Sonnenkrone',18],['obsidian','Obsidiankrone',22],['omega','Omega-Krone',0],['aurora','Polarlicht-Krone',0]];
-const PATTERNS=[['stripes','Diagonalen',3],['diagonal','Streifen',3],['checker','Schachbrett',3],['dots','Punkte',3],['bricks','Mauerwerk',4],['hearts','Herzchen',4],['stars','Sterne',4],['waves','Wellen',5],['grid','Gitter',5],['arrows','Pfeile',5],['hexes','Waben',6],['scales','Schuppen',6],['plus','Plus-Muster',0],['aurora','Polarlicht',0]];
-const SHIPS=[['leaf','Blattkahn',4],['paper','Papierboot',5],['duck','Entenboot',6],['turtle','Schildkrötenfloß',6],['viking','Wikingerboot',6],['ice','Eisbrecher',7],['steam','Dampfer',8],['pirate','Piratenschiff',10],['ghost','Geisterschiff',11],['golden','Goldgaleone',14],['leviathan','Leviathan',0],['nebula','Nebelgaleone',0]];
-/* Kriegs- und Handelsschiffe: gleiche Schlüssel wie die Schiffe, werden mit dem passenden Schiff freigeschaltet */
-const WARSHIP_NAME={leaf:'Kriegsblatt',paper:'Kriegsboot',duck:'Enterboot',turtle:'Panzerschildkröte',viking:'Langschiff',ice:'Eisbrecher',steam:'Kanonendampfer',pirate:'Kaperfahrer',ghost:'Geisterfregatte',golden:'Goldflaggschiff',leviathan:'Leviathan',nebula:'Nebelgaleone'};
-const TRADESHIP_NAME={leaf:'Blatthändler',paper:'Papierkutsche',duck:'Entenhandel',turtle:'Schildkrötenkarawane',viking:'Wikingerhandel',ice:'Eisfrachter',steam:'Dampffrachter',pirate:'Schmuggler',ghost:'Geisterfrachter',golden:'Goldhandel',leviathan:'Leviathan-Frachter',nebula:'Nebelfrachter'};
-const shipRows=(kind,names)=>SHIPS.map(([id,n,p])=>({id:kind+':'+id,kind,key:id,name:names[id]||n,price:p||0,plus:!p,shipOf:'ship'}));
+const CROWNS=[['monarch','Königskrone',40],['ruby','Rubinkrone',55],['coral','Korallenkrone',70],['amethyst','Amethystturm',85],['toxic','Giftkrone',95],['laurel','Lorbeerkranz',110],['halo','Himmelsreif',125],['frost','Eiskrone',140],['inferno','Infernokrone',160],['prism','Prisma-Herrscher',185],['sun','Sonnenkrone',210],['obsidian','Obsidiankrone',240],['omega','Omega-Krone',0],['aurora','Polarlicht-Krone',0]];
+const PATTERNS=[['stripes','Diagonalen',25],['diagonal','Streifen',25],['checker','Schachbrett',28],['dots','Punkte',30],['bricks','Mauerwerk',35],['hearts','Herzchen',38],['stars','Sterne',42],['waves','Wellen',48],['grid','Gitter',52],['arrows','Pfeile',58],['hexes','Waben',65],['scales','Schuppen',72],['plus','Plus-Muster',0],['aurora','Polarlicht',0]];
+const SHIPS=[['leaf','Blattkahn',60],['paper','Papierboot',75],['duck','Entenboot',90],['turtle','Schildkrötenfloß',100],['viking','Wikingerboot',110],['ice','Eisbrecher',125],['steam','Dampfer',145],['pirate','Piratenschiff',170],['ghost','Geisterschiff',190],['golden','Goldgaleone',230],['leviathan','Leviathan',0],['nebula','Nebelgaleone',0]];
+/* Eine Schiffs-Kosmetik gilt für normales Boot, Kriegs- und Handelsschiff (gleiche Schlüssel). */
 /* Kosmetik in Stufen. Preis 0 = nur über AntWars + erhältlich (Stufe „Ultimativ“). */
 const TIERS={common:'Gewöhnlich',rare:'Selten',epic:'Episch',legendary:'Legendär',mythic:'Mythisch',ultimate:'Ultimativ'};
 const TIER_ORDER=['common','rare','epic','legendary','mythic'];
@@ -28,8 +25,6 @@ const SHOP=[
   ...cosRows(CROWNS,'crown'),
   ...cosRows(PATTERNS,'pattern'),
   ...cosRows(SHIPS,'ship'),
-  ...shipRows('wship',WARSHIP_NAME),
-  ...shipRows('tship',TRADESHIP_NAME),
   ...Object.entries(BSKINS).filter(([id])=>id!=='default').map(([id,x])=>({id:'bskin:'+id,kind:'bskin',key:id,name:x.n,price:x.price||0,plus:!x.price})),
   ...Object.entries(TSKINS).filter(([id])=>id!=='default').map(([id,x])=>({id:'tskin:'+id,kind:'tskin',key:id,name:x.n,price:x.price||0,plus:!x.price})),
   ...Object.entries(RSKINS).filter(([id])=>id!=='default').map(([id,x])=>({id:'rskin:'+id,kind:'rskin',key:id,name:x.n,price:x.price||0,plus:!x.price})),
@@ -46,11 +41,9 @@ const SHOP=[
   /* „Am beliebtesten“: je Art der mittlere (epische) Artikel */
   for(const k of['crown','ship','pattern','bskin','hat']){const it=SHOP.find(i=>i.kind===k&&i.tier==='epic');if(it)it.pop=true}
 })();
-/* Schiffs-Kosmetik gilt auch für Kriegs- und Handelsschiffe: gleiche Stufe und derselbe Preis */
-for(const i of SHOP)if(i.shipOf){const s=SHOP.find(x=>x.id==='ship:'+i.key);if(s){i.tier=s.tier;i.pop=!!s.pop;i.price=s.price;i.plus=s.plus}}
 const PLUS_IDS=SHOP.filter(i=>i.plus).map(i=>i.id);
-/* Besitz: Schiffs-Kosmetik schaltet Kriegs- und Handelsschiff derselben Art mit frei */
-const ownsItem=(p,id)=>{const it=SHOP_BY_ID[id];const owned=(p&&p.owned)||[];return owned.includes(id)||!!(it&&it.shipOf&&owned.includes(it.shipOf+':'+it.key))};
+/* Besitz: eine Schiffs-Kosmetik deckt Boot, Kriegs- und Handelsschiff ab */
+const ownsItem=(p,id)=>(p&&p.owned?p.owned:[]).includes(id);
 const plusItems=kind=>SHOP.filter(i=>i.plus&&(!kind||i.kind===kind));
 var SHOP_BY_ID=Object.fromEntries(SHOP.map(i=>[i.id,i]));
 /* Quests: [id, Art, Statistik, Ziel, Belohnung (Rubys), Titel] */
@@ -121,7 +114,7 @@ const AW={remote:REMOTE,sb:null,user:null,profile:null,ready:false,subs:[],
   on(f){this.subs.push(f)},emit(){this.subs.forEach(f=>{try{f()}catch(e){console.error(e)}})},
   get loggedIn(){return !!this.user},
   get isAdmin(){return !!(this.profile&&this.profile.is_admin)},
-  get plusActive(){const u=this.profile&&this.profile.plus_until;return !!u&&new Date(u).getTime()>Date.now()},
+  get plusActive(){const p=this.profile||{};return !!p.plus_life||(!!p.plus_until&&new Date(p.plus_until).getTime()>Date.now())},
   get name(){return(this.profile&&this.profile.username)||lsGet('ak_name','Gast')},
   get tag(){return(this.profile&&this.profile.tag)||'0000'},
   get fullName(){return this.name+'#'+this.tag},
@@ -186,12 +179,18 @@ const Remote={
   async setPhone(phone){const{error}=await AW.sb.auth.updateUser({phone});if(error)throw new Error('Nummer konnte nicht gespeichert werden')},
   async verifyPhone(phone,token){const{error}=await AW.sb.auth.verifyOtp({phone,token,type:'phone_change'});if(error)throw new Error('Code ungültig');await Remote.loadProfile()},
   async update(p){
-    p={...p};if('avatar' in p)p.avatar=safeAvatar(p.avatar);
+    p={...p};    if('avatar' in p)p.avatar=safeAvatar(p.avatar);
+    if('ship' in p){p.wship=p.ship;p.tship=p.ship}
     if('username' in p){const nm=cleanName(p.username);if(nm.length<2)throw new Error('Name zu kurz');delete p.username;const{error}=await AW.sb.rpc('set_username',{n:nm});if(error)throw new Error('Name konnte nicht gespeichert werden')}
     if(Object.keys(p).length){const{error}=await AW.sb.from('profiles').update(p).eq('id',AW.user.id);if(error)throw new Error('Speichern nicht möglich')}
     await Remote.loadProfile()},
   async buy(id){if(SHOP_BY_ID[id]&&SHOP_BY_ID[id].plus)throw new Error('Nur mit AntWars + erhältlich');if(SHOP_BY_ID[id]&&SHOP_BY_ID[id].shipOf)throw new Error('Wird mit dem passenden Schiff freigeschaltet');const{error}=await AW.sb.rpc('buy_item',{item:id});if(error)throw new Error(error.message);await Remote.loadProfile()},
   async buyPlus(){const{error}=await AW.sb.rpc('buy_plus');if(error)throw new Error(/function|schema cache/i.test(error.message)?'Server noch nicht aktualisiert: supabase/schema.sql im SQL-Editor ausführen':error.message);await Remote.loadProfile()},
+  async redeem(code){const{data,error}=await AW.sb.rpc('redeem_code',{c:String(code||'').trim()});if(error){console.warn('redeem_code:',error.message);throw new Error(/function|schema cache/i.test(error.message)?'Server noch nicht aktualisiert: supabase/schema.sql im SQL-Editor ausführen':error.message)}await Remote.loadProfile();return data},
+  async adminCodes(){const{data,error}=await AW.sb.rpc('admin_codes');if(error)throw new Error(/function|schema/i.test(error.message)?'Server noch nicht aktualisiert':'Keine Berechtigung');return data||[]},
+  async adminCodeMake(o){const{error}=await AW.sb.rpc('admin_code_make',{c:String(o.code||'').trim(),kind:o.kind,amount:+o.amount||0,item:o.item||null,days:o.days==null||o.days===''?null:+o.days,max_uses:+o.maxUses||1,note:o.note||''});if(error)throw new Error(error.message)},
+  async adminCodeOff(code){const{error}=await AW.sb.rpc('admin_code_off',{c:code});if(error)throw new Error(error.message)},
+  async adminGrantPlus(id,days){const{error}=await AW.sb.rpc('admin_grant_plus',{pid:id,days:days==null?null:+days});if(error)throw new Error(error.message)},
   async switchAccount(){try{await AW.sb.auth.signOut()}catch(e){AW.user=null;AW.profile=null}Remote.userOut=true;AW.emit()},
   async claim(id){const{error}=await AW.sb.rpc('claim_quest',{qid:id});if(error)throw new Error(error.message);await Remote.loadProfile()},
   async report(p){const{error}=await AW.sb.rpc('report_stats',{p});if(error)console.warn('report_stats fehlgeschlagen (schema.sql ausgeführt?):',error.message);else await Remote.loadProfile()},
@@ -271,7 +270,8 @@ const Local={
     if('avatar' in p)a.avatar=safeAvatar(p.avatar);
     if('hat' in p){if(p.hat&&!a.owned.includes('hat:'+p.hat))throw new Error('Nicht freigeschaltet');a.hat=p.hat}
     if('flag' in p){if(p.flag&&!a.owned.includes('flag:'+p.flag))throw new Error('Nicht freigeschaltet');a.flag=p.flag}
-    for(const k of['crown','pattern','ship','wship','tship','bskin','tskin','rskin'])if(k in p){if(p[k]&&!ownsItem(a,k+':'+p[k]))throw new Error('Nicht freigeschaltet');a[k]=p[k]}
+    if('ship' in p){if(p.ship&&!ownsItem(a,'ship:'+p.ship))throw new Error('Nicht freigeschaltet');a.ship=a.wship=a.tship=p.ship}
+    for(const k of['crown','pattern','bskin','tskin','rskin'])if(k in p){if(p[k]&&!ownsItem(a,k+':'+p[k]))throw new Error('Nicht freigeschaltet');a[k]=p[k]}
     lsSet('ak_name',a.username);Local.save()},
   async buy(id){const it=SHOP_BY_ID[id],a=AW.profile;if(!it)throw new Error('Unbekannt');if(it.plus)throw new Error('Nur mit AntWars + erhältlich');if(it.shipOf)throw new Error('Wird mit dem passenden Schiff freigeschaltet');if(a.owned.includes(id))throw new Error('Schon gekauft');if(a.rubys<it.price)throw new Error('Nicht genug Rubys');a.rubys-=it.price;a.owned.push(id);Local.save()},
   async player(id,n,tg){const p=AW.profile||{};if(!p.username)return null;
@@ -304,6 +304,8 @@ const Local={
   async newsSave(n){const l=await Local.news();const c=l.map(x=>({...x}));if(n.id){const i=c.findIndex(x=>x.id===n.id);if(i>=0)c[i]={...c[i],...n}}else c.unshift({...n,id:'n'+Date.now(),created_at:new Date().toISOString()});lsSet(LP+'news',c)},
   async newsDel(id){lsSet(LP+'news',(await Local.news()).filter(x=>x.id!==id))},
   async adminProfiles(){return[AW.profile]},async adminUpdate(id,p){Object.assign(AW.profile,p);Local.save()},
+  async redeem(){throw new Error('Einlöse-Codes brauchen ein Konto')},
+  async adminCodes(){return[]},async adminCodeMake(){throw new Error('Nur mit Server-Konto möglich')},async adminCodeOff(){throw new Error('Nur mit Server-Konto möglich')},async adminGrantPlus(){throw new Error('Nur mit Server-Konto möglich')},
   async friends(){return{list:[],incoming:[],outgoing:[]}},
   async friendRequest(){throw new Error('Freunde brauchen einen Server – im Gastmodus nicht möglich')},
   async friendRespond(){throw new Error('Freunde brauchen einen Server – im Gastmodus nicht möglich')},
@@ -428,6 +430,7 @@ Object.assign(AW,{
   buyPlus:async()=>{await API.buyPlus();AW.emit()},switchAccount:async()=>{await API.switchAccount();AW.emit()},
   players:()=>API.players(),player:(id,n,tg)=>API.player(id,n,tg),potd:()=>API.potd(),clans:()=>API.clans(),news:()=>API.news(),newsSave:n=>API.newsSave(n),newsDel:id=>API.newsDel(id),
   adminProfiles:q=>API.adminProfiles(q),adminUpdate:(i,p)=>API.adminUpdate(i,p),
+  redeem:c=>API.redeem(c),adminCodes:()=>API.adminCodes(),adminCodeMake:o=>API.adminCodeMake(o),adminCodeOff:c=>API.adminCodeOff(c),adminGrantPlus:(i,d)=>API.adminGrantPlus(i,d),
   friends:()=>API.friends(),friendRequest:n=>API.friendRequest(n),friendRespond:(i,a)=>API.friendRespond(i,a),friendRemove:i=>API.friendRemove(i),
   lobbies:()=>API.lobbies(),lobbyCreate:l=>API.lobbyCreate(l),lobbyFind:c=>API.lobbyFind(c),lobbyUpdate:(c,p)=>API.lobbyUpdate(c,p),lobbyClose:c=>API.lobbyClose(c),channel:(c,h)=>API.channel(c,h),
   forumThreads:()=>API.forumThreads(),forumOpen:i=>API.forumOpen(i),forumSend:(k,t,b)=>API.forumSend(k,t,b),forumReply:(i,b)=>API.forumReply(i,b),forumClose:(i,c)=>API.forumClose(i,c),forumDel:i=>API.forumDel(i),

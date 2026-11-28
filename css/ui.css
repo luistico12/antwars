@@ -1411,3 +1411,12 @@ body.ingame #toasts{bottom:calc(min(44vh,320px) + 18px);left:10px}
   .cosm-side{flex-direction:row;flex-wrap:wrap}
   .shgrid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
 }
+
+/* v25: Schiffs-Varianten, Einlöse-Code, größere Siegzahl */
+.pf-big b .pf-wins{font-size:34px;color:#f7c948;line-height:1.1}
+.cosm-vars{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.cosm-vars button{padding:6px 12px;border-radius:999px;border:1px solid var(--ln);background:rgba(255,255,255,.04);color:var(--mu);font-weight:700;font-size:12px;cursor:pointer}
+.cosm-vars button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.cosm-inc{margin-top:8px}
+.redeembox{max-width:520px}
+.redeembox .row{gap:8px}

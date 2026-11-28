@@ -320,23 +320,64 @@ ${hull('url(#h)', '#0a0618')}
 <path d="M20 19l-4 4 4 2" fill="none" stroke="#c6b0ff" stroke-width="1.2" opacity=".7"/>
 <g fill="#ff4fd8"><circle cx="18" cy="35" r="2"/><circle cx="32" cy="35" r="2"/><circle cx="46" cy="35" r="2"/></g>`;
 
-/* Kriegsschiff: Kanonen an der Bordwand, roter Wimpel am Mast */
-const WAR_ADD = `<g stroke="#1c1008" stroke-width=".9" stroke-linejoin="round">
-<g fill="#2b2f38"><rect x="12" y="28.4" width="9" height="3.6" rx="1.2"/><rect x="25" y="28.4" width="9" height="3.6" rx="1.2"/><rect x="38" y="28.4" width="9" height="3.6" rx="1.2"/></g>
-<g fill="#0c0e13"><circle cx="12.6" cy="30.2" r="1"/><circle cx="25.6" cy="30.2" r="1"/><circle cx="38.6" cy="30.2" r="1"/></g>
-<path d="M31 1.4h12.6l-4.2 3.4 4.2 3.4H31z" fill="#ff5757" stroke="#7d1b20" stroke-width=".8"/>
-<path d="M30.4 1h2.2v9h-2.2z" fill="#1c1008" stroke="none"/>
-<g fill="#ffd23f" stroke="none" opacity=".9"><circle cx="17" cy="40.4" r="1.4"/><circle cx="32" cy="40.4" r="1.4"/><circle cx="47" cy="40.4" r="1.4"/></g>
-</g>`;
-/* Handelsschiff: Kisten an Deck, Münzen und ein Wimpel in Gold */
-const TRADE_ADD = `<g stroke="#3d2710" stroke-width=".9" stroke-linejoin="round">
-<g fill="#b8874a"><rect x="11" y="33" width="10" height="7" rx="1.2"/><rect x="23" y="35" width="8" height="5" rx="1.1"/></g>
-<g fill="none" stroke="#7a5a2a" stroke-width=".8"><path d="M11 36.6h10M16 33v7M23 37.6h8"/></g>
-<g fill="#ffd23f" stroke="#8a5a00"><circle cx="45" cy="37" r="2.6"/><circle cx="51" cy="39.4" r="1.8"/></g>
-<path d="M45 34.4v5.2M51 37.6v3.6" stroke="#8a5a00" stroke-width=".8" fill="none"/>
-<path d="M40.6 2.4h10l-3.4 2.8 3.4 2.8h-10z" fill="#ffd23f" stroke="#8a5a00" stroke-width=".8"/>
-<path d="M40 1.6h2v8h-2z" fill="#3d2710" stroke="none"/>
-</g>`;
+/* ===== Kriegs- und Handelsschiff: eigenständige Rümpfe, eigene Textur je Stil =====
+/* Farbwelt und Segelzeichen je Stil (a/b = Segelverlauf, wood = Rumpf, t = Zierlinie, ink = Kontur) */
+const SEA = {
+  leaf: {a:'#b6f08a',b:'#3b7a2a',wood:'#7a5228',t:'#5aa83c',ink:'#22471a',
+    mark:'<path d="M2 6C4 2 9 1 11 4 8 4 6 6 5 9 4 8 3 7 2 6z" fill="#e6ffd0" opacity=".9"/>'},
+  paper:{a:'#ffffff',b:'#cfd6e2',wood:'#e6ebf5',t:'#8d97a8',ink:'#4c5464',
+    mark:'<path d="M2 2h9v9H2z" fill="#f7f9ff" stroke="#8d97a8" stroke-width=".8"/><path d="M2 6h9M6 2v9" stroke="#b6c0d0" stroke-width=".7"/>'},
+  duck:{a:'#ffe27a',b:'#e0a51a',wood:'#c08a52',t:'#ff8a1f',ink:'#7a4a00',
+    mark:'<path d="M3 8c0-3 2-5 5-5s4 2 4 4-2 3-4 3H4z" fill="#fff3b0"/><path d="M10 6l3 1-3 1z" fill="#ff8a1f"/><circle cx="8" cy="5" r=".8" fill="#3a2400"/>'},
+  turtle:{a:'#a6e87f',b:'#2f6b24',wood:'#5f7f38',t:'#8fd66a',ink:'#24540f',
+    mark:'<path d="M6 2l4 3-1.4 5H3.4L2 5z" fill="#8fd66a" stroke="#24540f" stroke-width=".7"/><path d="M6 4.6l1.6 1.2-.6 1.8H5l-.6-1.8z" fill="#2f6b24" opacity=".6"/>'},
+  viking:{a:'#ffe27a',b:'#e0a51a',wood:'#8a5a30',t:'#c0392b',ink:'#3d2710',
+    mark:'<path d="M1 2h10M1 6h10M1 10h10" stroke="#c0392b" stroke-width="2.2"/>'},
+  ice:{a:'#e6faff',b:'#6fb7e0',wood:'#a8dcf5',t:'#bfe9ff',ink:'#2c6b96',
+    mark:'<g stroke="#ffffff" stroke-width="1.1" fill="none"><path d="M6 1v10M1.6 3.6l8.8 4.8M10.4 3.6L1.6 8.4"/></g>'},
+  steam:{a:'#eef2f8',b:'#9aa4b6',wood:'#b8c0cc',t:'#5d6472',ink:'#4c5464',
+    mark:'<circle cx="6" cy="6" r="3.4" fill="none" stroke="#5d6472" stroke-width="1.2"/><path d="M6 2.6v6.8M2.6 6h6.8" stroke="#5d6472" stroke-width="1.2"/>'},
+  pirate:{a:'#f2ede0',b:'#cfc7b4',wood:'#2e2e3a',t:'#8a8474',ink:'#0b0b10',
+    mark:'<circle cx="6" cy="5" r="3.6" fill="#151519"/><g fill="#f2ede0"><circle cx="4.8" cy="4.2" r=".9"/><circle cx="7.2" cy="4.2" r=".9"/><path d="M5 7.4h2l-1 1.6z"/></g><path d="M2.4 9.6h7.2" stroke="#151519" stroke-width=".9"/>'},
+  ghost:{a:'#e8f6ff',b:'#8fb8d6',wood:'#132a3d',t:'#bcdff5',ink:'#07131f',
+    mark:'<path d="M2 4c1.6-2.6 6.4-2.6 8 0 .8 1.4-.4 3-2 3.4L7.4 9 6 7.4C4 7 1.6 5.6 2 4z" fill="#dff1ff" opacity=".85"/><circle cx="4.6" cy="5" r=".8" fill="#0f2233"/><circle cx="7.6" cy="5" r=".8" fill="#0f2233"/>'},
+  golden:{a:'#fff0a0',b:'#e0a51a',wood:'#c99312',t:'#fff3b0',ink:'#6b4a00',
+    mark:'<path d="M2 8 3 3l2.4 2.2L6 2l.6 3.2L9 3l1 5z" fill="#ffe27a" stroke="#8a5a00" stroke-width=".6"/><rect x="2" y="7.6" width="8" height="2" rx=".6" fill="#ffd23f" stroke="#8a5a00" stroke-width=".5"/>'},
+  leviathan:{a:'#7bf0d2',b:'#0f5f52',wood:'#0b3a33',t:'#3fd6b0',ink:'#03100e',
+    mark:'<path d="M1 8c2-4 5-5 10-3-2 0-3.4 1-4.2 3-1.6 4-4.4 4-5.8 0z" fill="#7bf0d2" opacity=".9"/><circle cx="8.4" cy="6.4" r=".9" fill="#03100e"/>'},
+  nebula:{a:'#7a4de0',b:'#1a0f33',wood:'#2a1a52',t:'#c6b0ff',ink:'#0a0618',
+    mark:'<g fill="#fff"><circle cx="3" cy="3" r=".9"/><circle cx="8.4" cy="2.4" r=".7"/><circle cx="6" cy="6.4" r="1"/><circle cx="9.6" cy="8.6" r=".6"/><circle cx="2.6" cy="9" r=".6"/></g>'}
+};
+/* Kriegsschiff: lang und breit, Rammbug, Heckkastell, zwei Masten, Kanonenpforten, Kriegswimpel */
+const warShip = s => `<ellipse cx="32" cy="44" rx="28" ry="3" fill="#04121c" opacity=".28"/>
+<path d="M5 29h46l7 6-7 7H14l-9-6z" fill="${s.wood}" stroke="${s.ink}" stroke-width="1.7" stroke-linejoin="round"/>
+<path d="M10 33h42" stroke="${s.t}" stroke-width="1.5" opacity=".85"/>
+<path d="M5 29v-6h11v6z" fill="${s.wood}" stroke="${s.ink}" stroke-width="1.5" stroke-linejoin="round"/>
+<path d="M7.4 25.4h6" stroke="${s.t}" stroke-width="1.2" opacity=".8"/>
+<g fill="${s.ink}" stroke="${s.t}" stroke-width=".8"><rect x="16" y="35" width="5" height="3.4" rx="1"/><rect x="25" y="35" width="5" height="3.4" rx="1"/><rect x="34" y="35" width="5" height="3.4" rx="1"/></g>
+<path d="M57 35l6 2-6 3z" fill="${s.t}" stroke="${s.ink}" stroke-width="1.2" stroke-linejoin="round"/>
+<rect x="23" y="4" width="2.6" height="25" fill="${s.ink}"/>
+<path d="M25.6 6c10 2 14 7 14 16h-14z" fill="${s.a}" stroke="${s.ink}" stroke-width="1.5" stroke-linejoin="round"/>
+<path d="M28 9c6 1.6 9 5 9.4 11" stroke="${s.b}" stroke-width="1.2" fill="none" opacity=".7"/>
+<g transform="translate(30 10) scale(.62)">${s.mark}</g>
+<rect x="43" y="12" width="2.2" height="17" fill="${s.ink}"/>
+<path d="M45.2 13c6 1.6 8 5 8 12h-8z" fill="${s.b}" stroke="${s.ink}" stroke-width="1.3" stroke-linejoin="round"/>
+<path d="M23 1h14l-4.4 3.4L37 8H23z" fill="#ff5757" stroke="#7d1b20" stroke-width=".9" stroke-linejoin="round"/>
+<path d="M22.6 0h2.8v10h-2.8z" fill="${s.ink}"/>`;
+/* Handelsschiff: klein und gedrungen, kurzer Mast, Kisten und Fass an Deck, Frachtkran */
+const tradeShip = s => `<ellipse cx="32" cy="43" rx="19" ry="2.6" fill="#04121c" opacity=".26"/>
+<path d="M17 31h30l-4 10H21z" fill="${s.wood}" stroke="${s.ink}" stroke-width="1.6" stroke-linejoin="round"/>
+<path d="M20 34.4h24" stroke="${s.t}" stroke-width="1.3" opacity=".8"/>
+<path d="M21 31v-3h8v3z" fill="${s.wood}" stroke="${s.ink}" stroke-width="1.3"/>
+<g fill="${s.t}" stroke="${s.ink}" stroke-width=".8"><rect x="26" y="25" width="8" height="6" rx="1"/><rect x="35" y="27" width="6" height="4" rx="1"/></g>
+<path d="M26 28h8M30 25v6M35 29h6" stroke="${s.ink}" stroke-width=".7" opacity=".55" fill="none"/>
+<ellipse cx="44" cy="28.4" rx="2.8" ry="3.2" fill="${s.wood}" stroke="${s.ink}" stroke-width=".9"/>
+<path d="M41.4 27.6h5.2M41.4 29.4h5.2" stroke="${s.t}" stroke-width=".7" opacity=".8"/>
+<rect x="27" y="9" width="2" height="19" fill="${s.ink}"/>
+<path d="M29.4 11c7 1.2 10 4.4 10 10h-10z" fill="${s.a}" stroke="${s.ink}" stroke-width="1.4" stroke-linejoin="round"/>
+<g transform="translate(31 13) scale(.5)">${s.mark}</g>
+<path d="M48 24l5-7" stroke="${s.ink}" stroke-width="1.4"/><path d="M53 17v3.4" stroke="${s.t}" stroke-width="1.1"/><rect x="49.6" y="20.4" width="3" height="2.6" rx=".5" fill="${s.t}" stroke="${s.ink}" stroke-width=".6"/>
+<path d="M26.6 6h10l-3.2 2.6 3.2 2.6h-10z" fill="${s.t}" stroke="${s.ink}" stroke-width=".8" stroke-linejoin="round"/>`;
 
 function write(dir, id, svg) {
   const d = path.join(OUT, dir);
@@ -347,7 +388,8 @@ for (const [id, body] of Object.entries(HATS)) write('hats', id, wrap(32, 24, bo
 for (const [id, body] of Object.entries(CROWNS)) write('crowns', id, wrap(64, 36, body));
 for (const [id, body] of Object.entries(SHIPS)) {
   write('ships', id, wrap(64, 48, body));
-  write('wships', id, wrap(64, 48, body + WAR_ADD));
-  write('tships', id, wrap(64, 48, body + TRADE_ADD));
+  const st = SEA[id];
+  write('wships', id, wrap(64, 48, warShip(st)));
+  write('tships', id, wrap(64, 48, tradeShip(st)));
 }
-console.log(`Hüte: ${Object.keys(HATS).length}, Kronen: ${Object.keys(CROWNS).length}, Schiffe: ${Object.keys(SHIPS).length} (+ Krieg und Handel)`);
+console.log(`Hüte: ${Object.keys(HATS).length}, Kronen: ${Object.keys(CROWNS).length}, Schiffe: ${Object.keys(SHIPS).length} (Krieg/Handel eigenständig)`);

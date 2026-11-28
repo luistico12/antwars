@@ -171,19 +171,19 @@ const modeName=k=>(MODES[k]||MODES.classic).n;
 UI.profTab=UI.profTab||'stats';UI.profMode='all';
 const pStat=(v,l,ic,cls)=>`<div class="pf-big ${cls||''}"><b>${v}</b><span>${ic?ico(ic)+' ':''}${l}</span></div>`;
 const pTile=(v,l,cls)=>`<div class="pf-tile"><span>${l}</span><b class="${cls||''}">${v}</b></div>`;
-function profStats(p){
-  const h=Hist.list().filter(x=>x.res||x.dur>30),wr=p.games?Math.round(100*p.wins/p.games):0;
+function profStats(p,other){
+  const h=other?[]:Hist.list().filter(x=>x.res||x.dur>30),wr=p.games?Math.round(100*p.wins/p.games):0;
   const mp=h.filter(x=>x.mp).length,so=h.length-mp,tot=Math.max(1,mp+so),durs=h.map(x=>x.dur).filter(x=>x>0);
   const avg=durs.length?durs.reduce((a,b)=>a+b,0)/durs.length:0,mx=durs.length?Math.max(...durs):0,mn=durs.length?Math.min(...durs):0;
   const fm=UI.profMode,hm=h.filter(x=>fm==='all'||x.mode===fm),mw=hm.filter(x=>x.res==='win').length,mt=hm.reduce((a,b)=>a+b.dur,0);
   const cv=(p.stats&&p.stats.career&&p.stats.career.v)||{},stk=streakNow();
   return `<div class="pf-box"><h4>${t('ALLE SPIELE')}</h4>
-    <div class="pf-row3">${pStat(num(p.games),t('Spiele'),'board')}${pStat(`<span style="color:#f7c948">${num(p.wins)}</span>`,t('Siege'),'trophy')}${pStat(wr+'%',t('Siegrate'),'up')}</div>
-    <div class="pf-split"><label><span>${t('Mehrspieler')} <b>${mp}</b></span><span><b>${so}</b> ${t('Einzelspieler')}</span></label><div class="bar2"><i style="width:${Math.round(100*mp/tot)}%"></i></div></div>
-    <div class="pf-row3 t">${pTile(avg?fmtDur(avg):'–',t('Ø Spiel'))}${pTile(mx?fmtDur(mx):'–',t('Längste'),'pu')}${pTile(mn?fmtDur(mn):'–',t('Kürzeste'),'gr')}</div></div>
-    <div class="pf-box"><div class="pf-hd"><h4>${t('MODI')}</h4><div class="pf-pills" id="pfM">${[['all','Alle'],['classic','Klassisch'],['fast','Schnell'],['chaos','Chaos'],['unlimited','Unlimited']].map(([k,n])=>`<button type="button" data-m="${k}" class="${fm===k?'on':''}">${t(n)}</button>`).join('')}</div></div>
+    <div class="pf-row3">${pStat(num(p.games),t('Spiele'),'board')}${pStat(`<span class="pf-wins">${num(p.wins)}</span>`,t('Siege'),'trophy')}${pStat(wr+'%',t('Siegrate'),'up')}</div>
+    ${other?'':`<div class="pf-split"><label><span>${t('Mehrspieler')} <b>${mp}</b></span><span><b>${so}</b> ${t('Einzelspieler')}</span></label><div class="bar2"><i style="width:${Math.round(100*mp/tot)}%"></i></div></div>
+    <div class="pf-row3 t">${pTile(avg?fmtDur(avg):'–',t('Ø Spiel'))}${pTile(mx?fmtDur(mx):'–',t('Längste'),'pu')}${pTile(mn?fmtDur(mn):'–',t('Kürzeste'),'gr')}</div>`}</div>
+    ${other?'':`<div class="pf-box"><div class="pf-hd"><h4>${t('MODI')}</h4><div class="pf-pills" id="pfM">${[['all','Alle'],['classic','Klassisch'],['fast','Schnell'],['chaos','Chaos'],['unlimited','Unlimited']].map(([k,n])=>`<button type="button" data-m="${k}" class="${fm===k?'on':''}">${t(n)}</button>`).join('')}</div></div>
       <div class="pf-grid2">${pTile(hm.length,t('SPIELE'))}${pTile(`<span style="color:#f7c948">${mw}</span>`,t('SIEGE'))}${pTile(mt?fmtDur(mt):'–',t('SPIELZEIT'))}${pTile((hm.length?Math.round(100*mw/hm.length):0)+'%',t('SIEGRATE'))}</div>
-      <div class="mini" style="margin-top:8px">${t('Modus-Werte stammen aus dem Spielverlauf dieses Geräts.')}</div></div>
+      <div class="mini" style="margin-top:8px">${t('Modus-Werte stammen aus dem Spielverlauf dieses Geräts.')}</div></div>`}
     <div class="pf-box"><h4>${ico('swords')} ${t('KRIEGSFÜHRUNG')}</h4><div class="pf-grid2">${pTile(num(cv.conq||0),t('Eroberte Gebiete'),'rd')}${pTile(num(cv.built||0),t('Gebaute Gebäude'))}${pTile(num(cv.sunk||0),t('Versenkte Schiffe'))}${pTile(num(cv.terr||0),t('Meiste Gebiete'))}${pTile(num(cv.allied||0),t('Bündnisse'))}${pTile(num(cv.found||0),t('Funde'))}</div></div>
     <div class="pf-box"><h4>${ico('clock')} ${t('SPIELZEIT & SERIE')}</h4><div class="pf-grid2">${pTile(num(cv.mins||0)+' min',t('Gesamte Spielzeit'))}${pTile(num(cv.days||0),t('Spieltage'))}${pTile(stk.n,t('Tage Serie'),stk.today?'gr':'')}${pTile(num(cv.score||0),t('Bestpunkte'),'pu')}${pTile(num(cv.games||p.games||0),t('Gezählte Partien'))}${pTile(num(cv.wins||p.wins||0),t('Gezählte Siege'))}</div></div>`;
 }
@@ -215,7 +215,7 @@ S.profile=()=>{
       <div class="row" style="justify-content:center">${p.flag?flagSVG(p.flag):''}</div></div>
       <div class="row" style="justify-content:center"><label class="btn sm" for="pAvF">${ico('edit')} ${t('Profilbild')}</label><input type="file" id="pAvF" accept="image/png,image/jpeg,image/webp" hidden>${av?`<button class="btn sm" id="pAvX" type="button" aria-label="${t('Entfernen')}">${ico('trash')}</button>`:''}</div></div>
     <div class="pf-card rub"><div class="pf-cur">${ico('ruby')}<b>${num(p.rubys||0)}</b></div><button class="btn pri block" data-go="shop" type="button">${ico('shop')} ${t('Zum Shop')} ›</button></div>
-    <div class="pf-card plus ${AW.plusActive?'on':''}"><div class="pf-cur"><span class="pluslogo">+</span><b>AntWars +</b></div><div class="mini" style="margin:2px 0 8px">${AW.plusActive?`${t('Aktiv bis')} ${fmtDate(p.plus_until)}`:`${PLUS_COST} ${t('Rubys')} / ${t('Monat')} · 16 ${t('exklusive Stücke')}`}</div><button class="btn ${AW.plusActive?'':'pri'} block" id="pPlus" type="button">${AW.plusActive?`${ico('check')} ${t('Aktiv')}`:`${ico('plus')} ${PLUS_COST} ${ico('ruby')}`}</button></div>
+    <div class="pf-card plus ${AW.plusActive?'on':''}"><div class="pf-cur"><span class="pluslogo">+</span><b>AntWars +</b></div><div class="mini" style="margin:2px 0 8px">${AW.plusActive?(p.plus_life?t('Dauerhaft aktiv'):`${t('Aktiv bis')} ${fmtDate(p.plus_until)}`):`${PLUS_COST} ${t('Rubys')} / ${t('Monat')} · 16 ${t('exklusive Stücke')}`}</div><button class="btn ${AW.plusActive?'':'pri'} block" id="pPlus" type="button">${AW.plusActive?`${ico('check')} ${t('Aktiv')}`:`${ico('plus')} ${PLUS_COST} ${ico('ruby')}`}</button></div>
     <div class="pf-card ach"><div class="pf-cur"><span class="pf-gem">${ico('trophy')}</span><em>${t('ERFOLGE')}</em><b>${done}</b></div></div>
     <div class="pf-card clan ${p.clan_tag?'':'none'}"><span class="pf-sh">${ico('shield')}</span><div><b>${p.clan_tag?esc(p.clan_tag):t('Kein Clan')}</b><button class="lnk" data-go="clan" type="button">${ico('search')} ${t('Clan finden')}</button></div></div>
     <div class="pf-card info"><div class="field"><span class="lbl">${t('Konto-ID')}</span><span class="mono">${esc(li?(p.id||''):'local')}</span></div><div class="field"><span class="lbl">${t('Mitglied seit')}</span><span>${fmtDate(p.created_at)}</span></div>

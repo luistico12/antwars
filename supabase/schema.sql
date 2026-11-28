@@ -1237,3 +1237,160 @@ grant select on public.leaderboard_players to anon, authenticated;
 insert into public.news (version, title, body)
 select 'v24', 'Profile anderer Spieler, Handelsschiffe und neue Schiffs-Kosmetik', 'Du kannst jetzt die Profile anderer Spieler ansehen: In der Bestenliste öffnet ein Klick auf einen Namen sein Profil mit Siegen, Spielen, Siegquote, Statistik und Kosmetik – ohne Bearbeiten-Knöpfe. Spieler des Tages steht mittig in der Kopfzeile. Das Spiel friert beim schnellen Wechsel zwischen Kolonie und Weltkarte nicht mehr ein: Die Zeichenfläche wird nur noch bei echter Größenänderung neu vermessen. Die Vorschauen im Shop zeigen jedes Stück so, wie es im Spiel aussieht: Schiffe auf Wasser, Muster auf Land, Hüte und Kronen über der Kolonie. Neu sind Kriegsschiff- und Handelsschiff-Kosmetik: Wer ein Schiff kauft, bekommt dieselbe Optik auch für sein Kriegsschiff und seine Handelsschiffe dazu. Handelsschiffe fahren jetzt von Hafen zu Hafen und bringen dabei Erde und Blätter ein. Alle Gebäude auf der Weltkarte sind etwas kleiner, damit mehr aufs Bild passt. Die FPS-Anzeige leuchtet in der Akzentfarbe. Das Profil zeigt deutlich mehr Statistik: Eroberungen, Gebäude, versenkte Schiffe, Bündnisse, Funde, Spielzeit, Tage, Serie, größtes Reich und Bestpunkte. AntWars + verspricht keinen Clan-Tag mehr – der gehört zu den Clans, nicht zur Mitgliedschaft –, und die goldenen Plus-Stücke sind jetzt eigenständig gestaltet, damit sie nicht wie die normalen goldigen Kosmetikstücke aussehen.'
 where not exists (select 1 from public.news where version = 'v24');
+-- ============ Update v25: Schiffs-Kosmetik inklusive, neue Preise, Einlöse-Codes ============
+-- AntWars+ dauerhaft (Admin/Code) zusätzlich zur Laufzeit
+alter table public.profiles add column if not exists plus_life boolean not null default false;
+
+create or replace function public.protect_profile() returns trigger
+language plpgsql security definer set search_path=public as $$
+begin
+  if auth.uid() is null or coalesce(current_setting('app.rpc', true),'') = '1' or public.is_admin() then return new; end if;
+  new.rubys := old.rubys; new.wins := old.wins; new.games := old.games; new.owned := old.owned;
+  new.username := old.username; new.tag := old.tag; new.quests := old.quests; new.stats := old.stats; new.is_admin := old.is_admin; new.id := old.id; new.created_at := old.created_at;
+  new.clan_tag := old.clan_tag; new.clan_id := old.clan_id;
+  new.plus_until := old.plus_until; new.plus_life := old.plus_life;
+  if new.hat is not null and not ('hat:'||new.hat) = any(old.owned) then new.hat := old.hat; end if;
+  if new.flag is not null and not ('flag:'||new.flag) = any(old.owned) then new.flag := old.flag; end if;
+  if new.crown is not null and not ('crown:'||new.crown) = any(old.owned) then new.crown := old.crown; end if;
+  if new.pattern is not null and not ('pattern:'||new.pattern) = any(old.owned) then new.pattern := old.pattern; end if;
+  if new.ship is not null and not ('ship:'||new.ship) = any(old.owned) then new.ship := old.ship; end if;
+  if new.wship is not null and not ('ship:'||new.wship) = any(old.owned) then new.wship := old.wship; end if;
+  if new.tship is not null and not ('ship:'||new.tship) = any(old.owned) then new.tship := old.tship; end if;
+  if new.bskin is not null and not ('bskin:'||new.bskin) = any(old.owned) then new.bskin := old.bskin; end if;
+  if new.tskin is not null and not ('tskin:'||new.tskin) = any(old.owned) then new.tskin := old.tskin; end if;
+  if new.rskin is not null and not ('rskin:'||new.rskin) = any(old.owned) then new.rskin := old.rskin; end if;
+  return new;
+end $$;
+
+-- Preise an die Gebäude angelehnt: Hüte 20–170, Kronen 40–240, Muster 25–72, Schiffe 60–230, Ameisenflaggen 30–60
+insert into public.shop_items(id,price) values
+ ('hat:cap',20),('hat:beanie',22),('hat:flower',24),('hat:party',26),('hat:helmet',30),('hat:top',34),('hat:pirate',38),('hat:mushroom',42),
+ ('hat:wizard',50),('hat:cowboy',56),('hat:chef',62),('hat:miner',70),('hat:viking',80),('hat:headphones',92),('hat:crown',105),('hat:halo',120),
+ ('hat:santa',140),('hat:astro',170),
+ ('crown:monarch',40),('crown:ruby',55),('crown:coral',70),('crown:amethyst',85),('crown:toxic',95),('crown:laurel',110),('crown:halo',125),
+ ('crown:frost',140),('crown:inferno',160),('crown:prism',185),('crown:sun',210),('crown:obsidian',240),
+ ('pattern:stripes',25),('pattern:diagonal',25),('pattern:checker',28),('pattern:dots',30),('pattern:bricks',35),('pattern:hearts',38),
+ ('pattern:stars',42),('pattern:waves',48),('pattern:grid',52),('pattern:arrows',58),('pattern:hexes',65),('pattern:scales',72),
+ ('ship:leaf',60),('ship:paper',75),('ship:duck',90),('ship:turtle',100),('ship:viking',110),('ship:ice',125),('ship:steam',145),
+ ('ship:pirate',170),('ship:ghost',190),('ship:golden',230),
+ ('flag:a_red',30),('flag:a_green',30),('flag:a_gold',32),('flag:a_stripe',34),('flag:a_mound',40),('flag:a_fungus',45),('flag:a_swords',52),('flag:a_queen',60)
+on conflict (id) do update set price = excluded.price;
+-- Einlöse-Codes: je Konto einmal, Gesamtzahl begrenzt. Anlegen/Prüfen nur über RPCs.
+create table if not exists public.redeem_codes(
+  code text primary key,
+  kind text not null check (kind in ('rubys','plus','item')),
+  amount int not null default 0,
+  item text,
+  days int,
+  max_uses int not null default 1,
+  uses int not null default 0,
+  active boolean not null default true,
+  note text not null default '',
+  created_by uuid default auth.uid(),
+  created_at timestamptz not null default now()
+);
+create table if not exists public.redeem_log(
+  code text not null references public.redeem_codes(code) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (code, user_id)
+);
+alter table public.redeem_codes enable row level security;
+alter table public.redeem_log enable row level security;
+drop policy if exists redeem_admin on public.redeem_codes;
+create policy redeem_admin on public.redeem_codes for select to authenticated using (public.is_admin());
+drop policy if exists redeem_log_admin on public.redeem_log;
+create policy redeem_log_admin on public.redeem_log for select to authenticated using (public.is_admin());
+
+-- Code einlösen (Belohnung: Rubys, AntWars+ für Tage/dauerhaft, ein Kosmetikstück)
+create or replace function public.redeem_code(c text) returns text
+language plpgsql security definer set search_path=public as $$
+declare rc public.redeem_codes;
+begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
+  select * into rc from public.redeem_codes where lower(code) = lower(trim(c)) for update;
+  if rc.code is null or not rc.active then raise exception 'Code ungültig'; end if;
+  if exists(select 1 from public.redeem_log where code = rc.code and user_id = auth.uid()) then raise exception 'Code schon eingelöst'; end if;
+  if rc.uses >= rc.max_uses then raise exception 'Code ist aufgebraucht'; end if;
+  perform set_config('app.rpc','1',true);
+  if rc.kind = 'rubys' then
+    update public.profiles set rubys = rubys + greatest(0, rc.amount) where id = auth.uid();
+  elsif rc.kind = 'plus' then
+    if rc.days is null then
+      update public.profiles set plus_life = true where id = auth.uid();
+    else
+      update public.profiles set plus_until = greatest(coalesce(plus_until, now()), now()) + make_interval(days => greatest(1, rc.days)) where id = auth.uid();
+    end if;
+  elsif rc.kind = 'item' then
+    if rc.item is null or not exists(select 1 from public.shop_items where id = rc.item) then raise exception 'Artikel unbekannt'; end if;
+    update public.profiles set owned = case when rc.item = any(owned) then owned else owned || rc.item end where id = auth.uid();
+  end if;
+  insert into public.redeem_log(code,user_id) values(rc.code, auth.uid());
+  update public.redeem_codes set uses = uses + 1 where code = rc.code;
+  return rc.kind;
+end $$;
+revoke all on function public.redeem_code(text) from public, anon;
+grant execute on function public.redeem_code(text) to authenticated;
+-- Admin: Code anlegen, abschalten, auflisten und AntWars+ direkt vergeben
+create or replace function public.admin_code_make(c text, kind text, amount int default 0, item text default null, days int default null, max_uses int default 1, note text default '')
+returns void language plpgsql security definer set search_path=public as $$
+begin
+  if not public.is_admin() then raise exception 'Keine Berechtigung'; end if;
+  if length(trim(c)) < 4 then raise exception 'Code zu kurz'; end if;
+  if kind not in ('rubys','plus','item') then raise exception 'Art ungültig'; end if;
+  insert into public.redeem_codes(code,kind,amount,item,days,max_uses,note,created_by)
+  values (trim(c), kind, greatest(0,amount), item, days, greatest(1,max_uses), coalesce(note,''), auth.uid());
+end $$;
+revoke all on function public.admin_code_make(text,text,int,text,int,int,text) from public, anon;
+grant execute on function public.admin_code_make(text,text,int,text,int,int,text) to authenticated;
+
+create or replace function public.admin_codes() returns table(code text, kind text, amount int, item text, days int, max_uses int, uses int, active boolean, note text, created_at timestamptz)
+language sql security definer set search_path=public stable as $$
+  select code, kind, amount, item, days, max_uses, uses, active, note, created_at
+  from public.redeem_codes where public.is_admin() order by created_at desc limit 200
+$$;
+revoke all on function public.admin_codes() from public, anon;
+grant execute on function public.admin_codes() to authenticated;
+
+create or replace function public.admin_code_off(c text) returns void
+language plpgsql security definer set search_path=public as $$
+begin
+  if not public.is_admin() then raise exception 'Keine Berechtigung'; end if;
+  update public.redeem_codes set active = false where code = c;
+end $$;
+revoke all on function public.admin_code_off(text) from public, anon;
+grant execute on function public.admin_code_off(text) to authenticated;
+
+create or replace function public.admin_grant_plus(pid uuid, days int default null) returns void
+language plpgsql security definer set search_path=public as $$
+begin
+  if not public.is_admin() then raise exception 'Keine Berechtigung'; end if;
+  if days is null then
+    update public.profiles set plus_life = true where id = pid;
+  else
+    update public.profiles set plus_until = greatest(coalesce(plus_until, now()), now()) + make_interval(days => greatest(1, days)) where id = pid;
+  end if;
+end $$;
+revoke all on function public.admin_grant_plus(uuid,int) from public, anon;
+grant execute on function public.admin_grant_plus(uuid,int) to authenticated;
+
+-- News v25
+insert into public.news (version, title, body)
+select 'v25', 'Eine Schiff-Optik für alle drei Schiffe', 'Eine Schiffs-Kosmetik gilt jetzt für alle drei Fahrzeuge: Kaufst du ein Schiff, bekommen Kriegsschiff und Handelsschiff automatisch dieselbe Optik – kein zweiter Kauf, keine getrennten Reiter im Shop. Dafür sind alle Schiffe neu gezeichnet: Das Kriegsschiff ist deutlich größer und breiter, mit Rammbug, zwei Masten, Kanonen und Kriegswimpel; das normale Boot bleibt in der Mitte mit einem Segel; das Handelsschiff ist klein und gedrungen, mit Kisten, Fässern und einem kurzen Mast. Jede der zwölf Stilrichtungen hat ihre eigene Textur, Farbwelt und ein eigenes Zeichen am Segel – statt zusammengewürfelter Pixel. Die Preise sind an die Gebäude angelehnt: Hüte 20–170 Rubys, Kronen 40–240, Muster 25–72, Schiffe 60–230 und Ameisenflaggen 30–60. Neu ist der Einlöse-Code im Shop: Jeder Code gilt je Konto einmal und kann Rubys, AntWars+ (befristet oder dauerhaft) oder ein einzigartiges Kosmetikstück bringen. Das Team legt Codes im Admin-Bereich an und kann AntWars+ auch direkt vergeben. Das Profil eines anderen Spielers sieht jetzt aus wie dein eigenes – mit Statistiken, Karrierewerten, AntWars+, Clan und Kosmetik, nur ohne Konto-Einstellungen und ohne Profilbild-Wechsel.'
+where not exists (select 1 from public.news where version = 'v25');
+-- ============ Update v25.1: plus_life auch im öffentlichen Profil ============
+drop function if exists public.player_public(uuid, text, text);
+create function public.player_public(pid uuid default null, n text default null, tg text default null)
+returns table(id uuid, username text, tag text, clan_tag text, avatar text, wins int, games int,
+  crown text, pattern text, ship text, wship text, tship text, bskin text, tskin text, rskin text,
+  hat text, flag text, plus_until timestamptz, plus_life boolean, stats jsonb, created_at timestamptz)
+language sql security definer set search_path=public stable as $$
+  select p.id, p.username, p.tag, p.clan_tag, p.avatar, p.wins, p.games, p.crown, p.pattern, p.ship, p.wship, p.tship,
+         p.bskin, p.tskin, p.rskin, p.hat, p.flag, p.plus_until, p.plus_life, p.stats, p.created_at
+  from public.profiles p
+  where (pid is not null and p.id = pid)
+     or (n is not null and lower(p.username) = lower(trim(n)) and (tg is null or p.tag = tg))
+  limit 1
+$$;
+revoke all on function public.player_public(uuid, text, text) from public, anon;
+grant execute on function public.player_public(uuid, text, text) to authenticated;
