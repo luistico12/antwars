@@ -21,7 +21,9 @@ const BSKINS={
   coral:{n:'Korallenburg',price:210,p:{b:'#e0708f',h:'#ffc2d2',d:'#7d2040',a:'#ffd23f',g:'#fff3f7'}},
   obsidian:{n:'Obsidianzitadelle',price:280,p:{b:'#3b3f4c',h:'#7b8496',d:'#0d0f14',a:'#ff3b5c',g:'#c9d2e0'}},
   neon:{n:'Neonbau',price:300,p:{b:'#14203a',h:'#2f6bff',d:'#070c16',a:'#41e0d0',g:'#8ff6ff'}},
-  golden:{n:'Goldpalast',price:320,p:{b:'#e0b030',h:'#fff0a0',d:'#7a5410',a:'#c62f3a',g:'#fff8d0'}}
+  golden:{n:'Goldpalast',price:320,p:{b:'#e0b030',h:'#fff0a0',d:'#7a5410',a:'#c62f3a',g:'#fff8d0'}},
+  aurum:{n:'Aurum-Residenz',price:0,p:{b:'#f0c860',h:'#fffbe0',d:'#7a5410',a:'#ff5757',g:'#ffffff'}},
+  void:{n:'Leerenzitadelle',price:0,p:{b:'#2a1836',h:'#8b5cf6',d:'#0b0512',a:'#ff4fd8',g:'#e9d5ff'}}
 };
 const TSKINS={
   default:{n:'Karrenameise',price:0,p:{b:'#3a2418',h:'#7a5230',d:'#1c1008',a:'#b9824e',g:'#f2c14e'}},
@@ -30,7 +32,9 @@ const TSKINS={
   shadow:{n:'Schattenhändler',price:170,p:{b:'#24202c',h:'#6b5a86',d:'#0b0910',a:'#8a3fd1',g:'#d9c6ff'}},
   royal:{n:'Königlicher Händler',price:190,p:{b:'#5a1f78',h:'#b86be0',d:'#220a30',a:'#f2c14e',g:'#fff3a8'}},
   jade:{n:'Jadehändler',price:220,p:{b:'#1d6b58',h:'#59d6a8',d:'#0a2a23',a:'#ffd23f',g:'#e9fff8'}},
-  golden:{n:'Goldkutsche',price:240,p:{b:'#b8860b',h:'#ffe27a',d:'#5a3f05',a:'#fff3a8',g:'#ffffff'}}
+  golden:{n:'Goldkutsche',price:240,p:{b:'#b8860b',h:'#ffe27a',d:'#5a3f05',a:'#fff3a8',g:'#ffffff'}},
+  aurum:{n:'Goldene Karawane',price:0,p:{b:'#c99a10',h:'#fff0a0',d:'#5a3f05',a:'#ff5757',g:'#ffffff'}},
+  void:{n:'Schattenkarawane',price:0,p:{b:'#241a33',h:'#7c4ddb',d:'#08040f',a:'#ff4fd8',g:'#e9d5ff'}}
 };
 /* Wege: edge = Rand, body = Belag, dash = Mittelmarkierung, acc = Spielerfarbe als Akzent (nur Standard) */
 const RSKINS={
@@ -40,7 +44,9 @@ const RSKINS={
   ice:{n:'Eisweg',price:200,edge:'#2c6b96',body:'#bfe9ff',dash:'#ffffff',w:4,glow:'#8fd6ff'},
   gold:{n:'Goldstraße',price:230,edge:'#7a5410',body:'#e0b030',dash:'#fff0a0',w:4.2,glow:'#ffe27a'},
   lava:{n:'Lavapfad',price:260,edge:'#3a0d05',body:'#8e2a12',dash:'#ff8a3d',w:4.2,glow:'#ff5a1a'},
-  neon:{n:'Neonbahn',price:280,edge:'#0b1a2a',body:'#1f3a5a',dash:'#41e0d0',w:4,glow:'#41e0d0'}
+  neon:{n:'Neonbahn',price:280,edge:'#0b1a2a',body:'#1f3a5a',dash:'#41e0d0',w:4,glow:'#41e0d0'},
+  aurum:{n:'Goldene Allee',price:0,edge:'#7a5410',body:'#f0c860',dash:'#fffbe0',w:4.4,glow:'#ffd23f'},
+  void:{n:'Leerenpfad',price:0,edge:'#120a1e',body:'#3a2058',dash:'#ff4fd8',w:4.2,glow:'#8b5cf6'}
 };
 const SKIN_KINDS={bskin:BSKINS,tskin:TSKINS,rskin:RSKINS};
 const skinOf=(kind,id)=>(SKIN_KINDS[kind][id])||SKIN_KINDS[kind].default;
@@ -128,10 +134,10 @@ function roadStroke(g,pts,sk,pc,k,scale){
   let rem=L*(k==null?1:k);const path=[pts[0]];
   for(let i=1;i<pts.length&&rem>0;i++){const l=seg[i-1];if(rem>=l){path.push(pts[i]);rem-=l}else{const f=rem/l;path.push([pts[i-1][0]+(pts[i][0]-pts[i-1][0])*f,pts[i-1][1]+(pts[i][1]-pts[i-1][1])*f]);rem=0}}
   if(path.length<2)return;
+  /* Gerade Abschnitte bis zur nächsten Rasterzelle: keine Kurven, Ecken treffen sich wie im Raster */
   const trace=()=>{g.beginPath();g.moveTo(path[0][0],path[0][1]);
-    for(let i=1;i<path.length-1;i++){const mx=(path[i][0]+path[i+1][0])/2,my=(path[i][1]+path[i+1][1])/2;g.quadraticCurveTo(path[i][0],path[i][1],mx,my)}
-    const e=path[path.length-1];g.lineTo(e[0],e[1])};
-  g.lineCap='round';g.lineJoin='round';
+    for(let i=1;i<path.length;i++)g.lineTo(path[i][0],path[i][1])};
+  g.lineCap='square';g.lineJoin='miter';g.miterLimit=4;
   if(sk.glow){g.strokeStyle=sk.glow;g.globalAlpha=.28;g.lineWidth=(sk.w+3.5)*scale;trace();g.stroke();g.globalAlpha=1}
   g.strokeStyle=sk.edge;g.lineWidth=(sk.w+1.2)*scale;trace();g.stroke();
   g.strokeStyle=sk.body;g.lineWidth=sk.w*scale;trace();g.stroke();

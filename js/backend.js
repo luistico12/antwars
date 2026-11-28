@@ -6,26 +6,42 @@ const CFG=window.AW_CONFIG||{};
 const REMOTE=!!(CFG.SUPABASE_URL&&CFG.SUPABASE_ANON_KEY);
 
 /* ---- Katalog (Anzeige; maßgeblich sind die Preise in der DB-Tabelle shop_items bzw. im lokalen Fallback) ---- */
-const HATS=[['cap','Kappe',2],['beanie','Wollmütze',2],['flower','Blume',2],['party','Partyhut',2],['helmet','Helm',3],['top','Zylinder',3],['pirate','Piratenhut',3],['mushroom','Pilzhut',3],['wizard','Zaubererhut',4],['cowboy','Cowboyhut',4],['chef','Kochmütze',4],['miner','Grubenhelm',4],['viking','Wikingerhelm',5],['headphones','Kopfhörer',5],['crown','Krone',5],['halo','Heiligenschein',6],['santa','Weihnachtsmütze',6],['astro','Astronautenhelm',8]];
+const HATS=[['cap','Kappe',2],['beanie','Wollmütze',2],['flower','Blume',2],['party','Partyhut',2],['helmet','Helm',3],['top','Zylinder',3],['pirate','Piratenhut',3],['mushroom','Pilzhut',3],['wizard','Zaubererhut',4],['cowboy','Cowboyhut',4],['chef','Kochmütze',4],['miner','Grubenhelm',4],['viking','Wikingerhelm',5],['headphones','Kopfhörer',5],['crown','Krone',5],['halo','Heiligenschein',6],['santa','Weihnachtsmütze',6],['astro','Astronautenhelm',8],['pharaoh','Pharaonenkrone',0],['nebula','Nebelkappe',0]];
 const WORLD_FLAGS=['de','gb','us','fr','es','it','nl','pl','pt','br','ar','mx','ca','au','jp','kr','cn','in','tr','ru','ua','se','no','dk','fi','at','ch','ie','be','gr','cz','hu','ro','bg','rs','sk','si','il','sa','eg','za','bd','mk'];
 const FLAG_NAMES={de:'Deutschland',gb:'Vereinigtes Königreich',us:'USA',fr:'Frankreich',es:'Spanien',it:'Italien',nl:'Niederlande',pl:'Polen',pt:'Portugal',br:'Brasilien',ar:'Argentinien',mx:'Mexiko',ca:'Kanada',au:'Australien',jp:'Japan',kr:'Südkorea',cn:'China',in:'Indien',tr:'Türkei',ru:'Russland',ua:'Ukraine',se:'Schweden',no:'Norwegen',dk:'Dänemark',fi:'Finnland',at:'Österreich',ch:'Schweiz',ie:'Irland',be:'Belgien',gr:'Griechenland',cz:'Tschechien',hu:'Ungarn',ro:'Rumänien',bg:'Bulgarien',rs:'Serbien',sk:'Slowakei',si:'Slowenien',il:'Israel',sa:'Saudi-Arabien',eg:'Ägypten',za:'Südafrika',bd:'Bangladesch',mk:'Nordmazedonien'};
-const ANT_FLAGS=[['a_red','Rote Kolonie',2],['a_green','Blattschneider',2],['a_gold','Goldstern',2],['a_stripe','Streifen',2],['a_mound','Hügelwacht',3],['a_fungus','Pilzgarten',3],['a_swords','Kriegsbanner',3],['a_queen','Königin',3]];
+const ANT_FLAGS=[['a_red','Rote Kolonie',2],['a_green','Blattschneider',2],['a_gold','Goldstern',2],['a_stripe','Streifen',2],['a_mound','Hügelwacht',3],['a_fungus','Pilzgarten',3],['a_swords','Kriegsbanner',3],['a_queen','Königin',3],['p_plus','AntWars +',0],['p_aurum','Goldene Kolonie',0]];
 /* Profilbild: kleines Bild als Data-URL (nur png/jpeg/webp, höchstens 30 kB), wird nur per <img> angezeigt */
 const safeAvatar=s=>typeof s==='string'&&s.length<=30000&&/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+\/=]+$/.test(s)?s:null;
-const CROWNS=[['monarch','Königskrone',4],['ruby','Rubinkrone',6],['coral','Korallenkrone',7],['amethyst','Amethystturm',8],['toxic','Giftkrone',8],['laurel','Lorbeerkranz',10],['halo','Himmelsreif',10],['frost','Eiskrone',11],['inferno','Infernokrone',13],['prism','Prisma-Herrscher',16],['sun','Sonnenkrone',18],['obsidian','Obsidiankrone',22]];
-const PATTERNS=[['stripes','Diagonalen',3],['diagonal','Streifen',3],['checker','Schachbrett',3],['dots','Punkte',3],['bricks','Mauerwerk',4],['hearts','Herzchen',4],['stars','Sterne',4],['waves','Wellen',5],['grid','Gitter',5],['arrows','Pfeile',5],['hexes','Waben',6],['scales','Schuppen',6]];
-const SHIPS=[['leaf','Blattkahn',4],['paper','Papierboot',5],['duck','Entenboot',6],['turtle','Schildkrötenfloß',6],['viking','Wikingerboot',6],['ice','Eisbrecher',7],['steam','Dampfer',8],['pirate','Piratenschiff',10],['ghost','Geisterschiff',11],['golden','Goldgaleone',14]];
+const CROWNS=[['monarch','Königskrone',4],['ruby','Rubinkrone',6],['coral','Korallenkrone',7],['amethyst','Amethystturm',8],['toxic','Giftkrone',8],['laurel','Lorbeerkranz',10],['halo','Himmelsreif',10],['frost','Eiskrone',11],['inferno','Infernokrone',13],['prism','Prisma-Herrscher',16],['sun','Sonnenkrone',18],['obsidian','Obsidiankrone',22],['omega','Omega-Krone',0],['aurora','Polarlicht-Krone',0]];
+const PATTERNS=[['stripes','Diagonalen',3],['diagonal','Streifen',3],['checker','Schachbrett',3],['dots','Punkte',3],['bricks','Mauerwerk',4],['hearts','Herzchen',4],['stars','Sterne',4],['waves','Wellen',5],['grid','Gitter',5],['arrows','Pfeile',5],['hexes','Waben',6],['scales','Schuppen',6],['plus','Plus-Muster',0],['aurora','Polarlicht',0]];
+const SHIPS=[['leaf','Blattkahn',4],['paper','Papierboot',5],['duck','Entenboot',6],['turtle','Schildkrötenfloß',6],['viking','Wikingerboot',6],['ice','Eisbrecher',7],['steam','Dampfer',8],['pirate','Piratenschiff',10],['ghost','Geisterschiff',11],['golden','Goldgaleone',14],['leviathan','Leviathan',0],['nebula','Nebelgaleone',0]];
+/* Kosmetik in Stufen. Preis 0 = nur über AntWars + erhältlich (Stufe „Ultimativ“). */
+const TIERS={common:'Gewöhnlich',rare:'Selten',epic:'Episch',legendary:'Legendär',mythic:'Mythisch',ultimate:'Ultimativ'};
+const TIER_ORDER=['common','rare','epic','legendary','mythic'];
+const PLUS_COST=900,PLUS_DAYS=30;
+const cosRows=(rows,kind)=>rows.map(([id,n,p])=>({id:kind+':'+id,kind,key:id,name:n,price:p||0,plus:!p}));
 const SHOP=[
-  ...CROWNS.map(([id,n,p])=>({id:'crown:'+id,kind:'crown',key:id,name:n,price:p})),
-  ...PATTERNS.map(([id,n,p])=>({id:'pattern:'+id,kind:'pattern',key:id,name:n,price:p})),
-  ...SHIPS.map(([id,n,p])=>({id:'ship:'+id,kind:'ship',key:id,name:n,price:p})),
-  ...Object.entries(BSKINS).filter(([id])=>id!=='default').map(([id,x])=>({id:'bskin:'+id,kind:'bskin',key:id,name:x.n,price:x.price})),
-  ...Object.entries(TSKINS).filter(([id])=>id!=='default').map(([id,x])=>({id:'tskin:'+id,kind:'tskin',key:id,name:x.n,price:x.price})),
-  ...Object.entries(RSKINS).filter(([id])=>id!=='default').map(([id,x])=>({id:'rskin:'+id,kind:'rskin',key:id,name:x.n,price:x.price})),
-  ...HATS.map(([id,n,p])=>({id:'hat:'+id,kind:'hat',key:id,name:n,price:p})),
+  ...cosRows(CROWNS,'crown'),
+  ...cosRows(PATTERNS,'pattern'),
+  ...cosRows(SHIPS,'ship'),
+  ...Object.entries(BSKINS).filter(([id])=>id!=='default').map(([id,x])=>({id:'bskin:'+id,kind:'bskin',key:id,name:x.n,price:x.price||0,plus:!x.price})),
+  ...Object.entries(TSKINS).filter(([id])=>id!=='default').map(([id,x])=>({id:'tskin:'+id,kind:'tskin',key:id,name:x.n,price:x.price||0,plus:!x.price})),
+  ...Object.entries(RSKINS).filter(([id])=>id!=='default').map(([id,x])=>({id:'rskin:'+id,kind:'rskin',key:id,name:x.n,price:x.price||0,plus:!x.price})),
+  ...cosRows(HATS,'hat'),
   ...WORLD_FLAGS.map(id=>({id:'flag:'+id,kind:'flag',key:id,name:FLAG_NAMES[id],price:['de','gb','us','fr','es','it','nl','pl'].includes(id)?1:2})),
-  ...ANT_FLAGS.map(([id,n,p])=>({id:'flag:'+id,kind:'flag',key:id,name:n,price:p,custom:true}))
+  ...cosRows(ANT_FLAGS,'flag').map(i=>({...i,custom:true}))
 ];
+/* Stufen aus der Preisspanne je Art (gleiche Art = gleiche Skala), Plus-Artikel sind „Ultimativ“ */
+(function tiers(){
+  const by={};for(const i of SHOP)if(!i.plus)(by[i.kind]=by[i.kind]||[]).push(i);
+  for(const k in by){const l=by[k].slice().sort((a,b)=>a.price-b.price),n=l.length;
+    l.forEach((it,i)=>{it.tier=TIER_ORDER[Math.min(4,Math.floor((n>1?i/(n-1):0)*5))]})}
+  for(const i of SHOP)if(i.plus)i.tier='ultimate';
+  /* „Am beliebtesten“: je Art der mittlere (epische) Artikel */
+  for(const k of['crown','ship','pattern','bskin','hat']){const it=SHOP.find(i=>i.kind===k&&i.tier==='epic');if(it)it.pop=true}
+})();
+const PLUS_IDS=SHOP.filter(i=>i.plus).map(i=>i.id);
+const plusItems=kind=>SHOP.filter(i=>i.plus&&(!kind||i.kind===kind));
 const SHOP_BY_ID=Object.fromEntries(SHOP.map(i=>[i.id,i]));
 /* Quests: [id, Art, Statistik, Ziel, Belohnung (Rubys), Titel] */
 /*Q-BEGIN*/
@@ -71,17 +87,17 @@ const CAREER=[
   ['score3','Meisterleistungen','Mythos','Erreiche Rekordpunkte','Dein höchster Punktestand in einer Partie.','star','score',[2500,8000,20000,45000],[40,110,240,520]]
 ];
 const QUESTS=[
-  Q('d_games','daily','games',2,3,'Spiele Partien','Jede gestartete Partie zählt, auch Solo.','gamepad','daily'),
-  Q('d_wins','daily','wins',1,8,'Gewinne eine Partie','Ein Sieg in beliebigem Modus.','trophy','daily'),
-  Q('d_conq','daily','conq',5,5,'Erobere Gebiete','Jede Eroberung zählt.','swords','daily'),
-  Q('d_build','daily','built',8,6,'Baue Gebäude','Außenposten, Häfen, Wälle und Schiffe zählen.','hammer','daily'),
-  Q('d_mins','daily','mins',10,4,'Spiele 10 Minuten','Zeit in Partien, auch Solo.','clock','daily'),
-  Q('b_daily','daily','bonus',5,6,'Bonus für alle erledigten Quests','Schließe alle Quests oben ab, um ihn freizuschalten.','chest','daily'),
-  Q('w_games','weekly','games',5,10,'Spiele 5 Partien','Jede gestartete Partie zählt, auch Solo.','gamepad','weekly'),
-  Q('w_conq','weekly','conq',10,12,'Erobere Gebiete','Jede Eroberung zählt.','swords','weekly'),
-  Q('w_build','weekly','built',40,14,'Baue 40 Gebäude','Außenposten, Häfen, Wälle und Schiffe zählen.','hammer','weekly'),
-  Q('w_mins','weekly','mins',120,14,'Spiele 2 Stunden','Zeit in Partien, auch Solo.','clock','weekly'),
-  Q('b_weekly','weekly','bonus',4,16,'Bonus für alle erledigten Quests','Schließe alle Quests oben ab, um ihn freizuschalten.','chest','weekly')
+  Q('d_games','daily','games',2,20,'Spiele Partien','Jede gestartete Partie zählt, auch Solo.','gamepad','daily'),
+  Q('d_wins','daily','wins',1,25,'Gewinne eine Partie','Ein Sieg in beliebigem Modus.','trophy','daily'),
+  Q('d_conq','daily','conq',5,30,'Erobere Gebiete','Jede Eroberung zählt.','swords','daily'),
+  Q('d_build','daily','built',8,35,'Baue Gebäude','Außenposten, Häfen, Wälle und Schiffe zählen.','hammer','daily'),
+  Q('d_mins','daily','mins',10,40,'Spiele 10 Minuten','Zeit in Partien, auch Solo.','clock','daily'),
+  Q('b_daily','daily','bonus',5,100,'Bonus für alle erledigten Quests','Schließe alle Quests oben ab, um ihn freizuschalten.','chest','daily'),
+  Q('w_games','weekly','games',5,50,'Spiele 5 Partien','Jede gestartete Partie zählt, auch Solo.','gamepad','weekly'),
+  Q('w_conq','weekly','conq',10,65,'Erobere Gebiete','Jede Eroberung zählt.','swords','weekly'),
+  Q('w_build','weekly','built',40,80,'Baue 40 Gebäude','Außenposten, Häfen, Wälle und Schiffe zählen.','hammer','weekly'),
+  Q('w_mins','weekly','mins',120,100,'Spiele 2 Stunden','Zeit in Partien, auch Solo.','clock','weekly'),
+  Q('b_weekly','weekly','bonus',4,250,'Bonus für alle erledigten Quests','Schließe alle Quests oben ab, um ihn freizuschalten.','chest','weekly')
 ];
 for(const[key,cat,title,desc,sub,ic,stat,goals,rew]of CAREER)goals.forEach((g,i)=>QUESTS.push(Q(`c_${key}_${i+1}`,'career',stat,g,rew[i],title,desc,ic,cat,{key,tier:i+1,tiers:goals.length,sub})));
 /*Q-END*/
@@ -95,6 +111,7 @@ const AW={remote:REMOTE,sb:null,user:null,profile:null,ready:false,subs:[],
   on(f){this.subs.push(f)},emit(){this.subs.forEach(f=>{try{f()}catch(e){console.error(e)}})},
   get loggedIn(){return !!this.user},
   get isAdmin(){return !!(this.profile&&this.profile.is_admin)},
+  get plusActive(){const u=this.profile&&this.profile.plus_until;return !!u&&new Date(u).getTime()>Date.now()},
   get name(){return(this.profile&&this.profile.username)||lsGet('ak_name','Gast')},
   get tag(){return(this.profile&&this.profile.tag)||'0000'},
   get fullName(){return this.name+'#'+this.tag},
@@ -163,7 +180,9 @@ const Remote={
     if('username' in p){const nm=cleanName(p.username);if(nm.length<2)throw new Error('Name zu kurz');delete p.username;const{error}=await AW.sb.rpc('set_username',{n:nm});if(error)throw new Error('Name konnte nicht gespeichert werden')}
     if(Object.keys(p).length){const{error}=await AW.sb.from('profiles').update(p).eq('id',AW.user.id);if(error)throw new Error('Speichern nicht möglich')}
     await Remote.loadProfile()},
-  async buy(id){const{error}=await AW.sb.rpc('buy_item',{item:id});if(error)throw new Error(error.message);await Remote.loadProfile()},
+  async buy(id){if(SHOP_BY_ID[id]&&SHOP_BY_ID[id].plus)throw new Error('Nur mit AntWars + erhältlich');const{error}=await AW.sb.rpc('buy_item',{item:id});if(error)throw new Error(error.message);await Remote.loadProfile()},
+  async buyPlus(){const{error}=await AW.sb.rpc('buy_plus');if(error)throw new Error(/function|schema cache/i.test(error.message)?'Server noch nicht aktualisiert: supabase/schema.sql im SQL-Editor ausführen':error.message);await Remote.loadProfile()},
+  async switchAccount(){try{await AW.sb.auth.signOut()}catch(e){AW.user=null;AW.profile=null}Remote.userOut=true;AW.emit()},
   async claim(id){const{error}=await AW.sb.rpc('claim_quest',{qid:id});if(error)throw new Error(error.message);await Remote.loadProfile()},
   async report(p){const{error}=await AW.sb.rpc('report_stats',{p});if(error)console.warn('report_stats fehlgeschlagen (schema.sql ausgeführt?):',error.message);else await Remote.loadProfile()},
   async players(){const{data}=await AW.sb.from('leaderboard_players').select('*').order('wins',{ascending:false}).limit(100);return data||[]},
@@ -226,7 +245,7 @@ const clName=()=>((AW.profile&&AW.profile.username)||'Gast')+'#'+((AW.profile&&A
 const Local={
   async init(){
     let p=lsGet(LP+'profile',null);
-    if(!p){p={id:'local',username:lsGet('ak_name','Gast'),tag:randTag(),clan_tag:'',rubys:0,wins:0,games:0,avatar:null,hat:null,flag:null,crown:null,pattern:null,ship:null,bskin:null,tskin:null,rskin:null,owned:[],quests:{},stats:{},is_admin:false,created_at:new Date().toISOString()};lsSet(LP+'profile',p)}
+    if(!p){p={id:'local',username:lsGet('ak_name','Gast'),tag:randTag(),clan_tag:'',rubys:0,wins:0,games:0,avatar:null,hat:null,flag:null,crown:null,pattern:null,ship:null,bskin:null,tskin:null,rskin:null,plus_until:null,owned:[],quests:{},stats:{},is_admin:false,created_at:new Date().toISOString()};lsSet(LP+'profile',p)}
     if(!p.tag){p.tag=randTag();lsSet(LP+'profile',p)}
     AW.user={id:'local',email:null,phone:null,local:true};AW.profile=p;
   },
@@ -242,7 +261,13 @@ const Local={
     if('flag' in p){if(p.flag&&!a.owned.includes('flag:'+p.flag))throw new Error('Nicht freigeschaltet');a.flag=p.flag}
     for(const k of['crown','pattern','ship','bskin','tskin','rskin'])if(k in p){if(p[k]&&!a.owned.includes(k+':'+p[k]))throw new Error('Nicht freigeschaltet');a[k]=p[k]}
     lsSet('ak_name',a.username);Local.save()},
-  async buy(id){const it=SHOP_BY_ID[id],a=AW.profile;if(!it)throw new Error('Unbekannt');if(a.owned.includes(id))throw new Error('Schon gekauft');if(a.rubys<it.price)throw new Error('Nicht genug Rubys');a.rubys-=it.price;a.owned.push(id);Local.save()},
+  async buy(id){const it=SHOP_BY_ID[id],a=AW.profile;if(!it)throw new Error('Unbekannt');if(it.plus)throw new Error('Nur mit AntWars + erhältlich');if(a.owned.includes(id))throw new Error('Schon gekauft');if(a.rubys<it.price)throw new Error('Nicht genug Rubys');a.rubys-=it.price;a.owned.push(id);Local.save()},
+  async buyPlus(){const a=AW.profile;if(a.rubys<PLUS_COST)throw new Error('Nicht genug Rubys (900 nötig)');
+    const base=Math.max(Date.now(),new Date(a.plus_until||0).getTime());
+    a.rubys-=PLUS_COST;a.plus_until=new Date(base+PLUS_DAYS*864e5).toISOString();
+    for(const id of PLUS_IDS)if(!a.owned.includes(id))a.owned.push(id);
+    Local.save()},
+  async switchAccount(){const nm=AW.profile&&AW.profile.username||'Gast';lsSet('ak_name',nm);AW.user=null;AW.profile=null;await Local.init();AW.emit()},
   bucket(kind){const a=AW.profile;a.stats=a.stats||{};const k=periodKey(kind);const b=a.stats[kind]=(a.stats[kind]&&a.stats[kind].k===k)?a.stats[kind]:{k,v:{}};return b},
   async claim(id){const q=QUESTS.find(x=>x[0]===id),a=AW.profile;if(!q)throw new Error('Unbekannt');const b=Local.bucket(q[1]);
     if((a.quests[id])===b.k)throw new Error('Schon abgeholt');
@@ -343,6 +368,7 @@ const Local={
   }
 };
 const DEFAULT_NEWS=[
+  {id:'d34',version:'v23',title:'AntWars +, Stufen im Shop, freies Bauen und schnelle Kolonie',body:'AntWars + ist da: für 900 Rubys im Monat bekommst du 16 exklusive Kosmetikstücke (zwei je Art), ein + vor dem Namen und den Clan-Tag hinter dem Namen. Die Kosmetik liegt im Shop im neuen Reiter „AntWars +“. Alle Kosmetik ist jetzt in Stufen sortiert – Gewöhnlich, Selten, Episch, Legendär, Mythisch – und die beliebtesten Stücke tragen ein Band. Der Shop ist neu: große Karten mit Stufenfarbe, ein Filter über den Stufen und eine Detailansicht mit großem Vorschaufenster und Preis. Fehlen Rubys, führt ein Knopf direkt zu den Quests. Das Inventar hat zwei Reiter: eigene Kosmetik und AntWars +, dazu „Mehr im Shop“ und einen Shop-Knopf. Bauen ohne Limit: Außenposten, Verteidigungswälle und Häfen stehen jetzt so oft in einem Gebiet, wie du willst und bezahlen kannst. Auch kleine Städte erzeugen langsam Ameisen. Wege laufen eckig über das Raster und treffen sich an Kreuzungen – keine Bögen mehr. Die Ameisenflaggen sind neu gezeichnet, die Kolonie läuft mit vielen Bauten flüssig, und im Spiel sind die Ränder links und rechts weg.' ,created_at:'2026-11-28T09:00:00Z'},
   {id:'d33',version:'v22',title:'Kein Einfrieren, markierte Räume, Bestenliste an der Kopfzeile',body:'Das Spiel friert nicht mehr ein: Ein Fehler in einem einzelnen Bild wird abgefangen, Simulation und Anzeige laufen weiter. Beim Bauen ist der gewählte Raum im Dock jetzt deutlich markiert – goldener Rahmen, helle Fläche und ein Häkchen. Die Bestenliste klappt man über ihre eigene Kopfzeile ein und aus; der kleine Knopf darüber ist weg, und eingeklappt bleibt die Kopfzeile sichtbar.',created_at:'2026-11-27T19:30:00Z'},
   {id:'d32',version:'v21.20',title:'Kartenvorschau ohne Ränder',body:'Im Hauptmenü füllt die Kartenvorschau jetzt die ganze Fläche: Links und rechts läuft das Meer im gleichen Zellenraster weiter, statt unscharfer Balken. Es ist kein Rand und keine Kante mehr an der Karte zu sehen, egal wie breit das Fenster ist.',created_at:'2026-11-27T18:40:00Z'},
   {id:'d31',version:'v21.19',title:'Mehr Wasser: Karten sind jetzt Inseln',body:'Die Karten haben deutlich mehr Meer: Das Land nimmt nur noch etwa ein Drittel der Fläche ein (vorher gut 40 Prozent) und endet mit Abstand vor dem Kartenrand. Dadurch liegt der ganze Kontinent als Insel mit Küste ringsum im Wasser, Seen und Flüsse bleiben. Die Zahl der Gebiete bleibt bei rund 20, bei Unlimited bei rund 70.',created_at:'2026-11-27T18:00:00Z'},
@@ -382,6 +408,7 @@ Object.assign(AW,{
   signIn:(...a)=>API.signIn(...a),signUp:(...a)=>API.signUp(...a),secure:(...a)=>API.secure(...a),oauth:(...a)=>API.oauth(...a),signOut:async()=>{await API.signOut();AW.emit()},
   reset:(...a)=>API.reset(...a),setPhone:(...a)=>API.setPhone(...a),verifyPhone:(...a)=>API.verifyPhone(...a),
   update:async p=>{await API.update(p);AW.emit()},buy:async id=>{await API.buy(id);AW.emit()},claim:async id=>{await API.claim(id);AW.emit()},report:p=>API.report(p).then(()=>AW.emit()),
+  buyPlus:async()=>{await API.buyPlus();AW.emit()},switchAccount:async()=>{await API.switchAccount();AW.emit()},
   players:()=>API.players(),potd:()=>API.potd(),clans:()=>API.clans(),news:()=>API.news(),newsSave:n=>API.newsSave(n),newsDel:id=>API.newsDel(id),
   adminProfiles:q=>API.adminProfiles(q),adminUpdate:(i,p)=>API.adminUpdate(i,p),
   friends:()=>API.friends(),friendRequest:n=>API.friendRequest(n),friendRespond:(i,a)=>API.friendRespond(i,a),friendRemove:i=>API.friendRemove(i),

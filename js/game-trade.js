@@ -22,14 +22,14 @@ function outpostCell(t){
   for(const i of t.cells){if(!M.land[i])continue;const d=Math.hypot((i%GW)-px,((i/GW)|0)-py);if(d<b){b=d;best=i}}
   return t.outp=best;
 }
-const nodeCell=n=>n.kind==='port'?n.t.port.idx:n.kind==='out'?outpostCell(n.t):cityCell(n.t);
+const nodeCell=n=>n.kind==='port'?(n.port?n.port.idx:n.t.port.idx):n.kind==='out'?outpostCell(n.t):cityCell(n.t);
 const nodePt=n=>n.kind==='city'?cityPt(n.t):(()=>{const[x,y]=cellPos(nodeCell(n));return[x,y+(n.kind==='out'?3:2)]})();
 
 function wantLinks(){
   const L=[];
   for(const t of T){
     if(t.owner!==0)continue;
-    if(t.port)L.push({k:'p'+t.id,a:{t,kind:'port'},b:{t,kind:'city'}});
+    if(typeof portsOf==='function')for(const p of portsOf(t))L.push({k:'p'+t.id+'-'+p.idx,a:{t,kind:'port',port:p},b:{t,kind:'city'}});
     if(t.str.out>0)L.push({k:'o'+t.id,a:{t,kind:'out'},b:{t,kind:'city'}});
     else t.outp=null;
     for(const j of t.adj){const u=T[j];if(u.id>t.id&&u.owner===0)L.push({k:`c${t.id}-${u.id}`,a:{t,kind:'city'},b:{t:u,kind:'city'}})}
@@ -50,11 +50,8 @@ function landRoute(from,to){
 }
 function buildLink(w){
   const c=landRoute(nodeCell(w.a),nodeCell(w.b));if(!c)return null;
-  let pts=c.map(cellPos);
-  /* Glätten: Gewichte 1-2-1, also durch 4 teilen (durch 3 streckte jeden Weg um 4/3 und zog riesige Bögen) */
-  for(let r=0;r<2;r++){const src=pts;pts=src.map((p,i)=>i===0||i===src.length-1?p:[(src[i-1][0]+p[0]*2+src[i+1][0])/4,(src[i-1][1]+p[1]*2+src[i+1][1])/4])}
-  const keep=[pts[0]];for(let i=1;i<pts.length-1;i+=2)keep.push(pts[i]);keep.push(pts[pts.length-1]);
-  const all=[nodePt(w.a),...keep,nodePt(w.b)];
+  /* Keine Glättung: der Weg läuft eckig über die Rasterzellen und trifft sich an Kreuzungen */
+  const all=[nodePt(w.a),...c.map(cellPos),nodePt(w.b)];
   return{k:w.k,a:w.a,b:w.b,pts:all,L:pathLen(all),p:0,tr:false};
 }
 function syncRoads(){
@@ -152,7 +149,7 @@ function updateBotRaids(dt){
   }
 }
 /* Quellhafen für eine Überfahrt (nicht das Ziel selbst) */
-const seaSourceFor=t=>T.filter(x=>x.owner===0&&x.id!==t.id&&x.port&&x.port.rafts>0&&Math.floor(x.troops)>=2).sort((a,b)=>b.troops-a.troops)[0]||null;
+const seaSourceFor=t=>T.filter(x=>x.owner===0&&x.id!==t.id&&portWithRaft(x)&&Math.floor(x.troops)>=2).sort((a,b)=>b.troops-a.troops)[0]||null;
 
 /* ----- Zeichnen ----- */
 function renderRoads(){

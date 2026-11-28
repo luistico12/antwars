@@ -7,7 +7,7 @@ const ric=k=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-
    Man muss kein Gebiet vorher auswählen – einfach die Bauart wählen und dorthin klicken. */
 const HSLOTS=[
   {k:'wall',n:'Verteidigungswall',c:()=>WALL_COST},
-  {k:'out',n:'Außenposten (bis 3 je Gebiet)',c:t=>STR_COST.out[Math.min(t?t.str.out:0,2)]},
+  {k:'out',n:'Außenposten (ohne Limit)',c:t=>outCost(t?t.str.out:0)},
   {k:'port',n:'Hafen',c:()=>PORT_COST},
   {k:'raft',n:'Transportschiff (im Hafen)',c:()=>RAFT_COST},
   {k:'war',n:'Kriegsschiff (im Hafen)',c:()=>WAR_COST}
@@ -143,7 +143,7 @@ function updateHud(){
   $('#wmLb').classList.toggle('shut',!!ST.hideLb);
   const tg=hudTarget();
   $$('#wmSlots .slot').forEach((el,i)=>{const s=HSLOTS[i],c=s.c?s.c(tg):null;
-    const poor=c?poorFor(c):false,bad=tg&&((s.k==='port'&&(tg.port||!tg.coast||!tg.coast.length))||(s.k==='raft'&&(!tg.port||tg.port.rafts>=tg.port.max))||(s.k==='war'&&(!tg.port||warsOf(tg)>=WAR_MAX))||(s.k==='wall'&&tg.walls.length>=WALL_MAX)||(s.k==='out'&&tg.str.out>=OUT_MAX));
+    const poor=c?poorFor(c):false,bad=tg&&((s.k==='port'&&(!tg.coast||!tg.coast.length))||(s.k==='raft'&&!portsOf(tg).some(p=>p.rafts<p.max))||(s.k==='war'&&(!portsOf(tg).length||warsOf(tg)>=WAR_MAX)));
     el.classList.toggle('poor',poor||!!bad);el.classList.toggle('arm',hudArm===s.k);
     el.querySelector('.cost').textContent=c?String(c.mat):'';
     el.title=`${i+1}: ${s.n}${c?` (${costLbl(c)})`:''}`});

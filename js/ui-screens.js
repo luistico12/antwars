@@ -115,59 +115,129 @@ S.achievements=()=>shell(t('Erfolge'),{right:`<div class="pills" id="achT">${[['
   `<div class="grid">${QUESTS.filter(q=>q[1]===UI.achTab).map(q=>questRow(q)).join('')}</div>${needLogin()?`<div class="msg">${t('Melde dich an, um zu spielen')}</div>`:''}`);
 S.achievements.bind=p=>{p.querySelectorAll('#achT [data-k]').forEach(b=>b.onclick=()=>{UI.achTab=b.dataset.k;render()});bindClaims(p)};
 
-/* ---------- Shop: Hüte, Weltflaggen, Ameisenflaggen ---------- */
+/* ---------- Shop: Kosmetik in Stufen ---------- */
 /* Vorschau und Ausrüstungsstatus für alle Kosmetik-Arten */
-const COS_TABS=[['hat','Hüte'],['crown','Kronen'],['pattern','Muster'],['ship','Schiffe'],['bskin','Gebäude'],['tskin','Händler'],['rskin','Wege'],['world','Weltflaggen'],['ant','Ameisenflaggen']];
-const cosKind=tab=>tab==='world'||tab==='ant'?'flag':tab;
-const cosFilter=(tab,i)=>tab==='world'?i.kind==='flag'&&!i.custom:tab==='ant'?i.kind==='flag'&&i.custom:i.kind===tab;
+const COS_TABS=[['hat','Hüte','hat'],['crown','Kronen','crown'],['pattern','Muster','gem'],['ship','Schiffe','map'],['bskin','Gebäude','box'],['tskin','Händler','users'],['rskin','Wege','link'],['world','Weltflaggen','globe'],['ant','Ameisenflaggen','flag']];
+const cosFilter=(tab,i)=>tab==='plus'?!!i.plus:(!i.plus&&(tab==='world'?i.kind==='flag'&&!i.custom:tab==='ant'?i.kind==='flag'&&i.custom:i.kind===tab));
 const cosEq=(i,p)=>p[i.kind]===i.key;
 const cosPv=i=>i.kind==='flag'?flagSVG(i.key):`<span data-cos="${i.kind}:${i.key}"></span>`;
-function cosBind(p){p.querySelectorAll('[data-cos]').forEach(c=>{const[k,id]=c.dataset.cos.split(':');
+function cosBind(p){p.querySelectorAll('[data-cos]').forEach(c=>{if(c.dataset.done)return;c.dataset.done='1';const[k,id]=c.dataset.cos.split(':');
   c.appendChild(cosPreview(k,id))})}
-UI.shopTab='hat';
+const tierLbl=tier=>t(TIERS[tier]||tier);
+const tierChip=i=>`<span class="tier t-${i.tier}">${i.plus?'<b>+</b> ':''}${esc(tierLbl(i.tier))}</span>`;
+const bestBand=i=>i.pop?`<span class="best">${ico('star')} ${t('Am beliebtesten')}</span>`:'';
+const TIER_FILTER=[['all','Alle'],['common','Gewöhnlich'],['rare','Selten'],['epic','Episch'],['legendary','Legendär'],['mythic','Mythisch'],['ultimate','Ultimativ']];
+UI.shopTab='hat';UI.shopTier='all';
+/* Mitgliedschaft AntWars + */
+const plusTxt=()=>AW.plusActive?`${t('Aktiv bis')} ${fmtDate(AW.profile.plus_until)}`:`${PLUS_COST} ${t('Rubys')} / ${t('Monat')}`;
+function plusBanner(){
+  return `<div class="pluscard ${AW.plusActive?'on':''}">
+    <div class="plushead"><span class="pluslogo">+</span><div class="plustx"><b>AntWars +</b><small>${plusTxt()}</small></div><span class="sp"></span>
+      ${AW.plusActive?'':`<button class="btn pri" id="plusBuy" type="button">${ico('plus')} ${PLUS_COST} ${ico('ruby')}</button>`}</div>
+    <div class="plusperks">
+      <span>${ico('hat')} 16 ${t('exklusive Stücke')}</span><span>${ico('star')} + ${t('vor dem Namen')}</span><span>${ico('shield')} ${t('Clan-Tag hinter dem Namen')}</span>
+    </div></div>`;
+}
+/* Detailansicht einer Kosmetik (Bild 4+5) */
+function cosModal(id){
+  const i=SHOP_BY_ID[id];if(!i)return;
+  const p=AW.profile||{},own=(p.owned||[]).includes(i.id),eq=cosEq(i,p),plusT=AW.plusActive,miss=Math.max(0,i.price-(p.rubys||0));
+  const sib=SHOP.filter(x=>!x.plus&&x.kind===i.kind&&x.id!==i.id).slice(0,6);
+  let foot;
+  if(i.plus&&!plusT)foot=`<button class="shbuy big t-ultimate" data-plus="1" type="button">${ico('plus')} ${t('Mit AntWars + freischalten')}</button>`;
+  else if(own)foot=`<button class="shbuy big equ ${eq?'on':''}" data-eq="${i.id}" type="button">${eq?t('Ablegen'):t('Ausrüsten')}</button>`;
+  else if(miss>0)foot=`<div class="missing">${t('Es fehlen')} <b>${num(miss)} ${ico('ruby')}</b></div><button class="shbuy big quest" data-go="achievements" type="button">${ico('trophy')} ${t('Zu den Quests')}</button>`;
+  else foot=`<button class="shbuy big t-${i.tier}" data-buy="${i.id}" type="button">${num(i.price)} ${ico('ruby')} · ${t('Kaufen')}</button>`;
+  const old=document.getElementById('cosM');if(old)old.remove();
+  const el=document.createElement('div');el.id='cosM';el.className='cosm';
+  el.innerHTML=`<div class="cosm-box t-${i.tier}">
+    <div class="cosm-h"><button class="ibtn" data-cmx type="button" aria-label="${t('Schließen')}">${ico('close')}</button><b>${esc(i.name)}</b></div>
+    <div class="cosm-body">
+      <div class="cosm-pv">${cosPv(i)}</div>
+      <aside class="cosm-side">
+        <div class="cosm-badges">${tierChip(i)}${i.pop?`<span class="best small">${ico('star')} ${t('Am beliebtesten')}</span>`:''}</div>
+        <div class="lbl">${t('In dieser Art')}</div>
+        <div class="cosm-mini">${sib.map(x=>`<span class="mnm" title="${esc(x.name)}">${cosPv(x)}</span>`).join('')}</div>
+        <div class="cosm-price">${i.plus?`<b>AntWars +</b>`:`${num(i.price)} ${ico('ruby')}`}</div>
+      </aside>
+    </div>
+    <div class="cosm-f">${foot}</div></div>`;
+  document.body.appendChild(el);
+  cosBind(el);
+  el.addEventListener('click',e=>{
+    if(e.target===el||e.target.closest('[data-cmx]')){el.remove();return}
+    const pl=e.target.closest('[data-plus]');
+    if(pl){el.remove();UI.shopTab='plus';UI.shopTier='all';openScreen('shop',undefined,false);return}
+    const buy=e.target.closest('[data-buy]');
+    if(buy){const card=buy.closest('.cosm-pv'),rc=card?card.getBoundingClientRect():null,pic=card?card.innerHTML:'';
+      AW.buy(buy.dataset.buy).then(()=>{el.remove();if(rc)flyBits(rc,pic,1,52)}).catch(toastErr);return}
+    const eqq=e.target.closest('[data-eq]');
+    if(eqq){const it=SHOP_BY_ID[eqq.dataset.eq],cur=(AW.profile||{})[it.kind];
+      AW.update({[it.kind]:cur===it.key?null:it.key}).then(()=>el.remove()).catch(toastErr);return}
+  });
+}
 S.shop=()=>{
-  const p=AW.profile||{owned:[]},tab=UI.shopTab;
-  const items=SHOP.filter(i=>cosFilter(tab,i));
+  const p=AW.profile||{owned:[]},tab=UI.shopTab,tf=UI.shopTier;
+  const items=SHOP.filter(i=>cosFilter(tab,i)).filter(i=>tf==='all'||i.tier===tf);
   const card=i=>{
     const own=(p.owned||[]).includes(i.id),eq=cosEq(i,p);
-    const pv=cosPv(i);
-    return `<div class="shopit ${eq?'eq':''}"><div class="pv">${pv}</div><b>${esc(i.name)}</b>
-      ${own?`<button class="btn sm ${eq?'':'pri'} block" data-eq="${i.id}" type="button">${eq?t('Ablegen'):t('Ausrüsten')}</button>`:`<button class="btn sm pri block" data-buy="${i.id}" type="button" ${(p.rubys||0)<i.price?'disabled':''}>${i.price} ${ico('ruby')} ${t('Kaufen')}</button>`}</div>`;
+    let act;
+    if(i.plus&&!AW.plusActive)act=`<button class="shbuy t-ultimate" data-plus="1" type="button">${ico('plus')} AntWars +</button>`;
+    else if(own)act=`<button class="shbuy equ ${eq?'on':''}" data-eq="${i.id}" type="button">${eq?t('Ablegen'):t('Ausrüsten')}</button>`;
+    else act=`<button class="shbuy t-${i.tier}" data-buy="${i.id}" type="button">${num(i.price)} ${ico('ruby')}</button>`;
+    return `<div class="shcard t-${i.tier} ${eq?'eq':''} ${i.plus?'pc':''}" data-card="${i.id}">${bestBand(i)}
+      <div class="shpv" data-open="${i.id}">${cosPv(i)}</div>${tierChip(i)}<b class="shnm">${esc(i.name)}</b>${act}</div>`;
   };
-  return shell(t('Shop'),{right:`<span class="ruby" style="font-size:17px">${ico('ruby')} ${p.rubys||0}</span>`},
-   `<div class="pills" id="shopT" style="align-self:flex-start">${COS_TABS.map(([k,n])=>`<button data-k="${k}" class="${tab===k?'on':''}" type="button">${t(n)}</button>`).join('')}</div>
+  return shell(t('Shop'),{right:`<span class="row" style="gap:6px"><span class="ruby pill3">${ico('ruby')} ${num(p.rubys||0)}</span><span class="pill3 ${AW.plusActive?'on':''}">+</span></span>`},
+   `<div class="pills seg" id="shopMode"><button data-mode="cos" class="${tab==='plus'?'':'on'}" type="button">${ico('star')} ${t('Kosmetik')}</button><button data-mode="plus" class="${tab==='plus'?'on':''}" type="button"><b>+</b> AntWars +</button></div>
+    ${tab==='plus'?plusBanner():`<div class="shoptabs" id="shopT">${COS_TABS.map(([k,n,ic])=>`<button data-k="${k}" class="${tab===k?'on':''}" type="button">${ico(ic)} ${t(n)}</button>`).join('')}</div>
+    <div class="pills tierfilter" id="shopF">${TIER_FILTER.map(([k,n])=>`<button data-t="${k}" class="${tf===k?'on':''} t-${k}" type="button">${t(n)}</button>`).join('')}</div>`}
     ${needLogin()?`<div class="msg">${t('Melde dich an, um zu spielen')}</div>`:''}
-    <div class="shopgrid">${items.map(card).join('')}</div>`);
+    <div class="shgrid">${items.map(card).join('')}</div>`);
 };
 S.shop.bind=p=>{
-  p.querySelectorAll('#shopT [data-k]').forEach(b=>b.onclick=()=>{UI.shopTab=b.dataset.k;render()});
+  p.querySelectorAll('#shopMode [data-mode]').forEach(b=>b.onclick=()=>{UI.shopTab=b.dataset.mode==='plus'?'plus':'hat';UI.shopTier='all';render()});
+  p.querySelectorAll('#shopT [data-k]').forEach(b=>b.onclick=()=>{UI.shopTab=b.dataset.k;UI.shopTier='all';render()});
+  p.querySelectorAll('#shopF [data-t]').forEach(b=>b.onclick=()=>{UI.shopTier=b.dataset.t;render()});
   cosBind(p);
+  const pb=p.querySelector('#plusBuy');if(pb)pb.onclick=async()=>{try{await AW.buyPlus();toast(LANG==='de'?'AntWars + ist aktiv':'AntWars + is active','good')}catch(e){toastErr(e)}};
+  p.querySelectorAll('[data-open]').forEach(el=>el.onclick=()=>cosModal(el.dataset.open));
+  p.querySelectorAll('[data-plus]').forEach(b=>b.onclick=()=>{UI.shopTab='plus';UI.shopTier='all';render()});
   p.querySelectorAll('[data-buy]').forEach(b=>b.onclick=async()=>{
-    const card=b.closest('.shopit'),pv=card&&card.querySelector('.pv'),rc=card?card.getBoundingClientRect():null,pic=pv?pv.innerHTML:'';
+    const card=b.closest('.shcard'),pv=card&&card.querySelector('.shpv'),rc=card?card.getBoundingClientRect():null,pic=pv?pv.innerHTML:'';
     try{await AW.buy(b.dataset.buy);if(rc)flyBits(rc,pic||ico('ruby'),1,52)}catch(e){toastErr(e)}});
   p.querySelectorAll('[data-eq]').forEach(b=>b.onclick=async()=>{const it=SHOP_BY_ID[b.dataset.eq],pr=AW.profile,cur=pr[it.kind];
     try{await AW.update({[it.kind]:cur===it.key?null:it.key})}catch(e){toastErr(e)}});
 };
 
-/* ---------- Inventar: alles, was du besitzt, ausrüsten und ablegen ---------- */
-UI.invTab='hat';
+/* ---------- Inventar: Kosmetik und AntWars + als zwei Tabs ---------- */
+UI.invTab='hat';UI.invPlus=false;
 S.inventory=()=>{
-  const p=AW.profile||{owned:[]},tab=UI.invTab;
-  const own=(p.owned||[]).map(id=>SHOP_BY_ID[id]).filter(Boolean);
-  const items=own.filter(i=>cosFilter(tab,i));
-  const slot=k=>{const v=p[k];return v&&SHOP_BY_ID[k+':'+v]?esc(SHOP_BY_ID[k+':'+v].name):'—'};
-  const card=i=>{
-    const eq=cosEq(i,p),pv=cosPv(i);
-    return `<div class="shopit ${eq?'eq':''}"><div class="pv">${pv}</div><b>${esc(i.name)}</b><button class="btn sm ${eq?'':'pri'} block" data-eq="${i.id}" type="button">${eq?t('Ablegen'):t('Ausrüsten')}</button></div>`;
-  };
-  return shell(t('Inventar'),{right:`<span class="tag">${own.length} ${t('Gegenstände')}</span>`},
-   `<div class="panel row" style="gap:18px;flex-wrap:wrap">${[['hat','Hut'],['crown','Krone'],['pattern','Muster'],['ship','Schiff'],['bskin','Gebäude'],['tskin','Händler'],['rskin','Weg']].map(([k,n])=>`<div class="field"><span class="lbl">${t(n)}</span><b>${slot(k)}</b></div>`).join('')}<div class="field"><span class="lbl">${t('Flagge')}</span><b>${(p.flag&&SHOP_BY_ID['flag:'+p.flag]?esc(SHOP_BY_ID['flag:'+p.flag].name):'—')}</b></div></div>
-    <div class="pills" id="invT" style="align-self:flex-start;flex-wrap:wrap">${COS_TABS.map(([k,n])=>`<button data-k="${k}" class="${tab===k?'on':''}" type="button">${t(n)}</button>`).join('')}</div>
-    ${items.length?`<div class="shopgrid">${items.map(card).join('')}</div>`:`<div class="msg">${LANG==='de'?'Hier liegt noch nichts. Im Shop kaufst du Hüte und Flaggen mit Rubys, die du durch Quests verdienst.':'Nothing here yet. Buy hats and flags in the shop with Rubys earned from quests.'}</div><button class="btn pri" data-go="shop" type="button" style="align-self:flex-start">${ico('shop')} ${t('Shop')}</button>`}`);
+  const p=AW.profile||{owned:[]},tab=UI.invTab,plusM=UI.invPlus;
+  const mine=(p.owned||[]).map(id=>SHOP_BY_ID[id]).filter(Boolean).filter(i=>plusM?i.plus:!i.plus);
+  const items=mine.filter(i=>plusM?true:cosFilter(tab,i));
+  const more=SHOP.filter(i=>!i.plus&&!(p.owned||[]).includes(i.id)).length;
+  const card=i=>{const eq=cosEq(i,p);
+    return `<div class="shcard t-${i.tier} ${eq?'eq':''} ${i.plus?'pc':''}" data-card="${i.id}">
+      <div class="shpv" data-open="${i.id}">${cosPv(i)}</div>${tierChip(i)}<b class="shnm">${esc(i.name)}</b>
+      <button class="shbuy equ ${eq?'on':''}" data-eq="${i.id}" type="button">${eq?t('Ablegen'):t('Ausrüsten')}</button></div>`};
+  const moreCard=plusM?'':`<div class="shcard more" data-go="shop" role="button" tabindex="0">
+    <div class="morestack"><span>${ico('hat')}</span><span>${ico('crown')}</span><span>${ico('gem')}</span></div>
+    <b>+${more}</b><span class="mlbl">${t('Mehr im Shop')}</span>
+    <span class="shbuy equ on go">${t('Ansehen')} ${ico('enter')}</span></div>`;
+  return shell(t('Inventar'),{right:`<button class="btn sm" data-go="shop" type="button">${ico('shop')} ${t('Shop')}</button>`},
+   `<div class="pills seg" id="invP" style="align-self:flex-start"><button data-p="0" class="${plusM?'':'on'}" type="button">${t('Kosmetik')}</button><button data-p="1" class="${plusM?'on':''}" type="button"><b>+</b> AntWars +</button></div>
+    ${plusM?'':`<div class="shoptabs" id="invT">${COS_TABS.map(([k,n,ic])=>`<button data-k="${k}" class="${tab===k?'on':''}" type="button">${ico(ic)} ${t(n)}</button>`).join('')}</div>`}
+    ${plusM?plusBanner():''}
+    <div class="shgrid">${moreCard}${items.map(card).join('')}</div>
+    ${!items.length?`<div class="msg">${plusM?(LANG==='de'?'Mit AntWars + bekommst du zwei exklusive Stücke je Kosmetik-Art.':'AntWars + gives you two exclusive items for every cosmetic type.'):(LANG==='de'?'Hier liegt noch nichts. Im Shop kaufst du Kosmetik mit Rubys aus Quests.':'Nothing here yet. Buy cosmetics in the shop with Rubys from quests.')}</div>`:''}`);
 };
 S.inventory.bind=p=>{
+  p.querySelectorAll('#invP [data-p]').forEach(b=>b.onclick=()=>{UI.invPlus=b.dataset.p==='1';render()});
   p.querySelectorAll('#invT [data-k]').forEach(b=>b.onclick=()=>{UI.invTab=b.dataset.k;render()});
   cosBind(p);
+  p.querySelectorAll('[data-open]').forEach(el=>el.onclick=()=>cosModal(el.dataset.open));
+  const pb=p.querySelector('#plusBuy');if(pb)pb.onclick=async()=>{try{await AW.buyPlus();toast(LANG==='de'?'AntWars + ist aktiv':'AntWars + is active','good')}catch(e){toastErr(e)}};
   p.querySelectorAll('[data-eq]').forEach(b=>b.onclick=async()=>{const it=SHOP_BY_ID[b.dataset.eq],pr=AW.profile,cur=pr[it.kind];
     try{await AW.update({[it.kind]:cur===it.key?null:it.key})}catch(e){toastErr(e)}});
 };
@@ -179,7 +249,7 @@ S.leaderboard=()=>{
   const tab=UI.lbTab,rows=UI['lb_'+tab];
   const me=(AW.profile||{});
   const body=rows?`<div class="panel" style="padding:0;overflow:auto"><table class="lb"><thead><tr><th style="text-align:center">#</th><th>${tab==='players'?t('Spieler'):'Clan'}</th><th>${t('Siege')}</th><th>${t('Spiele')}</th><th>${t('Quote')}</th></tr></thead><tbody>
-    ${rows.map((r,i)=>{const wr=r.games?100*r.wins/r.games:0;const nm=tab==='players'?`${r.clan_tag?`<span class="ctag">${esc(r.clan_tag)}</span>`:''}${esc(r.username)}<span class="mini">#${esc(r.tag||'')}</span>`:`<span class="ctag">${esc(r.clan_tag)}</span>${r.members||''} ${t('Mitglieder')}`;
+    ${rows.map((r,i)=>{const wr=r.games?100*r.wins/r.games:0;const nm=tab==='players'?`${esc(r.username)}<span class="mini">#${esc(r.tag||'')}</span>${r.clan_tag?`<span class="ctag">${esc(r.clan_tag)}</span>`:''}`:`<span class="ctag">${esc(r.clan_tag)}</span>${r.members||''} ${t('Mitglieder')}`;
       return `<tr class="r${i+1} ${tab==='players'&&r.username===me.username&&r.tag===me.tag&&me.games?'me':''}"><td style="text-align:center"><span class="rk">${i+1}</span></td><td><b>${nm}</b></td><td><b>${num(r.wins)}</b></td><td style="color:var(--mu)">${num(r.games)}</td><td><span class="wp ${wr<50?'low':''}">${wr.toFixed(1)}%</span></td></tr>`}).join('')||`<tr><td colspan="5" style="text-align:center;color:var(--mu)">–</td></tr>`}</tbody></table></div>`:spinner();
   return shell('Leaderboard',{sub:LANG==='de'?'Aktualisiert beim Öffnen':'Updated when opened',right:`<div class="pills" id="lbT"><button data-k="players" class="${tab==='players'?'on':''}" type="button">${ico('users')} ${t('Spieler')}</button><button data-k="clans" class="${tab==='clans'?'on':''}" type="button">${ico('shield')} ${t('Clans')}</button></div>`},body);
 };

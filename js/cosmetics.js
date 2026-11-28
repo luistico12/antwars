@@ -74,7 +74,10 @@ const PATTERN_FN={
   grid:(x,y)=>(x%6===2||y%6===3)?((x%6===2&&y%6===3)?1:2):0,
   hexes:(x,y)=>{const px=(x+(((y>>1)&1)*3))%6,py=y%4;return ((py===0&&px!==0&&px!==5)||(py===2&&(px===0||px===5)))?1:0},
   scales:(x,y)=>{const px=x%4,py=y%4;return ((py===0&&(px===1||px===2))||(py===1&&(px===0||px===3)))?1:0},
-  rakes:(x,y)=>((x*2+y*3)%9<2)?1:0
+  rakes:(x,y)=>((x*2+y*3)%9<2)?1:0,
+  /* AntWars + */
+  plus:(x,y)=>((y%7===3&&x%7>=1&&x%7<=5)||(x%7===3&&y%7>=1&&y%7<=5))?1:0,
+  aurora:(x,y)=>{const w=Math.sin(x*0.55+y*0.35)+Math.sin(y*0.6-x*0.2)*0.6;return w>0.85?1:w<-0.85?2:0}
 };
 function drawPatternCell(g,id,x,y,cs){const f=PATTERN_FN[id];if(!f)return;const v=f(x,y);if(!v)return;
   g.fillStyle=v===1?'rgba(255,255,255,.38)':'rgba(0,0,0,.26)';g.fillRect(x*cs,y*cs,cs,cs)}

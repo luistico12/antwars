@@ -4,6 +4,10 @@ const SCR={stack:[],cur:null};
 const initials=n=>(String(n||'?').trim()[0]||'?').toUpperCase();
 const fmtDate=d=>{try{return new Date(d).toLocaleDateString(LANG==='de'?'de-DE':'en-GB',{day:'numeric',month:'long',year:'numeric'})}catch(e){return''}};
 const num=n=>Number(n||0).toLocaleString(LANG==='de'?'de-DE':'en-GB');
+/* AntWars +: + vor dem Namen, Clan-Tag dahinter */
+const plusOn=()=>!!(typeof AW!=='undefined'&&AW.plusActive);
+const plusMark=()=>plusOn()?'<b class="plusmk" title="AntWars +">+</b>':'';
+const clanTag=t=>t?`<span class="ctag">${esc(t)}</span>`:'';
 
 /* ---------- Scroll-Fortschritt, Ladeanimation, Handy-Navigation ---------- */
 (function(){
@@ -91,7 +95,7 @@ function renderHeader(){
     <button class="ibtn" id="hdrMenu" type="button" aria-label="${t('Pause')}" ${started?'':'hidden'}>${ico('menu')}</button>
     <button class="ibtn" id="hdrNews" type="button" aria-label="${t('Neuigkeiten')}">${ico('news')}${newsUnseen()?'<i class="dot"></i>':''}</button>
     <button class="ibtn" id="hdrForum" type="button" aria-label="${t('Forum')}">${ico('chat')}</button>
-    <button id="hdrProf" type="button" aria-label="${t('Profil')}"><span class="av">${p&&safeAvatar(p.avatar)?`<img alt="" src="${safeAvatar(p.avatar)}">`:ico('user')}</span><span class="nm">${AW.loggedIn?esc(p&&p.username||''):t('Anmelden')}</span>${AW.loggedIn&&p?`<span class="ruby">${ico('ruby')}${p.rubys}</span>`:''}</button>`;
+    <button id="hdrProf" type="button" aria-label="${t('Profil')}"><span class="av">${p&&safeAvatar(p.avatar)?`<img alt="" src="${safeAvatar(p.avatar)}">`:ico('user')}</span><span class="nm">${AW.loggedIn?`${plusMark()}${esc(p&&p.username||'')}${clanTag(p&&p.clan_tag)}`:t('Anmelden')}</span>${AW.loggedIn&&p?`<span class="ruby">${ico('ruby')}${p.rubys}</span>`:''}</button>`;
   $('#hdrMenu').onclick=()=>{if(started&&!over){const k=$('#speed [data-sp="0"]');k&&k.click()}};
   const nv=$('#hdrNav');if(nv)nv.onclick=()=>{if(!$('#home').hidden)document.body.classList.toggle('navopen')};
   $('#hdrNews').onclick=()=>openScreen('news',undefined,false);

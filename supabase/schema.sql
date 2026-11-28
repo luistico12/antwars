@@ -1135,3 +1135,51 @@ where not exists (select 1 from public.news where version = 'v21.20');
 insert into public.news (version, title, body)
 select 'v22', 'Kein Einfrieren, markierte Räume, Bestenliste an der Kopfzeile', 'Das Spiel friert nicht mehr ein: Ein Fehler in einem einzelnen Bild wird abgefangen, Simulation und Anzeige laufen weiter. Beim Bauen ist der gewählte Raum im Dock jetzt deutlich markiert – goldener Rahmen, helle Fläche und ein Häkchen. Die Bestenliste klappt man über ihre eigene Kopfzeile ein und aus; der kleine Knopf darüber ist weg, und eingeklappt bleibt die Kopfzeile sichtbar.'
 where not exists (select 1 from public.news where version = 'v22');
+-- ============ Update v23: AntWars +, Kosmetik-Stufen, mehr Quest-Rubys ============
+-- Mitgliedschaft „AntWars +“: 900 Rubys für 30 Tage, verlängert sich vom bestehenden Ende aus.
+alter table public.profiles add column if not exists plus_until timestamptz;
+
+create or replace function public.buy_plus() returns timestamptz
+language plpgsql security definer set search_path=public as $$
+declare me public.profiles; nxt timestamptz;
+begin
+  if auth.uid() is null then raise exception 'Nicht angemeldet'; end if;
+  select * into me from public.profiles where id = auth.uid() for update;
+  if me.id is null then raise exception 'Profil fehlt'; end if;
+  if me.rubys < 900 then raise exception 'Nicht genug Rubys'; end if;
+  nxt := greatest(coalesce(me.plus_until, now()), now()) + interval '30 days';
+  perform set_config('app.rpc','1',true);
+  -- Die 16 AntWars+-Stücke wandern in „owned“, damit sie ausgerüstet werden dürfen (2 je Kosmetik-Art)
+  update public.profiles set rubys = rubys - 900, plus_until = nxt,
+    owned = (select array_agg(distinct x) from unnest(owned || array['hat:pharaoh','hat:nebula','crown:omega','crown:aurora','pattern:plus','pattern:aurora','ship:leviathan','ship:nebula','bskin:aurum','bskin:void','tskin:aurum','tskin:void','rskin:aurum','rskin:void','flag:p_plus','flag:p_aurum']) x)
+  where id = auth.uid();
+  return nxt;
+end $$;
+grant execute on function public.buy_plus() to authenticated;
+
+-- Tages- und Wochenquests: mehr Rubys (Täglich 20–40, Bonus 100; Wöchentlich 50–100, Bonus 250).
+-- Karriere-Quests bleiben unverändert.
+delete from public.quests where kind in ('daily','weekly');
+insert into public.quests(id,kind,stat,goal,reward) values
+ ('d_games','daily','games',2,20),
+ ('d_wins','daily','wins',1,25),
+ ('d_conq','daily','conq',5,30),
+ ('d_build','daily','built',8,35),
+ ('d_mins','daily','mins',10,40),
+ ('b_daily','daily','bonus',5,100),
+ ('w_games','weekly','games',5,50),
+ ('w_conq','weekly','conq',10,65),
+ ('w_build','weekly','built',40,80),
+ ('w_mins','weekly','mins',120,100),
+ ('b_weekly','weekly','bonus',4,250)
+on conflict (id) do update set kind=excluded.kind, stat=excluded.stat, goal=excluded.goal, reward=excluded.reward;
+
+-- Die neuen AntWars+-Kosmetikstücke (Pharaonenkrone, Nebelkappe, Omega-Krone, Polarlicht-Krone,
+-- Leviathan, Nebelgaleone, Plus-Muster, Polarlicht-Muster, Aurum-/Void-Skins, AntWars+-Flaggen)
+-- haben keinen Preis und stehen deshalb absichtlich nicht in shop_items: Sie lassen sich nicht mit
+-- Rubys kaufen, sondern nur mit einer aktiven Mitgliedschaft ausrüsten.
+
+-- News v23
+insert into public.news (version, title, body)
+select 'v23', 'AntWars +, Stufen im Shop, freies Bauen und schnelle Kolonie', 'AntWars + ist da: für 900 Rubys im Monat bekommst du 16 exklusive Kosmetikstücke (zwei je Art), ein + vor dem Namen und den Clan-Tag hinter dem Namen. Die Kosmetik liegt im Shop im neuen Reiter „AntWars +“. Alle Kosmetik ist jetzt in Stufen sortiert – Gewöhnlich, Selten, Episch, Legendär, Mythisch – und die beliebtesten Stücke tragen ein Band. Der Shop ist neu: große Karten mit Stufenfarbe, ein Filter über den Stufen und eine Detailansicht mit großem Vorschaufenster und Preis. Fehlen Rubys, führt ein Knopf direkt zu den Quests. Das Inventar hat zwei Reiter: eigene Kosmetik und AntWars +, dazu „Mehr im Shop“ und einen Shop-Knopf. Bauen ohne Limit: Außenposten, Verteidigungswälle und Häfen stehen jetzt so oft in einem Gebiet, wie du willst und bezahlen kannst. Auch kleine Städte erzeugen langsam Ameisen. Wege laufen eckig über das Raster und treffen sich an Kreuzungen – keine Bögen mehr. Die Ameisenflaggen sind neu gezeichnet, die Kolonie läuft mit vielen Bauten flüssig, und im Spiel sind die Ränder links und rechts weg.'
+where not exists (select 1 from public.news where version = 'v23');

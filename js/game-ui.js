@@ -22,6 +22,17 @@ function fitStage(c,st){
 }
 function fitStages(){fitStage(cv,cv&&cv.parentElement);fitStage(mv,mv&&mv.parentElement)}
 addEventListener('resize',()=>{if(!over)fitStages()});
+/* Unscharrfer Hintergrund hinter dem Spielfeld: dieselbe Szene, unscharf und abgedunkelt.
+   Dadurch entstehen links und rechts keine leeren Raender mehr, wenn das Seitenverhaeltnis nicht passt. */
+function mkStageBg(c){if(!c||!c.parentElement)return null;const b=document.createElement('canvas');b.className='stagebg';b.setAttribute('aria-hidden','true');c.parentElement.insertBefore(b,c);return b}
+const cvBg=mkStageBg(cv),mvBg=mkStageBg(mv);
+let bgT=0;
+function drawStageBg(b,c){if(!b||!c)return;const st=c.parentElement;if(!st)return;const r=st.getBoundingClientRect();if(r.width<4||r.height<4)return;
+  const w=Math.max(8,Math.round(r.width/10)),h=Math.max(8,Math.round(r.height/10));
+  if(b.width!==w||b.height!==h){b.width=w;b.height=h}
+  const g=b.getContext('2d'),ar=b.width/b.height,car=c.width/c.height;let dw=b.width,dh=b.height;
+  if(car>ar){dw=b.height*car}else{dh=b.width/car}
+  g.clearRect(0,0,b.width,b.height);g.drawImage(c,(b.width-dw)/2,(b.height-dh)/2,dw,dh)}
 function setView(v){
   view=v;$('#viewColony').hidden=v!=='colony';$('#viewMap').hidden=v!=='map';
   $('#tabColony').classList.toggle('on',v==='colony');$('#tabMap').classList.toggle('on',v==='map');
@@ -84,9 +95,9 @@ function terrTip(t){
     if(t.owner>0&&F[t.owner].allied)h+=' · Verbündet';
     if(own&&t.col)h+=`<br>Arbeiterinnen: ${t.col.w} · Eier: ${t.col.eggAges.length}<br>Hügelhöhe: ${moundH(t.col)}/${MR} · Wasser: ${WATER_N[t.col.water.size]}`;
     if(own&&!t.isCap&&!t.col)h+='<br>Wartet auf deine Entscheidung';
-    if(t.str.out)h+=`<br>Außenposten: ${t.str.out}/3`;
+    if(t.str.out)h+=`<br>Außenposten: ${t.str.out}`;
     if(t.walls&&t.walls.length)h+=`<br>Verteidigungswälle: ${t.walls.length}`;
-    if(t.port)h+=`<br>Hafen · Schiffe ${t.port.rafts}/${t.port.max}`;
+    {const ps=portsOf(t);if(ps.length)h+=`<br>Häfen: ${ps.length} · Schiffe ${ps.reduce((a,p)=>a+p.rafts,0)}/${ps.length*PORT_RAFTS}`}
     if(own&&!t.isCap)h+=`<br>Ertrag: ${q.food?'+'+fmt(q.food*60)+' Blätter/Min ':''}${q.mat?'+'+fmt(q.mat*60)+' Erde/Min':''}`;
     if(t.item)h+=`<br><b style="color:#7fe6f2">Powerup:</b> ${PW[t.item.type]} +${t.item.pct}% <span class="dim">(Rechtsklick: Spähtrupp bergen oder Gebiet erobern)</span>`;
   }
@@ -297,9 +308,9 @@ function buildHTML(){
   if(selT==null)return'<p class="mini">Wähle auf der Karte ein eigenes Gebiet, um dort zu bauen.</p>';
   const t=T[selT];
   if(t.owner!==0)return`<p class="mini"><b>${t.name}</b> gehört nicht dir. Gebaut wird nur in eigenen Gebieten.</p>`;
-  const lv=t.str.out;
+  const lv=t.str.out,c=outCost(lv);
   let h=`<h2>${t.name}</h2>`;
-  h+=`<div class="brow"><b>${ih('flag')}Außenposten (${lv}/3)</b><small>+40% Verteidigung je Außenposten, frei platzierbar. Die Garnison erholt sich langsam.</small><span class="cost">${lv<3?costTxt(STR_COST.out[lv]):'Alle drei gebaut'}</span><button class="btn sm" type="button" data-b="out"${lv>=3?' disabled':''}>${lv?'Noch einen':'Bauen'}</button></div>`;
+  h+=`<div class="brow"><b>${ih('flag')}Außenposten (${lv})</b><small>+40% Verteidigung je Außenposten, frei platzierbar, ohne Limit – der Preis steigt mit jedem weiteren.</small><span class="cost">${costTxt(c)}</span><button class="btn sm" type="button" data-b="out">${lv?'Noch einen':'Bauen'}</button></div>`;
   return h;
 }
 function setSideTab(v){sideTab='info';updateSide()}
@@ -325,7 +336,7 @@ function updateSide(){
   if(selT==null){info.innerHTML='';send.hidden=true;setHTML($('#openBox'),'');hint.textContent='Linksklick: eigenes Gebiet wählen (Verstärkung). Rechtsklick auf ein Gebiet: Angriff, Bündnis, Spenden oder Bauen.'}
   else{
     const t=T[selT],q=TERR[t.terrain],own=t.owner===0,cmd=own;
-    const stt=(t.str.out?`Außenposten ${t.str.out}/3`:'')+(t.walls&&t.walls.length?` · Wälle ${t.walls.length}`:'');
+    const stt=(t.str.out?`Außenposten ${t.str.out}`:'')+(t.walls&&t.walls.length?` · Wälle ${t.walls.length}`:'')+(portsOf(t).length?` · Häfen ${portsOf(t).length}`:'');
     info.innerHTML=`<dt>Name</dt><dd>${t.name}</dd><dt>Gelände</dt><dd>${q.name}</dd><dt>Besitzer</dt><dd>${t.owner<0?'Wilde Ameisen':F[t.owner].name}</dd><dt>Soldaten</dt><dd>${Math.floor(t.troops)}</dd>`
       +(t.isCap?'<dt>Status</dt><dd>Hauptstadt</dd>':'')+(own&&!t.isCap?`<dt>Ertrag</dt><dd>${q.food?'+'+fmt(q.food*60)+' Blätter/Min ':''}${q.mat?'+'+fmt(q.mat*60)+' Erde/Min':''}</dd>`:'')+(stt?`<dt>Bauten</dt><dd>${stt}</dd>`:'')+(t.item?`<dt>Powerup</dt><dd>${PW[t.item.type]} +${t.item.pct}%</dd>`:'');
     setHTML($('#openBox'),own&&t.col?`<button class="btn primary" type="button" data-open="${t.id}">Kolonie öffnen</button>`:'');
@@ -519,10 +530,14 @@ function tick(now){
   /* FPS unten links (Weltkarte) und Vollbild-Klasse */
   fpsAcc+=rdt;fpsCnt++;
   if(fpsAcc>=0.5){fpsVal=Math.round(fpsCnt/fpsAcc);fpsAcc=0;fpsCnt=0;const fe=$('#wmFps');if(fe)fe.textContent=fpsVal+' FPS'}
-  acc5+=rdt;if(acc5>=0.2){acc5=0;document.body.classList.toggle('ingame',!!(started&&!over)||document.body.classList.contains('picking'));if(!over)fitStages();if(started){refreshLive();updateSide()}}
+  acc5+=rdt;if(acc5>=0.2){acc5=0;document.body.classList.toggle('ingame',!!(started&&!over)||document.body.classList.contains('picking'));if(!over)fitStages();
+    /* Im Vollbild ist das Seitenpanel ausgeblendet – dann nicht neu bauen (spart Zeit bei vielen Bauten) */
+    if(started){refreshLive();if(!document.body.classList.contains('ingame'))updateSide()}}
   if(started&&dockDirty)renderDock();
   if(started&&view==='colony'&&col)drawColony(cg,now,ccam);
   if(view==='map')drawMap(mg,now);
+  bgT=(bgT+1)%3;
+  if(view==='colony')drawStageBg(cvBg,cv);else drawStageBg(mvBg,mv);
 }
 newMap((Math.random()*1e6)|0);renderSetup();setView('map');
 requestAnimationFrame(frame);

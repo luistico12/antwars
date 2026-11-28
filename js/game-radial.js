@@ -61,23 +61,24 @@ function showRing(segs,atk,cx,cy,title,meta){
 /* Rechtsklick aufs eigene Gebiet: Info, Bauen, Schließen; Mitte = Verteidigungswall */
 function ownRing(t,mode,cx,cy,wx,wy){
   const owned=T.filter(x=>x.owner===0),cap=t.isCap?' · Hauptstadt':'';
+  const nPorts=portsOf(t).length;
   const info=`${t.name}${cap}: ${Math.floor(t.troops)} Soldaten`+(t.regArea?`, Reich mit ${owned.length} Gebieten`:'')
-    +(t.str.out?`, ${t.str.out}/${OUT_MAX} Außenposten`:'')+(t.walls&&t.walls.length?`, ${t.walls.length} Wälle`:'')+(t.port?', Hafen':'');
+    +(t.str.out?`, ${t.str.out} Außenposten`:'')+(t.walls&&t.walls.length?`, ${t.walls.length} Wälle`:'')+(nPorts?`, ${nPorts} ${nPorts===1?'Hafen':'Häfen'}`:'');
   let segs,atk,title=`${t.name} · Dein Gebiet`;
   if(mode==='main'){
     segs=[{k:'info',l:'Info',why:info,info}];
     segs.push({k:'build',l:'Bauen',why:'Strukturen bauen: Außenposten, Hafen, Schiffe'});
     segs.push({k:'x',l:'Schließen',why:'Menü schließen'});
-    const wd=t.walls.length>=WALL_MAX?'Hier stehen schon 3 Wälle':poorFor(WALL_COST)?`Zu wenig Material (${costLbl(WALL_COST)} nötig)`:'';
-    atk={ic:'wall',dis:!!wd,why:wd||`Verteidigungswall frei platzieren (${costLbl(WALL_COST)}). Verstärkt die Grenzen im Umkreis um +50%`,n:t.walls.length?`${t.walls.length}/${WALL_MAX}`:0};
+    const wd=poorFor(WALL_COST)?`Zu wenig Material (${costLbl(WALL_COST)} nötig)`:'',wm=1+0.5*Math.min(12,t.walls.length);
+    atk={ic:'wall',dis:!!wd,why:wd||`Verteidigungswall frei platzieren (${costLbl(WALL_COST)}). Verstärkt die Grenzen im Umkreis, aktuell ×${wm.toFixed(1)}`,n:t.walls.length||0};
   }else if(mode==='build'){
-    const lv=t.str.out,cOut=STR_COST.out[Math.min(lv,2)];
-    const wPort=t.port?'Hier gibt es schon einen Hafen':!t.coast||!t.coast.length?'Keine Küste: Häfen brauchen Wasser':poorFor(PORT_COST)?`Zu wenig Material (${costLbl(PORT_COST)} nötig)`:'';
+    const lv=t.str.out,cOut=outCost(lv),nPorts=portsOf(t).length,freePort=portsOf(t).find(p=>p.rafts<p.max);
+    const wPort=!t.coast||!t.coast.length?'Keine Küste: Häfen brauchen Wasser':poorFor(PORT_COST)?`Zu wenig Material (${costLbl(PORT_COST)} nötig)`:'';
     segs=[{k:'back',l:'Zurück',why:'Zurück zum Hauptmenü'},
-      {k:'out',l:'Außenposten',n:`${lv}/${OUT_MAX}`,dis:lv>=OUT_MAX||poorFor(cOut),why:lv>=OUT_MAX?`Hier stehen schon ${OUT_MAX} Außenposten`:`Außenposten ${lv+1}/${OUT_MAX}: +40% Verteidigung. Du wählst die Stelle danach auf der Karte (${costLbl(cOut)})`},
-      {k:'port',l:'Hafen',dis:!!wPort,why:wPort||`Hafen bauen (${costLbl(PORT_COST)}) und die Küstenstelle wählen. Schiffe und Seewege`}];
-    if(t.port)segs.push({k:'raft',l:'Schiff',n:`${t.port.rafts}/${t.port.max}`,dis:t.port.rafts>=t.port.max||poorFor(RAFT_COST),why:t.port.rafts>=t.port.max?'Alle Schiffe dieses Hafens sind gebaut':`Schiff bauen (${costLbl(RAFT_COST)}). Damit greifst du über Wasser an`});
-    if(t.port){const wm=warsOf(t)>=WAR_MAX?`Dieser Hafen hat schon ${WAR_MAX} Kriegsschiffe`:poorFor(WAR_COST)?`Zu wenig Material (${costLbl(WAR_COST)} nötig)`:'';segs.push({k:'war',l:'Kriegsschiff',n:`${warsOf(t)}/${WAR_MAX}`,dis:!!wm,why:wm||`Kriegsschiff bauen (${costLbl(WAR_COST)}) und frei aufs Wasser stellen. Es greift gegnerische Schiffe in Reichweite an`})}
+      {k:'out',l:'Außenposten',n:`${lv}`,dis:poorFor(cOut),why:`Außenposten ${lv+1}: +40% Verteidigung. Du wählst die Stelle danach auf der Karte (${costLbl(cOut)})`},
+      {k:'port',l:'Hafen',n:`${nPorts}`,dis:!!wPort,why:wPort||`Hafen bauen (${costLbl(PORT_COST)}) und die Küstenstelle wählen. Schiffe und Seewege`}];
+    if(nPorts)segs.push({k:'raft',l:'Schiff',n:`${portsOf(t).reduce((a,p)=>a+p.rafts,0)}/${nPorts*PORT_RAFTS}`,dis:!freePort||poorFor(RAFT_COST),why:!freePort?'Alle Schiffe deiner Häfen sind gebaut':`Schiff bauen (${costLbl(RAFT_COST)}). Damit greifst du über Wasser an`});
+    if(nPorts){const wm=warsOf(t)>=WAR_MAX?`Dieser Hafen hat schon ${WAR_MAX} Kriegsschiffe`:poorFor(WAR_COST)?`Zu wenig Material (${costLbl(WAR_COST)} nötig)`:'';segs.push({k:'war',l:'Kriegsschiff',n:`${warsOf(t)}/${WAR_MAX}`,dis:!!wm,why:wm||`Kriegsschiff bauen (${costLbl(WAR_COST)}) und frei aufs Wasser stellen. Es greift gegnerische Schiffe in Reichweite an`})}
     if(t.coast&&t.coast.length){const[ra,rm]=raftTotals(),src=seaSourceFor(t),sw=rm===0?'Du brauchst einen Hafen mit Schiff':ra===0?'Alle Schiffe sind unterwegs oder noch nicht gebaut':!src?'Zu wenige Soldaten in deinen Häfen':'';segs.push({k:'ship',l:'Verschiffen',n:`${ra}/${rm}`,dis:!!sw,why:sw||`Soldaten aus ${src.name} per Schiff hierher bringen, danach den Landepunkt an der Küste wählen`})}
     atk={ic:'build',dis:true,why:`Bauen in ${t.name}`};
   }else{

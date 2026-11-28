@@ -1,5 +1,6 @@
 /* ===== Weltkarte: Verteidigungswälle, Häfen, Wege, Schiffe und Seeangriff ===== */
-const WALL_R=70,WALL_MAX=3,OUT_MAX=3,OUT_R=34,WALL_COST={mat:50,food:25},PORT_COST={mat:60,food:30},RAFT_COST={mat:25,food:10};
+const WALL_R=70,OUT_R=34,WALL_COST={mat:50,food:25},PORT_COST={mat:60,food:30},RAFT_COST={mat:25,food:10},PORT_RAFTS=3;
+/* Wälle, Außenposten und Häfen haben kein Limit je Gebiet mehr. */
 /* placing: aktueller Platzier-Modus {kind:'wall'|'war'|'land'} */
 let placing=null;
 const mapEl=document.getElementById('mv');
@@ -38,10 +39,9 @@ function wallMul(t,fromId,pt){
     else if(fromId!=null&&M.bp){const pts=M.bp.get(t.id+'-'+fromId);hit=!!pts&&pts.some(q=>Math.hypot(w.x-q[0],w.y-q[1])<=WALL_R)}
     if(hit)n++;
   }
-  return 1+0.5*Math.min(WALL_MAX,n);
+  return 1+0.5*Math.min(12,n);
 }
 function startWall(t){
-  if(t.walls.length>=WALL_MAX)return toast('In diesem Gebiet stehen schon 3 Wälle','bad');
   placing={kind:'wall',tid:t.id};
   toast(`Verteidigungswall: Klicke eine Stelle in ${t.name}. Er verstärkt die Grenzen im Umkreis. Esc bricht ab`,'good');
 }
@@ -49,32 +49,28 @@ function placeWall(x,y){
   const i=cellOf(x,y);if(i<0||M.tid[i]<0)return false;
   const t=T[placing.tid];
   if(M.tid[i]!==t.id){toast(`Der Wall muss in ${t.name} stehen`,'bad');return false}
-  if(t.walls.length>=WALL_MAX){toast('In diesem Gebiet stehen schon 3 Wälle','bad');placing=null;return true}
   if(!payCost(WALL_COST))return false;
   t.walls.push({x,y});qStat('built');placing=null;fxs.push({k:'ripple',x,y,t:0,dur:1,c:[200,205,215]});
   toast(`Verteidigungswall in ${t.name} gebaut (${costLbl(WALL_COST)})`,'good');return true;
 }
 
-/* ----- Außenposten: bis zu drei je Gebiet, frei platziert ----- */
+/* ----- Außenposten: beliebig viele je Gebiet, frei platziert ----- */
 function startOutpost(t){
-  if(t.str.out>=OUT_MAX)return toast(`In diesem Gebiet stehen schon ${OUT_MAX} Außenposten`,'bad');
   placing={kind:'out',tid:t.id};
-  toast(`Außenposten ${t.str.out+1}/${OUT_MAX}: Klicke eine Stelle in ${t.name}. Esc bricht ab`,'good');
+  toast(`Außenposten ${t.str.out+1}: Klicke eine Stelle in ${t.name}. Esc bricht ab`,'good');
 }
 function placeOutpost(t,x,y){
   const i=cellOf(x,y);if(i<0||M.tid[i]<0)return false;
   if(M.tid[i]!==t.id){toast(`Der Außenposten muss in ${t.name} stehen`,'bad');return false}
-  if(t.str.out>=OUT_MAX){toast(`In diesem Gebiet stehen schon ${OUT_MAX} Außenposten`,'bad');return false}
-  const c=STR_COST.out[Math.min(t.str.out,OUT_MAX-1)];
+  const c=outCost(t.str.out);
   if(!payCost(c))return false;
   t.outs=t.outs||[];t.outs.push({x,y});t.str.out=t.outs.length;t.outp=null;
   qStat('built');strDirty=true;roadsChanged();
   fxs.push({k:'ripple',x,y,t:0,dur:1,c:[240,200,110]});
-  toast(`Außenposten in ${t.name} gebaut (${t.str.out}/${OUT_MAX}, ${costLbl(c)})`,'good');return true;
+  toast(`Außenposten in ${t.name} gebaut (${t.str.out}, ${costLbl(c)})`,'good');return true;
 }
-/* ----- Hafen: an der selbst gewählten Küste ----- */
+/* ----- Hafen: an der selbst gewählten Küste, beliebig viele je Gebiet ----- */
 function startPort(t){
-  if(t.port)return toast('Hier gibt es schon einen Hafen','bad');
   if(!t.coast||!t.coast.length)return toast(`${t.name} hat keine Küste. Häfen brauchen Wasser`,'bad');
   placing={kind:'port',tid:t.id};
   toast(`Hafen: Klicke an die Küste von ${t.name}. Esc bricht ab`,'good');
@@ -82,27 +78,29 @@ function startPort(t){
 function placePortAt(t,x,y){buildPort(t,x,y);placing=null;return true}
 
 /* ----- Hafen und Schiffe ----- */
+/* Häfen liegen in t.ports; t.port zeigt auf den ersten (ältere Stellen bleiben so gültig) */
+const portsOf=t=>{if(!t.ports)t.ports=t.port?[t.port]:[];return t.ports};
+const portWithRaft=t=>portsOf(t).find(p=>p.rafts>0)||null;
 function buildPort(t,wx,wy){
   if(t.owner!==0)return;
-  if(t.port)return toast('Hier gibt es schon einen Hafen','bad');
   if(!t.coast||!t.coast.length)return toast(`${t.name} hat keine Küste. Häfen brauchen Wasser`,'bad');
   if(!payCost(PORT_COST))return;
   const tx=wx!=null?wx:t.lx*CS,ty=wy!=null?wy:t.ly*CS;
   let best=t.coast[0],bd=1e9;
   for(const i of t.coast){const[cx,cy]=cellPos(i),d=Math.hypot(cx-tx,cy-ty);if(d<bd){bd=d;best=i}}
-  t.port={idx:best,rafts:0,max:3};qStat('built');const[px,py]=cellPos(best);
+  portsOf(t).push({idx:best,rafts:0,max:PORT_RAFTS});t.port=t.ports[0];qStat('built');const[px,py]=cellPos(best);
   roadsChanged();fxs.push({k:'ripple',x:px,y:py,t:0,dur:1.2,c:[110,180,255]});
-  toast(`Hafen in ${t.name} gebaut. Jetzt kannst du Schiffe bauen`,'good');
+  toast(`Hafen in ${t.name} gebaut (${t.ports.length}). Jetzt kannst du Schiffe bauen`,'good');
 }
 function buildRaft(t){
-  if(!t.port)return;
-  if(t.port.rafts>=t.port.max)return toast('Alle Schiffe dieses Hafens sind gebaut','bad');
+  const p=portsOf(t).find(x=>x.rafts<x.max);
+  if(!p)return toast(portsOf(t).length?'Alle Schiffe deiner Häfen sind gebaut':'Hier gibt es keinen Hafen','bad');
   if(!payCost(RAFT_COST))return;
-  t.port.rafts++;qStat('built');const[px,py]=cellPos(t.port.idx);fxs.push({k:'ripple',x:px,y:py,t:0,dur:1,c:[110,180,255]});
-  toast(`Schiff gebaut (${t.port.rafts}/${t.port.max})`,'good');
+  p.rafts++;qStat('built');const[px,py]=cellPos(p.idx);fxs.push({k:'ripple',x:px,y:py,t:0,dur:1,c:[110,180,255]});
+  toast(`Schiff gebaut (${portsOf(t).reduce((a,x)=>a+x.rafts,0)}/${portsOf(t).length*PORT_RAFTS})`,'good');
 }
-const raftTotals=()=>{let a=0,m=0;for(const t of T)if(t.owner===0&&t.port){a+=t.port.rafts;m+=t.port.max}return[a,m]};
-const seaSource=()=>T.filter(t=>t.owner===0&&t.port&&t.port.rafts>0&&Math.floor(t.troops)>=2).sort((a,b)=>b.troops-a.troops)[0]||null;
+const raftTotals=()=>{let a=0,m=0;for(const t of T)if(t.owner===0)for(const p of portsOf(t)){a+=p.rafts;m+=p.max}return[a,m]};
+const seaSource=()=>T.filter(t=>t.owner===0&&portWithRaft(t)&&Math.floor(t.troops)>=2).sort((a,b)=>b.troops-a.troops)[0]||null;
 
 /* Landepunkt: nächste Küstenzelle des Zielgebiets, nahe genug am Mauszeiger */
 function landingCell(t,x,y){
@@ -137,10 +135,10 @@ function pathAt(p,d){
   const e=p[p.length-1];return[e[0],e[1],1,0];
 }
 function launchSea(src,t,n,cell){
-  if(!src.port||src.port.rafts<1)return false;
+  const port=portWithRaft(src);if(!port)return false;
   if(t.owner!==0&&!isFriend(0,t.owner)&&protLeft()>0){toast(`Schutzzeit: noch ${mmss(protLeft())}. Bis dahin kann niemand angreifen`,'bad');return false}
-  const path=waterPath(src.port.idx,cell);if(!path){toast('Kein Seeweg: dorthin kommt das Schiff nicht, das Wasser ist nicht verbunden','bad');return false}
-  src.port.rafts--;src.troops-=n;
+  const path=waterPath(port.idx,cell);if(!path){toast('Kein Seeweg: dorthin kommt das Schiff nicht, das Wasser ist nicht verbunden','bad');return false}
+  port.rafts--;src.troops-=n;
   const a=path[0],b=path[path.length-1],d=pathLen(path)/CS;
   marches.push({from:src,to:t,n,f:0,t:0,dur:(3+d*0.22)/pwMul('speed'),phase:'walk',ft:0,fdur:2.4,seed:(Math.random()*1e6)|0,sea:true,a,b,path,land:{x:b[0],y:b[1]},home:src});
   if(t.owner>0&&!isFriend(0,t.owner)){F[t.owner].hurt=gtime;addHeat(t.owner)}
@@ -177,12 +175,12 @@ function drawWall(g,x,y,sk,pc){
   g.fillStyle='#22242b';g.fillRect(x-10,y-5,20,11);g.fillStyle='#8c919c';g.fillRect(x-9,y-4,18,9);g.fillStyle='#b4b9c4';g.fillRect(x-9,y-4,18,2);
   g.fillStyle='#22242b';g.fillRect(x-10,y-9,20,4);g.fillStyle='#b4b9c4';for(let k=0;k<4;k++)g.fillRect(x-9+k*5,y-8,3,3);
 }
-function drawDock(g,t,now){
-  const[x,y]=cellPos(t.port.idx),sk=cosmOf(t.owner).bskin||'default',pc=rgb(F[t.owner].rgb);
+function drawDock(g,t,now,port){
+  port=port||t.port;const[x,y]=cellPos(port.idx),sk=cosmOf(t.owner).bskin||'default',pc=rgb(F[t.owner].rgb);
   if(!svDraw(g,'dock',sk,pc,x,y+9,0.85)){
     g.fillStyle='#22140a';g.fillRect(x-9,y-4,18,9);g.fillStyle='#8a5a30';g.fillRect(x-8,y-3,16,7);g.fillStyle='#a8764a';g.fillRect(x-8,y-3,16,2);
     g.fillStyle='#22140a';g.fillRect(x-1,y-14,2,11);g.fillStyle='#e6edf5';g.fillRect(x+1,y-14,8,6)}
-  const txt=`${t.port.rafts}/${t.port.max}`;g.font='700 11px '+PX;g.textAlign='center';g.textBaseline='middle';
+  const txt=`${port.rafts}/${port.max}`;g.font='700 11px '+PX;g.textAlign='center';g.textBaseline='middle';
   const w=g.measureText(txt).width+8;g.fillStyle='rgba(12,22,40,.9)';g.fillRect(x-w/2,y+11,w,13);g.strokeStyle='#4f78e0';g.lineWidth=1;g.strokeRect(x-w/2+.5,y+11.5,w-1,12);g.fillStyle='#fff';g.fillText(txt,x,y+18);
 }
 /* Wälle, Außenposten, Häfen und Kriegsschiffe (liegen über den Wegen) */
@@ -201,10 +199,10 @@ function drawSeaLayer(g,now){
       list.forEach((o,idx)=>{
         const ox=o.x,oy=o.y;
         if(!svDraw(g,'tower',sk,pc,ox,oy+8,0.72,t.str.out))drawTower(g,ox,oy,t.str.out,F[t.owner].rgb);
-        if(showR.has(t.id)){g.font='700 10px '+PX;g.textAlign='center';g.textBaseline='middle';g.lineWidth=3;g.strokeStyle='rgba(20,12,4,.9)';const lb=`Außenposten ${idx+1}/${OUT_MAX}`;g.strokeText(lb,ox,oy+14);g.fillStyle='#fff';g.fillText(lb,ox,oy+14)}
+        if(showR.has(t.id)){g.font='700 10px '+PX;g.textAlign='center';g.textBaseline='middle';g.lineWidth=3;g.strokeStyle='rgba(20,12,4,.9)';const lb=`Außenposten ${idx+1}`;g.strokeText(lb,ox,oy+14);g.fillStyle='#fff';g.fillText(lb,ox,oy+14)}
       });
     }
-    if(t.port)drawDock(g,t,now);
+    for(const p of portsOf(t))drawDock(g,t,now,p);
   }
   drawWarships(g,now);
 }
@@ -232,7 +230,7 @@ function drawSeaTop(g,now){
     g.strokeStyle=ok?'rgba(150,240,170,.9)':'rgba(255,110,100,.9)';g.setLineDash([5,4]);g.lineWidth=1.5;g.beginPath();g.arc(mw[0],mw[1],WALL_R,0,6.283);g.stroke();g.setLineDash([]);
     g.globalAlpha=0.8;drawWall(g,mw[0],mw[1]);g.globalAlpha=1;
   }else if(placing.kind==='out'&&mw){
-    const t=T[placing.tid],ci=cellOf(mw[0],mw[1]),ok=ci>=0&&M.tid[ci]===t.id,full=t.str.out>=OUT_MAX;
+    const t=T[placing.tid],ci=cellOf(mw[0],mw[1]),ok=ci>=0&&M.tid[ci]===t.id,full=false;
     g.strokeStyle=(ok&&!full)?'rgba(150,240,170,.9)':'rgba(255,110,100,.9)';g.setLineDash([4,4]);g.lineWidth=2;
     g.beginPath();g.arc(mw[0],mw[1],OUT_R,0,6.283);g.stroke();g.setLineDash([]);
     g.globalAlpha=.85;drawTower(g,mw[0],mw[1],t.str.out+1,F[0].rgb);g.globalAlpha=1;

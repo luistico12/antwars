@@ -4,8 +4,10 @@ const FNAME=['Du','Rote Kolonie','Violette Kolonie','Gelbe Kolonie','Grüne Kolo
 const DIFFS={easy:{regen:0.8,think:7,atk:1,ratio:1.5},normal:{regen:1,think:5,atk:1.05,ratio:1.25},hard:{regen:1.3,think:3.2,atk:1.15,ratio:1.1}};
 /* Starttruppen: der Spieler beginnt mit 3, Gegner mit diesem Anteil davon */
 const PLAYER_START=3,BOT_START={easy:0.75,normal:1,hard:1.35};
-/* Außenposten: bis zu drei je Gebiet, frei platziert. Verteidigungslinien gibt es nicht mehr. */
+/* Außenposten: beliebig viele je Gebiet, frei platziert – der Preis steigt mit jedem weiteren. */
 const STR_COST={out:[{mat:40,food:20},{mat:70,food:35},{mat:110,food:55}],line:[{mat:25,food:10},{mat:45,food:20}]};
+/* Preis des nächsten Außenpostens: die drei Grundstufen wiederholen sich, jede Runde 75 % teurer */
+const outCost=n=>{const i=Math.max(0,n),base=STR_COST.out[i%3],k=1+Math.floor(i/3)*0.75;return{mat:Math.round(base.mat*k),food:Math.round(base.food*k)}};
 let MW=GW*CS,MH=GH*CS,modeKey='classic';
 let contWin=false,M=null,F=[],T=[],marches=[],fxs=[],started=false,over=false,speed=1,gtime=0,selT=null,hovT=null,pct=50;
 let setupSp='ground',setupStart=null,diffKey='normal',baseCanvas=null,ownCanvas=null,strCanvas=null,ownDirty=true,strDirty=true,dockDirty=true;
@@ -20,7 +22,7 @@ const isFriend=(a,b)=>a===b||(a===0&&b>0&&F[b].allied)||(b===0&&a>0&&F[a].allied
 function newMap(seed){
   setMapDims(MODES[modeKey].scale);MW=GW*CS;MH=GH*CS;if(typeof applyDensity==='function')applyDensity();
   M=buildMap(seed);T=M.terrs;baseCanvas=renderBase(M);
-  for(const t of T){t.str=newStr();t.col=null;t.item=null;t.walls=[];t.outs=[];t.outp=null;t.port=null}
+  for(const t of T){t.str=newStr();t.col=null;t.item=null;t.walls=[];t.outs=[];t.outp=null;t.port=null;t.ports=[]}
   F=[{id:0,isPlayer:true,name:'Du',species:setupSp,rgb:FCOL[0],alive:true,capital:-1}];
   if(typeof seaReset==='function')seaReset();
   setupStart=null;selT=null;hovT=null;ownDirty=true;strDirty=true;mcam.x=0;mcam.y=0;mcam.z=1;
@@ -42,7 +44,7 @@ function collectItem(t){
 function startGame(){
   setColonyDims(modeKey==='unlimited'?2:1);
   const D=DIFFS[diffKey],st=T[setupStart],hum=(typeof NET!=='undefined'&&NET.role==='host')?NET.humans:[];
-  for(const t of T){t.owner=-1;t.isCap=false;t.troops=6+Math.floor(Math.random()*12);t.str=newStr();t.col=null;t.item=null;t.walls=[];t.outs=[];t.outp=null;t.port=null}
+  for(const t of T){t.owner=-1;t.isCap=false;t.troops=6+Math.floor(Math.random()*12);t.str=newStr();t.col=null;t.item=null;t.walls=[];t.outs=[];t.outp=null;t.port=null;t.ports=[]}
   if(typeof seaReset==='function')seaReset();
   F=[{id:0,isPlayer:true,name:'Du',species:setupSp,rgb:FCOL[0],alive:true,capital:setupStart}];
   st.owner=0;st.isCap=true;st.troops=PLAYER_START;
@@ -134,7 +136,7 @@ function resolve(m){
 }
 function setOwner(t,nw,troops){
   const old=t.owner,wasCap=t.isCap;
-  t.owner=nw;t.troops=troops;t.isCap=false;t.str=newStr();t.outs=[];t.outp=null;ownDirty=true;strDirty=true;t.walls=[];t.port=null;if(typeof roadsChanged==='function')roadsChanged();
+  t.owner=nw;t.troops=troops;t.isCap=false;t.str=newStr();t.outs=[];t.outp=null;ownDirty=true;strDirty=true;t.walls=[];t.port=null;t.ports=[];if(typeof roadsChanged==='function')roadsChanged();
   if(old===0){t.col=null;renderColSwitch()}
   if(nw===0)t.col=null;
   if(nw===0)collectItem(t);
@@ -182,7 +184,11 @@ function updateWorld(dt){
   H.v=Math.max(0,H.v-0.25*dt);
   for(const f of F)if(f.dipCool>0)f.dipCool=Math.max(0,f.dipCool-dt);
   for(const t of T){
-    if(t.owner===0){const o=t.str.out;if(o&&t.troops<30)t.troops=Math.min(30,t.troops+0.05*o*dt)}
+    /* Jedes eigene Gebiet erzeugt langsam Ameisen – kleine Städte weniger als die Hauptstadt, Außenposten helfen mit */
+    if(t.owner===0){
+      const cells=t.cells?t.cells.length:20,mx=Math.max(6,Math.round(cells*0.55)+(t.isCap?10:0))+3*t.str.out;
+      if(t.troops<mx)t.troops=Math.min(mx,t.troops+(0.012*cells+0.05*t.str.out)*dt)
+    }
     else if(t.owner>0&&!F[t.owner].human){const cp=t.isCap,mx=cp?60:30;if(t.troops<mx)t.troops=Math.min(mx,t.troops+(cp?0.5:0.15)*D.regen*dt+0.05*t.str.out*dt)}
   }
   for(let i=marches.length-1;i>=0;i--){const m=marches[i];
@@ -197,7 +203,7 @@ function botBuild(f){
   if(!mine.length)return false;const t=pick(mine);
   const foes=t.adj.filter(i=>T[i].owner!==f.id&&T[i].owner!==-1);
   if(foes.length&&t.walls&&t.walls.length<2&&Math.random()<0.3&&M.bp){const pts=M.bp.get(t.id+'-'+pick(foes));if(pts&&pts.length){const q=pick(pts);t.walls.push({x:q[0],y:q[1]});t.troops-=5;return true}}
-  if(t.str.out<3){
+  if(t.str.out<6){
     t.outs=t.outs||[];let q=null;
     if(M.bp&&foes.length){const pts=M.bp.get(t.id+'-'+pick(foes))||[];if(pts.length)q=pick(pts)}
     t.outs.push(q?{x:q[0],y:q[1]}:{x:t.lx*CS+5+(Math.random()-.5)*18,y:t.ly*CS+5});

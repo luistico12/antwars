@@ -496,14 +496,18 @@ function drawRoom(g,kind,x0,y0,fill,tm,sp){
       drawAnt(g,cx-3,cy+3,1,0,Math.sin(tm*2)*0.3,'q',sp,null,1.0);break}
   }
 }
-function drawCaves(g,C,tm){
+function drawCaves(g,C,tm,cam){
   const RIM='#6a4524',DARK='#241408',OP=(c,r)=>openAtC(C,c,r);
   const same=(k,c,r)=>{const o=(c<0||r<0||c>=COLS||r>=ROWS)?null:C.grid[r*COLS+c];return o&&o.s===2&&o.kind===k.kind&&k.kind!=='tunnel'};
-  const each=f=>{for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){const k=C.grid[r*COLS+c];if(k.s===2)f(k,c,r,c*CELLW,r*CELLH,c*CELLW+CELLW/2,r*CELLH+CELLH/2)}};
+  /* Nur den sichtbaren Ausschnitt zeichnen: mit vielen Bauten bleibt die Kolonie fluessig */
+  let c0=0,c1=COLS-1,r0=0,r1=ROWS-1;
+  if(cam&&cam.z>0){c0=Math.max(0,Math.floor(cam.x/CELLW)-1);c1=Math.min(COLS-1,Math.ceil((cam.x+VW/cam.z)/CELLW)+1);
+    r0=Math.max(0,Math.floor(cam.y/CELLH)-1);r1=Math.min(ROWS-1,Math.ceil((cam.y+VH/cam.z)/CELLH)+1)}
+  const each=f=>{for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++){const k=C.grid[r*COLS+c];if(k.s===2)f(k,c,r,c*CELLW,r*CELLH,c*CELLW+CELLW/2,r*CELLH+CELLH/2)}};
   // Felsen
-  for(let r=MR;r<ROWS;r++)for(let c=0;c<COLS;c++){const k=C.grid[r*COLS+c];if(k.s!==1)continue;const cx=c*CELLW+24,cy=r*CELLH+16,rs=C.grid[r*COLS+c+1],ds=r+1<ROWS?C.grid[(r+1)*COLS+c]:null;
+  for(let r=Math.max(MR,r0);r<=r1;r++)for(let c=c0;c<=c1;c++){const k=C.grid[r*COLS+c];if(k.s!==1)continue;const cx=c*CELLW+24,cy=r*CELLH+16,rs=C.grid[r*COLS+c+1],ds=r+1<ROWS?C.grid[(r+1)*COLS+c]:null;
     ell(g,cx,cy,23,15,'#3e454e');if(c+1<COLS&&rs.s===1)g.fillRect(cx,cy-14,CELLW,28);if(ds&&ds.s===1)g.fillRect(cx-22,cy,44,CELLH)}
-  for(let r=MR;r<ROWS;r++)for(let c=0;c<COLS;c++){const k=C.grid[r*COLS+c];if(k.s!==1)continue;const cx=c*CELLW+24,cy=r*CELLH+16,rs=C.grid[r*COLS+c+1],ds=r+1<ROWS?C.grid[(r+1)*COLS+c]:null;
+  for(let r=Math.max(MR,r0);r<=r1;r++)for(let c=c0;c<=c1;c++){const k=C.grid[r*COLS+c];if(k.s!==1)continue;const cx=c*CELLW+24,cy=r*CELLH+16,rs=C.grid[r*COLS+c+1],ds=r+1<ROWS?C.grid[(r+1)*COLS+c]:null;
     ell(g,cx,cy,21,13,'#6d7680');if(c+1<COLS&&rs.s===1){g.fillStyle='#6d7680';g.fillRect(cx,cy-12,CELLW,24)}if(ds&&ds.s===1){g.fillStyle='#6d7680';g.fillRect(cx-20,cy,40,CELLH)}
     ell(g,cx-4,cy-4,12,6,'#8f99a4');g.fillStyle='#b4bdc7';g.fillRect(cx-10,cy-6,5,2);g.fillStyle='#59616b';g.fillRect(cx+6,cy+6,8,2)}
   // Rand
@@ -525,7 +529,7 @@ function drawCaves(g,C,tm){
   const st=C.stats,foodFill=G.food/Math.max(1,G.foodCap),fungFill=G.fungus/Math.max(1,G.fungusCap),eggFill=C.eggAges.length/st.eggCap,matFill=G.mat/Math.max(1,G.matCap);
   each((k,c,r,x0,y0)=>{if(k.kind==='tunnel')return;
     drawRoom(g,k.kind,x0,y0,k.kind==='leaf'?foodFill:k.kind==='fstore'?fungFill:k.kind==='egg'?eggFill:k.kind==='clay'?matFill:0.6,tm,C.sp)});
-  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){const k=C.grid[r*COLS+c],x0=c*CELLW,y0=r*CELLH;
+  for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++){const k=C.grid[r*COLS+c],x0=c*CELLW,y0=r*CELLH;
     if(k.build){const p=k.build.prog/k.build.need;
       if(k.s===3){g.fillStyle='rgba(240,200,110,.22)';g.fillRect(x0+4,y0+4,40,24);g.strokeStyle='rgba(255,220,140,.8)';g.lineWidth=1;g.setLineDash([4,3]);g.strokeRect(x0+4.5,y0+4.5,39,23);g.setLineDash([])}
       g.fillStyle='#000a';g.fillRect(x0+8,y0+22,32,6);g.fillStyle='#f0b94a';g.fillRect(x0+9,y0+23,Math.round(30*p),4)}}
@@ -553,7 +557,7 @@ function drawColony(g,now,cam){
   g.fillStyle='rgba(8,14,40,'+((1-day)*0.45)+')';g.fillRect(0,0,CW,GY);
   g.drawImage(C.soil,0,GY-8);
   drawPond(g,C,tm);
-  drawCaves(g,C,tm);
+  drawCaves(g,C,tm,cam);
   if(C.items)for(const it of C.items){const k=C.grid[it.r*COLS+it.c];if(k.s===2)continue;
     const x=it.c*CELLW+CELLW/2,y=it.r*CELLH+CELLH/2,p=0.5+0.5*Math.sin(tm*2.4+it.c*1.7+it.r),sm=g.imageSmoothingEnabled;
     g.fillStyle=`rgba(255,226,120,${0.16+0.2*p})`;g.beginPath();g.arc(x,y,17+p*3,0,6.283);g.fill();

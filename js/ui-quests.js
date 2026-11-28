@@ -210,15 +210,17 @@ S.profile=()=>{
   return shell(t('Profil'),{right:tabs},`
   <div class="pf" id="profGrid"><div class="pf-l">
     <div class="pf-card id"><div class="avbig">${av?`<img alt="" src="${av}">`:ico('user')}</div>
-      <div class="pf-nm"><b>${p.clan_tag?`<span class="ctag">${esc(p.clan_tag)}</span>`:''}${esc(p.username||'Gast')}<span class="mini" style="font-weight:400">#${esc(p.tag||'0000')}</span></b>
+      <div class="pf-nm"><b>${plusMark()}${esc(p.username||'Gast')}<span class="mini" style="font-weight:400">#${esc(p.tag||'0000')}</span>${p.clan_tag?`<span class="ctag">${esc(p.clan_tag)}</span>`:''}</b>
       <div class="row" style="justify-content:center">${p.flag?flagSVG(p.flag):''}</div></div>
       <div class="row" style="justify-content:center"><label class="btn sm" for="pAvF">${ico('edit')} ${t('Profilbild')}</label><input type="file" id="pAvF" accept="image/png,image/jpeg,image/webp" hidden>${av?`<button class="btn sm" id="pAvX" type="button" aria-label="${t('Entfernen')}">${ico('trash')}</button>`:''}</div></div>
     <div class="pf-card rub"><div class="pf-cur">${ico('ruby')}<b>${num(p.rubys||0)}</b></div><button class="btn pri block" data-go="shop" type="button">${ico('shop')} ${t('Zum Shop')} ›</button></div>
+    <div class="pf-card plus ${AW.plusActive?'on':''}"><div class="pf-cur"><span class="pluslogo">+</span><b>AntWars +</b></div><div class="mini" style="margin:2px 0 8px">${AW.plusActive?`${t('Aktiv bis')} ${fmtDate(p.plus_until)}`:`${PLUS_COST} ${t('Rubys')} / ${t('Monat')} · 16 ${t('exklusive Stücke')}`}</div><button class="btn ${AW.plusActive?'':'pri'} block" id="pPlus" type="button">${AW.plusActive?`${ico('check')} ${t('Aktiv')}`:`${ico('plus')} ${PLUS_COST} ${ico('ruby')}`}</button></div>
     <div class="pf-card ach"><div class="pf-cur"><span class="pf-gem">${ico('trophy')}</span><em>${t('ERFOLGE')}</em><b>${done}</b></div></div>
     <div class="pf-card clan ${p.clan_tag?'':'none'}"><span class="pf-sh">${ico('shield')}</span><div><b>${p.clan_tag?esc(p.clan_tag):t('Kein Clan')}</b><button class="lnk" data-go="clan" type="button">${ico('search')} ${t('Clan finden')}</button></div></div>
     <div class="pf-card info"><div class="field"><span class="lbl">${t('Konto-ID')}</span><span class="mono">${esc(li?(p.id||''):'local')}</span></div><div class="field"><span class="lbl">${t('Mitglied seit')}</span><span>${fmtDate(p.created_at)}</span></div>
       <button class="btn block" id="pCopy" type="button">${ico('link')} ${t('Profillink kopieren')}</button></div>
     ${li&&!AW.isAnon?`<button class="btn danger block" id="pOut" type="button">${ico('logout')} ${t('Abmelden')}</button>`:`<button class="btn pri block" id="pSecure" type="button">${ico('shield')} ${t('Konto sichern')}</button><button class="btn block" id="pIn" type="button">${ico('enter')} ${t('Anmelden')}</button>`}
+    <button class="btn block" id="pSwitch" type="button">${ico('refresh')} ${t('Konto wechseln')}</button>
     ${AW.isAdmin?`<button class="btn block" data-go="admin" type="button">${ico('admin')} ${t('Admin')}</button>`:''}
   </div><div class="pf-r">${tab==='stats'?profStats(p):tab==='hist'?profHist(p):profAccount(p,li)}</div></div>`);
 };
@@ -232,6 +234,8 @@ S.profile.bind=p=>{
   const msg=(id,k,x)=>{p.querySelector(id).innerHTML=`<div class="msg ${k}">${esc(x)}</div>`};
   p.querySelector('#pCopy').onclick=()=>{try{navigator.clipboard.writeText(location.origin+location.pathname+'?u='+((AW.profile&&AW.profile.id)||'')).then(()=>toast(t('Kopiert'),'good'))}catch(e){}};
   const o=p.querySelector('#pOut');if(o)o.onclick=async()=>{await AW.signOut();closeScreens()};
+  const sw=p.querySelector('#pSwitch');if(sw)sw.onclick=async()=>{try{await AW.switchAccount();closeScreens();toast(LANG==='de'?'Konto gewechselt – jetzt anmelden':'Account switched – sign in now','good')}catch(e){toastErr(e)}};
+  const pp=p.querySelector('#pPlus');if(pp)pp.onclick=()=>{UI.shopTab='plus';UI.shopTier='all';openScreen('shop')};
   const i=p.querySelector('#pIn');if(i)i.onclick=()=>loginShow();
   const sc=p.querySelector('#pSecure');if(sc)sc.onclick=()=>loginShow('up');
   const sv=p.querySelector('#pSave');if(sv)sv.onclick=async()=>{

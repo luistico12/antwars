@@ -274,6 +274,52 @@ ${hull('url(#h)', '#2c6b96')}
 <path d="M19 24c4-3 10-4 14-3" stroke="#d9ffb8" stroke-width="1.3" fill="none" stroke-linecap="round" opacity=".8"/>`
 };
 
+/* ============================== AntWars + (nur mit Mitgliedschaft) ============================== */
+HATS.pharaoh = `<defs>${lin('p', '#ffe9a8', '#c99312')}</defs>
+<path d="M9 16c0-6 3-10 7-10s7 4 7 10z" fill="url(#p)" stroke="#8a5a00" stroke-width="1.2"/>
+<path d="M6.6 14.4c-1.6 3-1.4 6 .6 8.2h17.6c2-2.2 2.2-5.2.6-8.2-1.4 1.6-4 2.6-9.4 2.6s-8-1-9.4-2.6z" fill="#2f6fd0" stroke="#123a72" stroke-width="1.2" stroke-linejoin="round"/>
+<g stroke="#7fb0f0" stroke-width="1" opacity=".85"><path d="M10 17.4v4M13.4 17.8v4M18.6 17.8v4M22 17.4v4"/></g>
+<path d="M16 6.4c1.8 0 3.2 1.4 3.2 3.2S17.8 13 16 13s-3.2-1.6-3.2-3.4S14.2 6.4 16 6.4z" fill="#ffd23f" stroke="#8a5a00" stroke-width=".9"/>
+<circle cx="15.2" cy="9.2" r=".7" fill="#7a4a00"/>
+<path d="M18.6 7.4c1.6-1 3.2-.6 4 0-1 1.2-2.4 1.6-4 .6z" fill="#e0b030" stroke="#8a5a00" stroke-width=".7"/>`;
+HATS.nebula = `<defs><radialGradient id="nb"><stop offset="0" stop-color="#6a3fd0"/><stop offset="1" stop-color="#160c2e"/></radialGradient></defs>
+<path d="M7 17c0-7 4-12 9-12s9 5 9 12z" fill="url(#nb)" stroke="#0a0618" stroke-width="1.2"/>
+<path d="M9.4 17c0-5.4 2.8-9 6.6-9s6.6 3.6 6.6 9z" fill="#2a1a52" opacity=".75"/>
+<g fill="#fff"><circle cx="12" cy="10.6" r="1"/><circle cx="18.6" cy="8.6" r=".8"/><circle cx="16" cy="13" r=".7"/><circle cx="21" cy="12.4" r=".6"/><circle cx="9.6" cy="14.6" r=".6"/></g>
+<path d="M6.4 16.6h19.2c1.2 0 1.8.8 1.6 1.8-.3 1.6-2 2.6-4 2.6H8.8c-2 0-3.7-1-4-2.6-.2-1 .4-1.8 1.6-1.8z" fill="#3c2470" stroke="#0a0618" stroke-width="1.1"/>
+<path d="M11 9.4c1.4-1.6 3-2.4 4.6-2.6" stroke="#c6b0ff" stroke-width="1.1" fill="none" stroke-linecap="round" opacity=".8"/>`;
+CROWNS.omega = `<defs>${lin('g', '#5b6580', '#0c0e14')}</defs>
+<path d="M3 31 4.6 7l10 9.4L32 2l17.4 14.4 10-9.4L61 31z" fill="url(#g)" stroke="#000" stroke-width="1.8" stroke-linejoin="round"/>
+<rect x="3" y="26.6" width="58" height="8" rx="1.6" fill="#191c24" stroke="#000" stroke-width="1.6"/>
+<circle cx="32" cy="17" r="9.4" fill="#0b0d12" stroke="#8b93a6" stroke-width="1.4"/>
+<path d="M27.4 21.4c-2.4-2.6-2.4-7 0-9.4M36.6 21.4c2.4-2.6 2.4-7 0-9.4" stroke="#ff4fd8" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+<g fill="#ff4fd8"><circle cx="13" cy="30.6" r="1.8"/><circle cx="32" cy="30.6" r="2"/><circle cx="51" cy="30.6" r="1.8"/></g>
+<path d="M7.6 11.6 6.8 27" stroke="#c9d2e0" stroke-width="1.4" opacity=".6" stroke-linecap="round"/>`;
+CROWNS.aurora = `<defs><linearGradient id="au" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#41e0d0"/><stop offset=".45" stop-color="#7aa8ff"/><stop offset="1" stop-color="#c58bff"/></linearGradient><linearGradient id="au2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".8"/><stop offset="1" stop-color="#7aa8ff" stop-opacity="0"/></linearGradient></defs>
+<path d="M3 31 4.6 7l10 9.4L32 2l17.4 14.4 10-9.4L61 31z" fill="url(#au)" stroke="#2b3f6b" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M3 31 4.6 7l10 9.4L32 2z" fill="url(#au2)" opacity=".55"/>
+<rect x="3" y="26.6" width="58" height="8" rx="2.2" fill="#132036" stroke="#2b3f6b" stroke-width="1.6"/>
+<g fill="#e8fbff"><path d="M14 24.8l2.4 3.4-2.4 3.4-2.4-3.4z"/><path d="M26 24.8l2 3.4-2 3.4-2-3.4z"/><path d="M38 24.8l2 3.4-2 3.4-2-3.4z"/><path d="M50 24.8l2.4 3.4-2.4 3.4-2.4-3.4z"/></g>
+<g stroke="#ffffff" stroke-width="1.4" stroke-linecap="round" opacity=".75"><path d="M10 8.6v6M46 8.6v6M22 6.6v5M42 6.6v5"/></g>
+<circle cx="32" cy="9.6" r="2.6" fill="#ffffff" opacity=".9"/>`;
+SHIPS.leviathan = `<defs>${lin('l', '#3fd6b0', '#0f5f52')}${lin('h', '#0b3a33', '#04110f')}</defs>
+${hull('url(#h)', '#03100e')}
+<path d="M14 33c6-8 20-11 34-6 6 2 10 4 12 6-8 1-14 3-22 0-10-4-18 0-24 0z" fill="url(#l)" stroke="#03100e" stroke-width="1.4" stroke-linejoin="round"/>
+<g fill="#7bf0d2"><circle cx="30" cy="27" r="1.6"/><circle cx="40" cy="26" r="1.4"/><circle cx="50" cy="27.6" r="1.2"/></g>
+<path d="M14 33c-6-2-9 2-8 6 1 3 5 4 8 2" fill="#1c8f78" stroke="#03100e" stroke-width="1.3"/>
+<path d="M56 28c4-2 6 0 6 3s-2 4-5 3z" fill="#1c8f78" stroke="#03100e" stroke-width="1.2"/>
+<circle cx="59" cy="29.6" r="1" fill="#03100e"/>
+<path d="M32 2l2 22 12-6-6 10" fill="none" stroke="#3fd6b0" stroke-width="2" stroke-linejoin="round" opacity=".8"/>
+<path d="M12 36c14-3 28-3 44 0" stroke="#7bf0d2" stroke-width="1.2" fill="none" opacity=".55"/>`;
+SHIPS.nebula = `<defs>${lin('s', '#7a4de0', '#1a0f33')}${lin('h', '#2a1a52', '#0a0618')}</defs>
+${hull('url(#h)', '#0a0618')}
+<rect x="30.8" y="4" width="2.6" height="29" fill="#0a0618"/>
+<path d="M33 6c14 3 19 12 18 26H33z" fill="url(#s)" stroke="#3c2470" stroke-width="1.4"/>
+<g fill="#fff"><circle cx="40" cy="12" r="1.2"/><circle cx="47" cy="18" r=".9"/><circle cx="38" cy="22" r="1"/><circle cx="46" cy="26" r=".7"/><circle cx="36" cy="16" r=".7"/></g>
+<path d="M33 9c-8 1-13 5-15 10h15z" fill="#241a44" stroke="#3c2470" stroke-width="1.2"/>
+<path d="M20 19l-4 4 4 2" fill="none" stroke="#c6b0ff" stroke-width="1.2" opacity=".7"/>
+<g fill="#ff4fd8"><circle cx="18" cy="35" r="2"/><circle cx="32" cy="35" r="2"/><circle cx="46" cy="35" r="2"/></g>`;
+
 function write(dir, id, svg) {
   const d = path.join(OUT, dir);
   fs.mkdirSync(d, { recursive: true });
