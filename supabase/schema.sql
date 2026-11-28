@@ -1402,3 +1402,9 @@ where not exists (select 1 from public.news where version = 'v26');
 insert into public.news (version, title, body)
 select 'v27', 'Gegner-Hauptstädte erzeugen keine Truppen mehr', 'Die Truppen-Erzeugung der Gegner ist gedrosselt: Gegnerische Hauptstädte erzeugen keine neuen Soldaten mehr, und kleine Gegner-Städte erzeugen nur noch einen Bruchteil von dem, was deine Städte schaffen. Gegner wachsen dadurch vor allem durch Eroberungen und nicht mehr durch Nachschub. Die Schwierigkeit bestimmt weiter das Tempo: Leicht 70 Prozent, Normal 100 Prozent, Schwer 130 Prozent der (kleinen) Rate. Deine eigene Truppenerzeugung bleibt unverändert.'
 where not exists (select 1 from public.news where version = 'v27');
+-- Flagge Costa Rica
+insert into public.shop_items(id,price) values ('flag:cr',2) on conflict (id) do update set price = excluded.price;
+-- News v28
+insert into public.news (version, title, body)
+select 'v28', 'Neue Flagge Costa Rica und Suche bei den Flaggen', 'Neu bei den Weltflaggen: Costa Rica. Außerdem gibt es bei den Reitern Weltflaggen und Ameisenflaggen im Shop und im Inventar ein Suchfeld: Tippe einen Teil des Namens, und nur die passenden Flaggen bleiben sichtbar.'
+where not exists (select 1 from public.news where version = 'v28');

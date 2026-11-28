@@ -170,7 +170,13 @@ const tierLbl=tier=>t(TIERS[tier]||tier);
 const tierChip=i=>`<span class="tier t-${i.tier}">${i.plus?'<b>+</b> ':''}${esc(tierLbl(i.tier))}</span>`;
 const bestBand=i=>i.pop?`<span class="best">${ico('star')} ${t('Am beliebtesten')}</span>`:'';
 const TIER_FILTER=[['all','Alle'],['common','Gewöhnlich'],['rare','Selten'],['epic','Episch'],['legendary','Legendär'],['mythic','Mythisch'],['ultimate','Ultimativ']];
-UI.shopTab='hat';UI.shopTier='all';
+UI.shopTab='hat';UI.shopTier='all';UI.flagQ='';
+/* Suchfeld für die Flaggen-Reiter: filtert die Karten per hidden, damit das Eingabefeld beim Tippen nicht neu gezeichnet wird */
+const isFlagTab=tab=>tab==='world'||tab==='ant';
+const flagSearchBox=tab=>isFlagTab(tab)?`<div style="position:relative;margin:2px 0 8px"><span style="position:absolute;left:12px;top:11px;color:var(--mu)">${ico('search')}</span><input class="inp" id="flQ" placeholder="${t('Flaggen suchen …')}" style="padding-left:40px;width:100%" autocomplete="off" spellcheck="false"></div>`:'';
+const flagSearchBind=p=>{const inp=p.querySelector('#flQ');if(!inp)return;
+  const ap=()=>{const q=(inp.value||'').trim().toLowerCase();p.querySelectorAll('.shgrid .shcard[data-q]').forEach(c=>c.hidden=!!q&&!c.dataset.q.includes(q))};
+  inp.value=UI.flagQ||'';inp.oninput=()=>{UI.flagQ=inp.value;ap()};ap()};
 /* Mitgliedschaft AntWars + */
 const plusTxt=()=>AW.plusActive?(AW.profile.plus_life?t('Dauerhaft aktiv'):`${t('Aktiv bis')} ${fmtDate(AW.profile.plus_until)}`):`${PLUS_COST} ${t('Rubys')} / ${t('Monat')}`;
 function plusBanner(){
@@ -238,7 +244,7 @@ S.shop=()=>{
     else if(own)act=`<button class="shbuy equ ${eq?'on':''}" data-eq="${i.id}" type="button">${eq?t('Ablegen'):t('Ausrüsten')}</button>`;
     else if(i.shipOf)act=`<button class="shbuy" disabled type="button">${t('Im Schiff enthalten')}</button>`;
     else act=`<button class="shbuy t-${i.tier}" data-buy="${i.id}" type="button">${num(i.price)} ${ico('ruby')}</button>`;
-    return `<div class="shcard t-${i.tier} ${eq?'eq':''} ${i.plus?'pc':''}" data-card="${i.id}">${bestBand(i)}
+    return `<div class="shcard t-${i.tier} ${eq?'eq':''} ${i.plus?'pc':''}" data-card="${i.id}" data-q="${esc((i.name+' '+i.key).toLowerCase())}">${bestBand(i)}
       <div class="shpv" data-open="${i.id}">${cosPv(i)}</div>${tierChip(i)}<b class="shnm">${esc(i.name)}</b>${act}</div>`;
   };
   return shell(t('Shop'),{right:`<span class="row" style="gap:6px"><span class="ruby pill3">${ico('ruby')} ${num(p.rubys||0)}</span><span class="pill3 ${AW.plusActive?'on':''}">+</span></span>`},
@@ -247,14 +253,15 @@ S.shop=()=>{
     <div class="pills tierfilter" id="shopF">${TIER_FILTER.map(([k,n])=>`<button data-t="${k}" class="${tf===k?'on':''} t-${k}" type="button">${t(n)}</button>`).join('')}</div>`}
     ${needLogin()?`<div class="msg">${t('Melde dich an, um zu spielen')}</div>`:''}
     ${REMOTE&&AW.loggedIn?`<div class="panel redeembox"><div class="lbl">${ico('enter')} ${t('Einlöse-Code')}</div><div class="row" style="margin-top:6px"><input class="inp" id="rdCode" maxlength="32" placeholder="${t('Code eingeben')}" style="flex:1;min-width:140px" autocomplete="off" spellcheck="false"><button class="btn pri" id="rdGo" type="button">${t('Einlösen')}</button></div><div id="rdMsg"></div></div>`:''}
+    ${flagSearchBox(tab)}
     <div class="shgrid">${items.map(card).join('')}</div>
     <div class="mini" style="margin-top:12px">${ico('info')} ${t('Eine Schiffs-Kosmetik gilt für Boot, Kriegsschiff und Handelsschiff zusammen.')}</div>`);
 };
 S.shop.bind=p=>{
   p.querySelectorAll('#shopMode [data-mode]').forEach(b=>b.onclick=()=>{UI.shopTab=b.dataset.mode==='plus'?'plus':'hat';UI.shopTier='all';render()});
-  p.querySelectorAll('#shopT [data-k]').forEach(b=>b.onclick=()=>{UI.shopTab=b.dataset.k;UI.shopTier='all';render()});
+  p.querySelectorAll('#shopT [data-k]').forEach(b=>b.onclick=()=>{UI.shopTab=b.dataset.k;UI.shopTier='all';UI.flagQ='';render()});
   p.querySelectorAll('#shopF [data-t]').forEach(b=>b.onclick=()=>{UI.shopTier=b.dataset.t;render()});
-  cosBind(p);
+  cosBind(p);flagSearchBind(p);
   const pb=p.querySelector('#plusBuy');if(pb)pb.onclick=async()=>{try{await AW.buyPlus();toast(LANG==='de'?'AntWars + ist aktiv':'AntWars + is active','good')}catch(e){toastErr(e)}};
   const rd=p.querySelector('#rdGo');
   if(rd)rd.onclick=async()=>{const inp=p.querySelector('#rdCode'),m=p.querySelector('#rdMsg'),v=inp.value.trim();if(!v)return;
@@ -279,7 +286,7 @@ S.inventory=()=>{
   const items=mine.filter(i=>plusM?true:cosFilter(tab,i));
   const more=SHOP.filter(i=>!i.plus&&!(p.owned||[]).includes(i.id)).length;
   const card=i=>{const eq=cosEq(i,p);
-    return `<div class="shcard t-${i.tier} ${eq?'eq':''} ${i.plus?'pc':''}" data-card="${i.id}">
+    return `<div class="shcard t-${i.tier} ${eq?'eq':''} ${i.plus?'pc':''}" data-card="${i.id}" data-q="${esc((i.name+' '+i.key).toLowerCase())}">
       <div class="shpv" data-open="${i.id}">${cosPv(i)}</div>${tierChip(i)}<b class="shnm">${esc(i.name)}</b>
       <button class="shbuy equ ${eq?'on':''}" data-eq="${i.id}" type="button">${eq?t('Ablegen'):t('Ausrüsten')}</button></div>`};
   const moreCard=plusM?'':`<div class="shcard more" data-go="shop" role="button" tabindex="0">
@@ -290,13 +297,14 @@ S.inventory=()=>{
    `<div class="pills seg" id="invP" style="align-self:flex-start"><button data-p="0" class="${plusM?'':'on'}" type="button">${t('Kosmetik')}</button><button data-p="1" class="${plusM?'on':''}" type="button"><b>+</b> AntWars +</button></div>
     ${plusM?'':`<div class="shoptabs" id="invT">${COS_TABS.map(([k,n,ic])=>`<button data-k="${k}" class="${tab===k?'on':''}" type="button">${ico(ic)} ${t(n)}</button>`).join('')}</div>`}
     ${plusM?plusBanner():''}
+    ${plusM?'':flagSearchBox(tab)}
     <div class="shgrid">${moreCard}${items.map(card).join('')}</div>
     ${!items.length?`<div class="msg">${plusM?(LANG==='de'?'Mit AntWars + bekommst du zwei exklusive Stücke je Kosmetik-Art.':'AntWars + gives you two exclusive items for every cosmetic type.'):(LANG==='de'?'Hier liegt noch nichts. Im Shop kaufst du Kosmetik mit Rubys aus Quests.':'Nothing here yet. Buy cosmetics in the shop with Rubys from quests.')}</div>`:''}`);
 };
 S.inventory.bind=p=>{
   p.querySelectorAll('#invP [data-p]').forEach(b=>b.onclick=()=>{UI.invPlus=b.dataset.p==='1';render()});
-  p.querySelectorAll('#invT [data-k]').forEach(b=>b.onclick=()=>{UI.invTab=b.dataset.k;render()});
-  cosBind(p);
+  p.querySelectorAll('#invT [data-k]').forEach(b=>b.onclick=()=>{UI.invTab=b.dataset.k;UI.flagQ='';render()});
+  cosBind(p);flagSearchBind(p);
   p.querySelectorAll('[data-open]').forEach(el=>el.onclick=()=>cosModal(el.dataset.open));
   const pb=p.querySelector('#plusBuy');if(pb)pb.onclick=async()=>{try{await AW.buyPlus();toast(LANG==='de'?'AntWars + ist aktiv':'AntWars + is active','good')}catch(e){toastErr(e)}};
   p.querySelectorAll('[data-eq]').forEach(b=>b.onclick=async()=>{const it=SHOP_BY_ID[b.dataset.eq],pr=AW.profile,cur=pr[it.kind];

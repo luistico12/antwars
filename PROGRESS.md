@@ -263,3 +263,4 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
 
 - v26: Gegner-Städte erzeugen Truppen wie der Spieler (`updateWorld`: 0,012×Zellen + 0,05×Außenposten, Maximum wie beim Spieler); `DIFFS.regen` skaliert (Leicht 0,7 / Normal 1 / Schwer 1,3). News v26.
 - v27: Gegner-Hauptstädte erzeugen keine Truppen, kleine Gegner-Städte nur 0,003×Zellen + 0,02×Außenposten pro s (× `DIFFS.regen`); Spieler unverändert. News v27.
+- v28: Flagge Costa Rica (`cr` in flags.js/backend.js/schema.sql), Suchfeld in den Flaggen-Reitern von Shop und Inventar (`flagSearchBox`/`flagSearchBind` in ui-screens.js). News v28.
