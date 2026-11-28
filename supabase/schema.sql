@@ -1398,3 +1398,7 @@ grant execute on function public.player_public(uuid, text, text) to authenticate
 insert into public.news (version, title, body)
 select 'v26', 'Gegner-Städte erzeugen jetzt Truppen wie deine', 'Gegner-Städte erzeugen jetzt Truppen nach derselben Formel wie deine: Je größer das Gebiet und je mehr Außenposten, desto schneller wachsen die Soldaten – nicht mehr nur ein fester Wert für Hauptstadt und Städte. Die Schwierigkeit bestimmt das Tempo: Leicht 70 Prozent, Normal genauso schnell wie du, Schwer 130 Prozent. Damit bist du auf Normal nicht mehr im Vorteil, wenn du viele Gebiete hältst, und Gegner mit großem Reich werden spürbar stärker.'
 where not exists (select 1 from public.news where version = 'v26');
+-- News v27
+insert into public.news (version, title, body)
+select 'v27', 'Gegner-Hauptstädte erzeugen keine Truppen mehr', 'Die Truppen-Erzeugung der Gegner ist gedrosselt: Gegnerische Hauptstädte erzeugen keine neuen Soldaten mehr, und kleine Gegner-Städte erzeugen nur noch einen Bruchteil von dem, was deine Städte schaffen. Gegner wachsen dadurch vor allem durch Eroberungen und nicht mehr durch Nachschub. Die Schwierigkeit bestimmt weiter das Tempo: Leicht 70 Prozent, Normal 100 Prozent, Schwer 130 Prozent der (kleinen) Rate. Deine eigene Truppenerzeugung bleibt unverändert.'
+where not exists (select 1 from public.news where version = 'v27');

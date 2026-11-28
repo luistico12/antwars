@@ -1,7 +1,7 @@
 /* ===== Weltkarte: Zustand ===== */
 const FCOL=[[74,163,255],[224,82,61],[179,107,224],[230,194,60],[80,200,140],[240,140,60],[230,120,190],[140,200,230]];
 const FNAME=['Du','Rote Kolonie','Violette Kolonie','Gelbe Kolonie','Grüne Kolonie','Orange Kolonie','Rosa Kolonie','Hellblaue Kolonie'];
-/* regen = Truppenerzeugung der Gegner-Städte im Vergleich zu deinen (Normal = gleich schnell wie du) */
+/* regen = Tempo der Truppenerzeugung in Gegner-Städten (Hauptstädte der Gegner erzeugen nichts) */
 const DIFFS={easy:{regen:0.7,think:7,atk:1,ratio:1.5},normal:{regen:1,think:5,atk:1.05,ratio:1.25},hard:{regen:1.3,think:3.2,atk:1.15,ratio:1.1}};
 /* Starttruppen: der Spieler beginnt mit 3, Gegner mit diesem Anteil davon */
 const PLAYER_START=3,BOT_START={easy:0.75,normal:1,hard:1.35};
@@ -187,11 +187,15 @@ function updateWorld(dt){
   H.v=Math.max(0,H.v-0.25*dt);
   for(const f of F)if(f.dipCool>0)f.dipCool=Math.max(0,f.dipCool-dt);
   for(const t of T){
-    /* Jedes Gebiet erzeugt langsam Ameisen – kleine Städte weniger als die Hauptstadt, Außenposten helfen mit.
-       Gegner-Städte folgen derselben Formel wie deine; die Schwierigkeit skaliert nur die Geschwindigkeit. */
-    if(t.owner===0||(t.owner>0&&!F[t.owner].human)){
-      const k=t.owner===0?1:D.regen,cells=t.cells?t.cells.length:20,mx=Math.max(6,Math.round(cells*0.55)+(t.isCap?10:0))+3*t.str.out;
-      if(t.troops<mx)t.troops=Math.min(mx,t.troops+(0.012*cells+0.05*t.str.out)*k*dt)
+    /* Deine Gebiete erzeugen langsam Ameisen – kleine Städte weniger als die Hauptstadt, Außenposten helfen mit.
+       Gegner: die Hauptstadt erzeugt nichts, kleine Städte nur einen Bruchteil (Schwierigkeit skaliert das Tempo). */
+    if(t.owner===0){
+      const cells=t.cells?t.cells.length:20,mx=Math.max(6,Math.round(cells*0.55)+(t.isCap?10:0))+3*t.str.out;
+      if(t.troops<mx)t.troops=Math.min(mx,t.troops+(0.012*cells+0.05*t.str.out)*dt)
+    }
+    else if(t.owner>0&&!F[t.owner].human&&!t.isCap){
+      const cells=t.cells?t.cells.length:20,mx=Math.max(6,Math.round(cells*0.4))+3*t.str.out;
+      if(t.troops<mx)t.troops=Math.min(mx,t.troops+(0.003*cells+0.02*t.str.out)*D.regen*dt)
     }
   }
   for(let i=marches.length-1;i>=0;i--){const m=marches[i];
