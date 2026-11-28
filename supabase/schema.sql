@@ -1227,7 +1227,9 @@ revoke all on function public.player_public(uuid, text, text) from public, anon;
 grant execute on function public.player_public(uuid, text, text) to authenticated;
 
 -- Rangliste mit Kennung, damit sich Profile aus der Bestenliste öffnen lassen
-create or replace view public.leaderboard_players with (security_invoker=false) as
+-- (neu anlegen, weil id als erste Spalte dazukommt – create or replace view erlaubt das nicht)
+drop view if exists public.leaderboard_players;
+create view public.leaderboard_players with (security_invoker=false) as
   select id, username, clan_tag, wins, games, tag from public.profiles where games > 0;
 grant select on public.leaderboard_players to anon, authenticated;
 

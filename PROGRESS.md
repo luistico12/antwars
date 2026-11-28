@@ -125,7 +125,7 @@ Damit eine neue Sitzung nicht von vorn beginnt: erst diese Datei lesen, dann wei
     - Gebäude auf der Weltkarte 25 % kleiner (`BSC=0.75`, Stadt/Nest, Außenposten, Wall, Hafen), damit mehr aufs Bild passt.
     - FPS-Anzeige (`#wmFps`) in der Akzentfarbe.
     - Profil (`js/ui-quests.js` `profStats`): neuer Block „Spielzeit & Serie“ – Gesamtzeit, Spieltage, Tagesserie, Bestpunkte, gezählte Partien und Siege.
-    - `supabase/schema.sql`: v24-Block (Spalten `profiles.wship/tship`, `protect_profile` prüft sie gegen `ship:*`, RPC `player_public`, `leaderboard_players` mit `id`, News v24). **Noch im Supabase-SQL-Editor ausführen** (ohne ihn bleibt das Fremdprofil auf dem Server leer).
+    - `supabase/schema.sql`: v24-Block (Spalten `profiles.wship/tship`, `protect_profile` prüft sie gegen `ship:*`, RPC `player_public`, `leaderboard_players` mit `id`, News v24) – **im Supabase-Projekt `hkrnduhssueuijveffof` ausgeführt** (Spalten, Funktionen, View mit `id`, Rechte: `player_public` nur für `authenticated`, View für `anon`/`authenticated`; News v24 liegt oben).
 
 ## Offen (neu)
 - Mehrspieler-Kosmetik (v16): Kronen/Muster/Schiffe werden beim Start gemeldet (`ready` → Host → `init`, `cosmPack/cosmClean/cosmOf`), „Kosmetik anderer ausblenden“ wirkt jetzt. Hüte/Flaggen anderer Spieler werden noch nicht synchronisiert; Bots tragen nur die Standardkrone.
